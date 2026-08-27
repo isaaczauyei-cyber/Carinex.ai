@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Carinex</title>
+  <desc id="desc">Carinex navy n mark with an upward arrow</desc>
+  <rect width="512" height="512" rx="48" fill="#F5F7FA"/>
+  <path fill="#081C2D" d="M126 365V238c0-67 49-112 111-112 60 0 105 43 105 111v128h-78V245c0-30-12-47-31-47-19 0-30 17-30 47v120h-77Z"/>
+  <path fill="#081C2D" d="M290 119c-8-7-4-19 7-19l78-2c10 0 17 7 17 17l3 77c0 11-12 16-19 8l-31-35-42 43-28-28 42-43-27-18Z"/>
+</svg>
