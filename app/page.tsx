@@ -3,6 +3,8 @@ import Hero from "@/components/Hero";
 import PathwayCard from "@/components/PathwayCard";
 import ComingSoon from "@/components/ComingSoon";
 import Footer from "@/components/Footer";
+import HowItWorks from "@/components/HowItWorks";
+import Tracks from "@/components/Tracks";
 import { specializations } from "@/lib/data";
 
 // NOTE: OpportunityCard + the `opportunities` array in lib/data.ts are kept
