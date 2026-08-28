@@ -70,6 +70,7 @@ export default async function ProfileEditPage() {
             initialSpecializationIds={(nurseSpecializations || []).map((s) => s.specialization_id)}
           />
         </div>
+
         <div className="mt-16 border-t border-carinex-navy/10 pt-8">
           <LogoutButton />
         </div>
