@@ -3,6 +3,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/server";
 import ProfileEditForm from "@/components/ProfileEditForm";
+import LogoutButton from "@/components/LogoutButton";
 
 export default async function ProfileEditPage() {
   const supabase = await createClient();
@@ -67,6 +68,10 @@ export default async function ProfileEditPage() {
             initialSpecializationIds={(nurseSpecializations || []).map((s) => s.specialization_id)}
           />
         </div>
+        <div className="mt-16 border-t border-carinex-navy/10 pt-8">
+          <LogoutButton />
+        </div>
+      </section>
       </section>
       <Footer />
     </main>
