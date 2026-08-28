@@ -31,6 +31,12 @@ export default async function DashboardPage() {
         </p>
 
         <div className="mt-10">
+          <a
+          href="/dashboard/profile"
+          className="mb-4 inline-block rounded-full bg-carinex-emerald px-6 py-2.5 text-sm font-semibold text-carinex-white transition hover:bg-carinex-emerald/90"
+        >
+          Edit profile
+        </a>
           <LogoutButton />
         </div>
       </section>
