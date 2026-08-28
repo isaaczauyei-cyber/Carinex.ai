@@ -3,7 +3,6 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/server";
 import { getSpecializationProgress } from "@/lib/specialization-status";
-import LogoutButton from "@/components/LogoutButton";
 
 const statusStyles = {
   not_started: { label: "Not Started", className: "bg-carinex-navy/5 text-carinex-navy/60" },
@@ -41,27 +40,6 @@ export default async function DashboardPage() {
         <p className="mt-2 text-carinex-navy/70">
           {profile?.bio || "Add a bio and your specializations to get the most from your dashboard."}
         </p>
-
-        <div className="mt-6 flex flex-wrap gap-3">
-          <a
-            href="/dashboard/profile"
-            className="rounded-full bg-carinex-emerald px-6 py-2.5 text-sm font-semibold text-carinex-white transition hover:bg-carinex-emerald/90"
-          >
-            Edit profile
-          </a>
-          <a
-            href="/dashboard/learning"
-            className="rounded-full border border-carinex-navy/20 px-6 py-2.5 text-sm font-semibold text-carinex-navy transition hover:bg-carinex-navy/5"
-          >
-            Learning Hub
-          </a>
-          <a
-            href="/dashboard/opportunities"
-            className="rounded-full border border-carinex-navy/20 px-6 py-2.5 text-sm font-semibold text-carinex-navy transition hover:bg-carinex-navy/5"
-          >
-            Opportunity Intelligence
-          </a>
-        </div>
 
         <div className="mt-12">
           <h2 className="text-xl font-bold text-carinex-navy">Your specializations</h2>
@@ -112,10 +90,6 @@ export default async function DashboardPage() {
               })}
             </div>
           )}
-        </div>
-
-        <div className="mt-12">
-          <LogoutButton />
         </div>
       </section>
 
