@@ -22,30 +22,34 @@ export default function Home() {
           <ComingSoon
             eyebrow="Opportunity Intelligence"
             title="Roles Matched to What You're Actually Eligible For"
-            description="Real listings, matched to your verified eligibility, are on the way — for now, focus on getting pathway-ready."
+            description="Real listings, matched to your verified eligibility, and pathway-readiness."
           />
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-6 py-24">
-        <div className="mb-10 flex flex-col gap-2">
-          <span className="text-sm font-semibold uppercase tracking-wide text-carinex-emerald">
-            Learning Hub
-          </span>
-          <h2 className="text-3xl font-bold tracking-tight text-carinex-navy">
-            Courses Mapped to Your Pathway, Not a Generic Catalog
-          </h2>
-          <p className="max-w-xl text-carinex-navy/70">
-            Every course on Carinex ties directly to a specialization&apos;s
-            requirements — nothing to take on faith.
-          </p>
-        </div>
+      <section className="relative overflow-hidden bg-gradient-to-br from-carinex-navy via-carinex-navy to-carinex-emerald py-24 text-carinex-white">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="mb-10 flex flex-col gap-2">
+            <span className="text-sm font-semibold uppercase tracking-wide text-carinex-white/70">
+              Learning Hub
+            </span>
+            <h2 className="max-w-xl text-3xl font-bold tracking-tight text-carinex-white">
+              Courses Mapped to Your Pathway, Not a Generic Catalog
+            </h2>
+            <p className="max-w-xl text-carinex-white/75">
+              Every course on Carinex ties directly to a specialization&apos;s
+              requirements — nothing to take on faith.
+            </p>
+          </div>
 
-        <a
-          href="/signup"
-          className="inline-block rounded-full bg-carinex-navy px-8 py-4 text-base font-semibold text-carinex-white transition hover:bg-carinex-navy/90"
-        >
-          Get Started
+          <a
+            href="/signup"
+            className="inline-block rounded-full bg-carinex-emerald px-8 py-4 text-base font-semibold text-carinex-white shadow-lg shadow-carinex-emerald/20 transition hover:bg-carinex-emerald/90"
+          >
+            Get Started
+          </a>
+        </div>
+      </section>
         </a>
       </section>
 
