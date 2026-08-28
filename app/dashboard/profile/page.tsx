@@ -72,7 +72,6 @@ export default async function ProfileEditPage() {
           <LogoutButton />
         </div>
       </section>
-      </section>
       <Footer />
     </main>
   );
