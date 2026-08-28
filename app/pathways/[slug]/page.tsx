@@ -6,6 +6,7 @@ import CourseTracker from "@/components/CourseTracker";
 import { getSpecializationBySlug } from "@/lib/data";
 import { specializationExtras, tierStyles } from "@/lib/specialization-extras";
 import { createClient } from "@/lib/supabase/server";
+import { specializationExtras, tierStyles, specializationEligibility } from "@/lib/specialization-extras";
 
 const trackLabel: Record<string, string> = {
   national: "Nigeria-based",
