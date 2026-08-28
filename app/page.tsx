@@ -77,7 +77,7 @@ export default function Home() {
         </div>
 
         <a
-          href="/assessment"
+          href="/pathways"
           className="inline-block rounded-full bg-carinex-navy px-8 py-4 text-base font-semibold text-carinex-white transition hover:bg-carinex-navy/90"
         >
           Find My Career Path
