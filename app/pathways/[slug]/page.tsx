@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { getSpecializationBySlug, specializations } from "@/lib/data";
+import SelectPathwayButton from "@/components/SelectPathwayButton";
 
 const trackLabel: Record<string, string> = {
   national: "Nigeria-based",
@@ -81,12 +82,7 @@ export default function PathwayDetailPage({ params }: { params: { slug: string }
           </div>
         </div>
 
-        <a
-          href="/signup"
-          className="mt-10 inline-block rounded-full bg-carinex-emerald px-8 py-4 text-base font-semibold text-carinex-white transition hover:bg-carinex-emerald/90"
-        >
-          Get Started
-        </a>
+        <SelectPathwayButton slug={spec.slug} />
       </section>
 
       <Footer />
