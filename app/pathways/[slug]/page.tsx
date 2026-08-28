@@ -4,8 +4,8 @@ import Footer from "@/components/Footer";
 import SelectPathwayButton from "@/components/SelectPathwayButton";
 import CourseTracker from "@/components/CourseTracker";
 import { getSpecializationBySlug } from "@/lib/data";
-import { createClient } from "@/lib/supabase/server";
 import { specializationExtras, tierStyles, specializationEligibility } from "@/lib/specialization-extras";
+import { createClient } from "@/lib/supabase/server";
 
 const trackLabel: Record<string, string> = {
   national: "Nigeria-based",
@@ -18,6 +18,36 @@ const workModeLabel: Record<string, string> = {
   async: "Flexible (self-paced, no fixed hours)",
   mixed: "Mix of scheduled and flexible work",
 };
+
+type CourseRow = {
+  id: number;
+  title: string;
+  track_type: string;
+  [key: string]: unknown;
+};
+
+// Some specializations were seeded twice — once per track — with the same
+// course titles. Show each course once, preferring the row matching the
+// nurse's selected track when known.
+function dedupeCourses(
+  courses: CourseRow[],
+  trackNational: boolean,
+  trackGlobal: boolean
+): CourseRow[] {
+  const byTitle = new Map<string, CourseRow>();
+  for (const course of courses) {
+    const existing = byTitle.get(course.title);
+    if (!existing) {
+      byTitle.set(course.title, course);
+      continue;
+    }
+    const prefersThis =
+      (course.track_type === "national" && trackNational) ||
+      (course.track_type === "global" && trackGlobal);
+    if (prefersThis) byTitle.set(course.title, course);
+  }
+  return Array.from(byTitle.values());
+}
 
 export default async function PathwayDetailPage({ params }: { params: { slug: string } }) {
   const spec = getSpecializationBySlug(params.slug);
@@ -32,7 +62,7 @@ export default async function PathwayDetailPage({ params }: { params: { slug: st
     .eq("slug", params.slug)
     .maybeSingle();
 
-  const { data: courses } = dbSpec
+  const { data: rawCourses } = dbSpec
     ? await supabase.from("courses").select("*").eq("specialization_id", dbSpec.id)
     : { data: [] };
 
@@ -42,16 +72,21 @@ export default async function PathwayDetailPage({ params }: { params: { slug: st
 
   let completionByCourseId = new Map();
   let nurseProfileId: string | null = null;
+  let trackNational = false;
+  let trackGlobal = false;
 
   if (user) {
     const { data: profile } = await supabase
       .from("nurse_profiles")
-      .select("id")
+      .select("id, track_national, track_global")
       .eq("user_id", user.id)
       .maybeSingle();
 
     if (profile) {
       nurseProfileId = profile.id;
+      trackNational = profile.track_national || false;
+      trackGlobal = profile.track_global || false;
+
       const { data: completions } = await supabase
         .from("nurse_course_completions")
         .select("*")
@@ -59,6 +94,8 @@ export default async function PathwayDetailPage({ params }: { params: { slug: st
       completionByCourseId = new Map((completions || []).map((c) => [c.course_id, c]));
     }
   }
+
+  const courses = dedupeCourses((rawCourses as CourseRow[]) || [], trackNational, trackGlobal);
 
   return (
     <main>
@@ -111,7 +148,6 @@ export default async function PathwayDetailPage({ params }: { params: { slug: st
             <p className="mt-2 text-carinex-navy/70">{workModeLabel[spec.workMode]}</p>
           </div>
 
-          {/* Eligibility shown before the course list, deliberately */}
           <div className="rounded-2xl border border-carinex-navy/10 bg-carinex-navy/5 p-6">
             <h2 className="text-lg font-bold text-carinex-navy">Eligibility</h2>
             {(() => {
@@ -148,7 +184,7 @@ export default async function PathwayDetailPage({ params }: { params: { slug: st
           <div>
             <h2 className="text-lg font-bold text-carinex-navy">Course pathway</h2>
 
-            {!courses || courses.length === 0 ? (
+            {courses.length === 0 ? (
               <p className="mt-3 text-sm text-carinex-navy/50">
                 Courses for this specialization are coming soon.
               </p>
@@ -158,7 +194,7 @@ export default async function PathwayDetailPage({ params }: { params: { slug: st
                   <CourseTracker
                     key={course.id}
                     nurseId={nurseProfileId}
-                    course={course}
+                    course={course as never}
                     completion={completionByCourseId.get(course.id) || null}
                   />
                 ))}
@@ -169,7 +205,6 @@ export default async function PathwayDetailPage({ params }: { params: { slug: st
                   <div key={course.id} className="rounded-xl border border-carinex-navy/10 p-5">
                     <p className="text-xs font-semibold text-carinex-navy/40">Step {i + 1}</p>
                     <p className="mt-1 font-semibold text-carinex-navy">{course.title}</p>
-                    <p className="text-sm text-carinex-navy/60">{course.provider}</p>
                   </div>
                 ))}
                 <p className="mt-1 text-sm text-carinex-navy/50">
@@ -186,4 +221,4 @@ export default async function PathwayDetailPage({ params }: { params: { slug: st
       <Footer />
     </main>
   );
-}
+              }
