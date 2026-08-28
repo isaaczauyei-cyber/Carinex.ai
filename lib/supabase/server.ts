@@ -18,10 +18,13 @@ export async function createClient() {
           return cookieStore.getAll();
         },
         setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
             );
           } catch {
             // setAll called from a Server Component — safe to ignore if
-            // middleware is refreshing sessions (see middleware.ts note below)
+            // middleware is refreshing sessions
           }
         },
       },
