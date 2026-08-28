@@ -48,6 +48,7 @@ export const tierStyles: Record<EvidenceTier, string> = {
   moderate: "bg-sky-50 text-sky-700",
   weak: "bg-red-50 text-red-700",
 };
+
 export type Eligibility = {
   license: string;
   experience: string | null;
