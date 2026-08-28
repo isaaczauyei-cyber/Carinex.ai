@@ -9,6 +9,8 @@ import CertificationEditor from "@/components/CertificationEditor";
 type ProfileEditFormProps = {
   nurseId: string;
   initialBio: string;
+  initialTrackNational: boolean;
+  initialTrackGlobal: boolean;
   skillOptions: TagOption[];
   serviceOptions: TagOption[];
   specializationOptions: TagOption[];
@@ -20,6 +22,8 @@ type ProfileEditFormProps = {
 export default function ProfileEditForm({
   nurseId,
   initialBio,
+  initialTrackNational,
+  initialTrackGlobal,
   skillOptions,
   serviceOptions,
   specializationOptions,
@@ -28,6 +32,8 @@ export default function ProfileEditForm({
   initialSpecializationIds,
 }: ProfileEditFormProps) {
   const [bio, setBio] = useState(initialBio);
+  const [trackNational, setTrackNational] = useState(initialTrackNational);
+  const [trackGlobal, setTrackGlobal] = useState(initialTrackGlobal);
   const [skillIds, setSkillIds] = useState(initialSkillIds);
   const [serviceIds, setServiceIds] = useState(initialServiceIds);
   const [specializationIds, setSpecializationIds] = useState(initialSpecializationIds);
@@ -51,7 +57,10 @@ export default function ProfileEditForm({
     setStatus("saving");
     const supabase = createClient();
 
-    await supabase.from("nurse_profiles").update({ bio }).eq("id", nurseId);
+    await supabase
+      .from("nurse_profiles")
+      .update({ bio, track_national: trackNational, track_global: trackGlobal })
+      .eq("id", nurseId);
 
     await supabase.from("nurse_skills").delete().eq("nurse_id", nurseId);
     if (skillIds.length > 0) {
@@ -79,6 +88,34 @@ export default function ProfileEditForm({
 
   return (
     <div className="flex flex-col gap-10">
+      <div>
+        <label className="text-sm font-medium text-carinex-navy">
+          Which track(s) are you interested in?
+        </label>
+        <p className="mt-1 text-sm text-carinex-navy/60">
+          This determines which course pathway and roles you&apos;re matched to
+          for specializations available on both tracks.
+        </p>
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:gap-4">
+          <label className="flex items-center gap-2 rounded-lg border border-carinex-navy/20 px-4 py-3 text-sm text-carinex-navy">
+            <input
+              type="checkbox"
+              checked={trackNational}
+              onChange={(e) => setTrackNational(e.target.checked)}
+            />
+            National — Nigeria-based roles
+          </label>
+          <label className="flex items-center gap-2 rounded-lg border border-carinex-navy/20 px-4 py-3 text-sm text-carinex-navy">
+            <input
+              type="checkbox"
+              checked={trackGlobal}
+              onChange={(e) => setTrackGlobal(e.target.checked)}
+            />
+            Global — international roles
+          </label>
+        </div>
+      </div>
+
       <div>
         <label className="text-sm font-medium text-carinex-navy">About</label>
         <textarea
