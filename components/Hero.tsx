@@ -1,10 +1,8 @@
+import Link from "next/link";
+
 export default function Hero() {
   return (
-    <section className="relative min-h-[92vh] overflow-hidden bg-carinex-navy text-carinex-white">
-      {/* Signature element: a large arch — the same geometry as the Carinex
-          mark — spanning the hero as a bridge from navy (bedside) to
-          emerald (broadband). This is the one bold visual move on the page;
-          everything else stays quiet around it. */}
+    <section className="relative overflow-hidden bg-carinex-navy text-carinex-white">
       <svg
         aria-hidden
         className="pointer-events-none absolute -bottom-1/3 left-1/2 h-[140%] w-[140%] -translate-x-1/2 opacity-90 md:h-[160%] md:w-[90%]"
@@ -25,26 +23,35 @@ export default function Hero() {
         />
       </svg>
 
-      <div className="relative mx-auto flex max-w-4xl flex-col items-start px-6 pb-24 pt-28 md:pt-40">
+      <div className="relative mx-auto max-w-4xl px-6 pb-24 pt-28 md:pt-40">
         <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-carinex-white/20 bg-carinex-white/5 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-carinex-white/80">
           Your Next Care, Connected
         </span>
 
         <h1 className="max-w-2xl text-4xl font-bold leading-[1.1] tracking-tight md:text-6xl">
-          Build Your Remote Healthcare Career
+          Nigerian nurses. Verified skills. Remote work that pays.
         </h1>
 
         <p className="mt-6 max-w-lg text-lg text-carinex-white/80">
-          Carinex helps licensed nurses discover, prepare for, and access
-          global remote healthcare careers.
+          Carinex verifies your NMCN license, maps your skills to eight real
+          remote career pathways, and shows you exactly what it takes to
+          qualify — no guessing, no generic course catalog.
         </p>
 
-        <a
-          href="/pathways"
-          className="mt-10 rounded-full bg-carinex-emerald px-8 py-4 text-base font-semibold text-carinex-white shadow-lg shadow-carinex-emerald/20 transition hover:bg-carinex-emerald/90"
-        >
-          Find My Career Path
-        </a>
+        <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+          <Link
+            href="/signup"
+            className="rounded-full bg-carinex-emerald px-8 py-4 text-center text-base font-semibold text-carinex-white shadow-lg shadow-carinex-emerald/20 transition hover:bg-carinex-emerald/90"
+          >
+            I&apos;m a nurse — get started
+          </Link>
+          <Link
+            href="/pathways"
+            className="rounded-full border border-carinex-white/30 px-8 py-4 text-center text-base font-semibold text-carinex-white transition hover:bg-carinex-white/10"
+          >
+            Explore pathways first
+          </Link>
+        </div>
       </div>
     </section>
   );
