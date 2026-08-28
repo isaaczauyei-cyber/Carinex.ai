@@ -6,7 +6,7 @@ import { getSpecializationProgress } from "@/lib/specialization-status";
 import LogoutButton from "@/components/LogoutButton";
 
 const statusStyles = {
-  not_started: { label: "Not Started" },
+  not_started: { label: "Not Started", className: "bg-carinex-navy/5 text-carinex-navy/60" },
   in_progress: { label: "In Progress", className: "bg-amber-50 text-amber-700" },
   unlocked: { label: "Unlocked", className: "bg-carinex-emerald/10 text-carinex-emerald" },
 };
