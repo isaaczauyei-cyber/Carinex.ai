@@ -114,7 +114,28 @@ export default async function PathwayDetailPage({ params }: { params: { slug: st
           {/* Eligibility shown before the course list, deliberately */}
           <div className="rounded-2xl border border-carinex-navy/10 bg-carinex-navy/5 p-6">
             <h2 className="text-lg font-bold text-carinex-navy">Eligibility</h2>
-            <p className="mt-2 text-carinex-navy/70">{spec.eligibilityGate}</p>
+            {(() => {
+              const elig = specializationEligibility[params.slug];
+              if (!elig) return <p className="mt-2 text-carinex-navy/70">{spec.eligibilityGate}</p>;
+              return (
+                <div className="mt-3 flex flex-col gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-carinex-navy">License</p>
+                    <p className="text-sm text-carinex-navy/70">{elig.license}</p>
+                  </div>
+                  {elig.experience && (
+                    <div>
+                      <p className="text-sm font-semibold text-carinex-navy">Experience</p>
+                      <p className="text-sm text-carinex-navy/70">{elig.experience}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-sm font-semibold text-carinex-navy">What matters most</p>
+                    <p className="text-sm text-carinex-navy/70">{elig.keyTraits}</p>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           {extras?.globalCaveat && (
