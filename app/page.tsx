@@ -21,6 +21,8 @@ export default function Home() {
     <main>
       <Navbar />
       <Hero />
+          <HowItWorks />
+          <Tracks />
 
       <section className="mx-auto max-w-6xl px-6 py-24">
         <div className="mb-10 flex flex-col gap-2">
