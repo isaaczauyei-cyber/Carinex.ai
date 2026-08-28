@@ -10,8 +10,8 @@ import type { User } from "@supabase/supabase-js";
 const menuLinks = [
   { href: "/", label: "Home" },
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/#learning-hub", label: "Learning Hub" },
-  { href: "/#opportunity-intelligence", label: "Opportunity Intelligence" },
+  { href: "/dashboard/learning", label: "Learning Hub" },
+  { href: "/dashboard/opportunities", label: "Opportunity Intelligence" },
 ];
 
 export default function Navbar() {
