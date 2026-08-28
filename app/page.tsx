@@ -17,7 +17,7 @@ export default function Home() {
 
       <PathwayPills />
 
-      <section className="bg-carinex-white/60 py-24">
+      <section id="opportunity-intelligence" className="bg-carinex-white/60 py-24">
         <div className="mx-auto max-w-6xl px-6">
           <ComingSoon
             eyebrow="Opportunity Intelligence"
@@ -27,7 +27,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="relative overflow-hidden bg-gradient-to-br from-carinex-navy via-carinex-navy to-carinex-emerald py-24 text-carinex-white">
+      <section id="learning-hub" className="relative overflow-hidden bg-gradient-to-br from-carinex-navy via-carinex-navy to-carinex-emerald py-24 text-carinex-white">
         <div className="mx-auto max-w-6xl px-6">
           <div className="mb-10 flex flex-col gap-2">
             <span className="text-sm font-semibold uppercase tracking-wide text-carinex-white/70">
