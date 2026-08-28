@@ -60,6 +60,8 @@ export default async function ProfileEditPage() {
           <ProfileEditForm
             nurseId={profile!.id}
             initialBio={profile!.bio || ""}
+            initialTrackNational={profile!.track_national || false}
+            initialTrackGlobal={profile!.track_global || false}
             skillOptions={skills || []}
             serviceOptions={services || []}
             specializationOptions={specializations || []}
