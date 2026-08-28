@@ -110,7 +110,9 @@ export default async function LearningHubPage() {
 
               return (
                 <div key={spec.id}>
-                  <h2 className="text-xl font-bold text-carinex-navy">{spec.name}</h2>
+                  <a href={`/pathways/${spec.slug}`} className="text-xl font-bold text-carinex-navy hover:text-carinex-emerald">
+                    {spec.name} →
+                  </a>
 
                   {specCourses.length === 0 ? (
                     <p className="mt-3 text-sm text-carinex-navy/50">
