@@ -5,6 +5,7 @@ import ComingSoon from "@/components/ComingSoon";
 import Footer from "@/components/Footer";
 import HowItWorks from "@/components/HowItWorks";
 import Tracks from "@/components/Tracks";
+import FAQ from "@/components/FAQ";
 import { specializations } from "@/lib/data";
 
 // NOTE: OpportunityCard + the `opportunities` array in lib/data.ts are kept
@@ -23,6 +24,7 @@ export default function Home() {
       <Hero />
           <HowItWorks />
           <Tracks />
+          <FAQ />
 
       <section className="mx-auto max-w-6xl px-6 py-24">
         <div className="mb-10 flex flex-col gap-2">
