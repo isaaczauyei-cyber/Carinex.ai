@@ -1,29 +1,10 @@
+import Image from "next/image";
 import Link from "next/link";
 
 export default function Hero() {
   return (
-    <section className="relative overflow-hidden bg-carinex-navy text-carinex-white">
-      <svg
-        aria-hidden
-        className="pointer-events-none absolute -bottom-1/3 left-1/2 h-[140%] w-[140%] -translate-x-1/2 opacity-90 md:h-[160%] md:w-[90%]"
-        viewBox="0 0 800 800"
-        fill="none"
-      >
-        <defs>
-          <linearGradient id="archGradient" x1="0" y1="800" x2="0" y2="0">
-            <stop offset="0%" stopColor="#081C2D" />
-            <stop offset="100%" stopColor="#1F7A63" />
-          </linearGradient>
-        </defs>
-        <path
-          d="M100 800 V420 C100 220 260 80 400 80 C540 80 700 220 700 420 V800"
-          stroke="url(#archGradient)"
-          strokeWidth="72"
-          strokeLinecap="round"
-        />
-      </svg>
-
-      <div className="relative mx-auto max-w-4xl px-6 pb-24 pt-28 md:pt-40">
+    <section className="relative overflow-hidden bg-gradient-to-br from-carinex-navy via-carinex-navy to-carinex-emerald text-carinex-white">
+      <div className="relative mx-auto max-w-6xl px-6 pb-16 pt-28 md:pt-36">
         <span className="mb-6 inline-flex items-center gap-2 rounded-full border border-carinex-white/20 bg-carinex-white/5 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-carinex-white/80">
           Your Next Care, Connected
         </span>
@@ -51,6 +32,17 @@ export default function Hero() {
           >
             Explore pathways first
           </Link>
+        </div>
+
+        <div className="relative mt-16 overflow-hidden rounded-2xl border border-carinex-white/10 shadow-2xl">
+          <Image
+            src="/nurse-telehealth.jpg"
+            alt="Nigerian nurse conducting a telehealth consultation"
+            width={1200}
+            height={700}
+            className="h-auto w-full object-cover"
+            priority
+          />
         </div>
       </div>
     </section>
