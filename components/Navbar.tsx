@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
@@ -16,6 +17,8 @@ const menuLinks = [
 export default function Navbar() {
   const [user, setUser] = useState<User | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname();
+  const isDashboardRoute = pathname?.startsWith("/dashboard");
 
   useEffect(() => {
     const supabase = createClient();
@@ -44,10 +47,12 @@ export default function Navbar() {
               {initial}
             </Link>
           )}
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/carinex-logo.svg" alt="Carinex" width={32} height={32} className="rounded-lg" />
-            <span className="text-lg font-bold tracking-tight text-carinex-navy">Carinex</span>
-          </Link>
+          {!isDashboardRoute && (
+            <Link href="/" className="flex items-center gap-2">
+              <Image src="/carinex-logo.svg" alt="Carinex" width={32} height={32} className="rounded-lg" />
+              <span className="text-lg font-bold tracking-tight text-carinex-navy">Carinex</span>
+            </Link>
+          )}
         </div>
 
         {!user && (
