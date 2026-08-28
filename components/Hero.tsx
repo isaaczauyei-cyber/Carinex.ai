@@ -40,7 +40,7 @@ export default function Hero() {
         </p>
 
         <a
-          href="/assessment"
+          href="/pathways"
           className="mt-10 rounded-full bg-carinex-emerald px-8 py-4 text-base font-semibold text-carinex-white shadow-lg shadow-carinex-emerald/20 transition hover:bg-carinex-emerald/90"
         >
           Find My Career Path
