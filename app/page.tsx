@@ -22,7 +22,7 @@ export default function Home() {
           <ComingSoon
             eyebrow="Opportunity Intelligence"
             title="Roles Matched to What You're Actually Eligible For"
-            description="Real listings, matched to your verified eligibility, and pathway-readiness."
+            description="Real listings, matched to your verified eligibility,and pathway-readiness."
           />
         </div>
       </section>
@@ -49,8 +49,6 @@ export default function Home() {
             Get Started
           </a>
         </div>
-      </section>
-        </a>
       </section>
 
       <FAQ />
