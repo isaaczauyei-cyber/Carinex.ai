@@ -48,3 +48,51 @@ export const tierStyles: Record<EvidenceTier, string> = {
   moderate: "bg-sky-50 text-sky-700",
   weak: "bg-red-50 text-red-700",
 };
+export type Eligibility = {
+  license: string;
+  experience: string | null;
+  keyTraits: string;
+};
+
+export const specializationEligibility: Record<string, Eligibility> = {
+  "telehealth-nursing": {
+    license: "Active NMCN license required.",
+    experience: "No prior remote-work experience needed, but clinical experience in any setting is expected.",
+    keyTraits: "Comfort with video/phone consultations and real-time triage decisions.",
+  },
+  "remote-patient-monitoring": {
+    license: "Active NMCN license required.",
+    experience: null,
+    keyTraits: "Comfort with digital dashboards and data interpretation matters more here than in bedside-equivalent roles.",
+  },
+  "telemedicine-coordination": {
+    license: "Active NMCN license preferred, not strictly required.",
+    experience: null,
+    keyTraits: "Strong communication and organizational skills are the core requirement — this role is coordination-first.",
+  },
+  "healthcare-data-ai-automation": {
+    license: "Active NMCN license required.",
+    experience: null,
+    keyTraits: "No AI/data background required to start — the course pathway is designed to build this from a clinical foundation.",
+  },
+  "medical-scribing": {
+    license: "Active NMCN license required.",
+    experience: null,
+    keyTraits: "Strong typing speed and medical terminology fluency matter more here than in most other specializations.",
+  },
+  "virtual-assistance": {
+    license: "Active NMCN license preferred — adds credibility even though the role itself is non-clinical.",
+    experience: null,
+    keyTraits: "This is the most accessible specialization for nurses newer to remote work generally.",
+  },
+  "medical-coding-billing": {
+    license: "Active NMCN license preferred.",
+    experience: null,
+    keyTraits: "Rewards attention to detail and comfort with rules-based, detail-heavy work.",
+  },
+  "case-management": {
+    license: "Active NMCN license required.",
+    experience: "2–5 years post-qualification clinical experience — ICU, emergency, or public health experience most valued.",
+    keyTraits: "This is a stricter experience gate than most other specializations — worth confirming you meet it before starting the courses below.",
+  },
+};
