@@ -4,7 +4,6 @@ import Footer from "@/components/Footer";
 import SelectPathwayButton from "@/components/SelectPathwayButton";
 import CourseTracker from "@/components/CourseTracker";
 import { getSpecializationBySlug } from "@/lib/data";
-import { specializationExtras, tierStyles } from "@/lib/specialization-extras";
 import { createClient } from "@/lib/supabase/server";
 import { specializationExtras, tierStyles, specializationEligibility } from "@/lib/specialization-extras";
 
