@@ -32,6 +32,7 @@ export default function CourseTracker({
   const [saving, setSaving] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState("");
+  const [imageBroken, setImageBroken] = useState(false);
 
   const linkPending = course.affiliate_link.startsWith("PENDING");
 
@@ -45,6 +46,10 @@ export default function CourseTracker({
       .single();
     setSaving(false);
     if (data) setCurrent(data);
+
+    if (!linkPending) {
+      window.open(course.affiliate_link, "_blank", "noopener,noreferrer");
+    }
   }
 
   async function handleSubmitProof() {
@@ -86,11 +91,12 @@ export default function CourseTracker({
 
   return (
     <div className="overflow-hidden rounded-xl border border-carinex-navy/10">
-      {course.image_url ? (
+      {course.image_url && !imageBroken ? (
         <img
           src={course.image_url}
           alt={course.title}
           className="h-32 w-full object-cover"
+          onError={() => setImageBroken(true)}
         />
       ) : (
         <div className="h-20 w-full bg-gradient-to-br from-carinex-navy to-carinex-emerald" />
@@ -127,27 +133,25 @@ export default function CourseTracker({
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
-          {linkPending ? (
-            <span className="text-sm text-carinex-navy/40">Course link coming soon</span>
-          ) : (
+          {!current && (
+            <button
+              onClick={handleStart}
+              disabled={saving || linkPending}
+              className="rounded-full bg-carinex-navy px-5 py-2 text-sm font-semibold text-carinex-white disabled:opacity-60"
+            >
+              {saving ? "Starting…" : linkPending ? "Course link coming soon" : "Start course →"}
+            </button>
+          )}
+
+          {current && !linkPending && (
             <a
               href={course.affiliate_link}
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm font-semibold text-carinex-emerald hover:underline"
             >
-              View course →
+              Continue course →
             </a>
-          )}
-
-          {!current && (
-            <button
-              onClick={handleStart}
-              disabled={saving}
-              className="rounded-full bg-carinex-navy px-5 py-2 text-sm font-semibold text-carinex-white disabled:opacity-60"
-            >
-              {saving ? "Starting…" : "Start course"}
-            </button>
           )}
         </div>
 
@@ -181,4 +185,4 @@ export default function CourseTracker({
       </div>
     </div>
   );
-      }
+}
