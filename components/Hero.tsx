@@ -10,13 +10,13 @@ export default function Hero() {
         </span>
 
         <h1 className="max-w-2xl text-4xl font-bold leading-[1.1] tracking-tight md:text-6xl">
-          Nigerian nurses. Verified skills. Remote work that pays.
+          Turn Your Nursing Experience Into a Global Remote Healthcare Career.
         </h1>
 
         <p className="mt-6 max-w-lg text-lg text-carinex-white/80">
-          Carinex verifies your NMCN license, maps your skills to eight real
-          remote career pathways, and shows you exactly what it takes to
-          qualify — no guessing, no generic course catalog.
+          Carinex helps Verified licensed nurses discover realistic career paths, gain the right skills
+          and connect with verified healthcare opportunities worldwide.
+          — no guessing, no generic course catalog.
         </p>
 
         <div className="mt-10 flex flex-col gap-3 sm:flex-row">
