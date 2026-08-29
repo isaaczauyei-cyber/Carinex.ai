@@ -22,7 +22,7 @@ export default function Home() {
           <ComingSoon
             eyebrow="Opportunity Intelligence"
             title="Roles Matched to What You're Actually Eligible For"
-            description="Real listings, matched to your verified eligibility,and pathway-readiness."
+            description="Carinex shows opportunities you can realistically pursue.."
           />
         </div>
       </section>
