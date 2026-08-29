@@ -16,7 +16,7 @@ export default function Hero() {
         <p className="mt-6 max-w-lg text-lg text-carinex-white/80">
           Carinex helps Verified licensed nurses discover realistic career paths, gain the right skills
           and connect with verified healthcare opportunities worldwide.
-          — no guessing, no generic course catalog.
+             — no guessing, no generic course catalog.
         </p>
 
         <div className="mt-10 flex flex-col gap-3 sm:flex-row">
