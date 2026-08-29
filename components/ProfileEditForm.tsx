@@ -57,10 +57,17 @@ export default function ProfileEditForm({
     setStatus("saving");
     const supabase = createClient();
 
-    await supabase
+    const { error: profileError } = await supabase
       .from("nurse_profiles")
       .update({ bio, track_national: trackNational, track_global: trackGlobal })
       .eq("id", nurseId);
+
+    if (profileError) {
+      console.error(profileError);
+      setStatus("idle");
+      alert(`Save failed: ${profileError.message}`);
+      return;
+    }
 
     await supabase.from("nurse_skills").delete().eq("nurse_id", nurseId);
     if (skillIds.length > 0) {
