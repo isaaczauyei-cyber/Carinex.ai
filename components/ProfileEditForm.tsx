@@ -7,7 +7,10 @@ import ExperienceEditor from "@/components/ExperienceEditor";
 import CertificationEditor from "@/components/CertificationEditor";
 
 type ProfileEditFormProps = {
+  userId: string;
   nurseId: string;
+  initialFirstName: string;
+  initialLastName: string;
   initialBio: string;
   initialTrackNational: boolean;
   initialTrackGlobal: boolean;
@@ -20,7 +23,10 @@ type ProfileEditFormProps = {
 };
 
 export default function ProfileEditForm({
+  userId,
   nurseId,
+  initialFirstName,
+  initialLastName,
   initialBio,
   initialTrackNational,
   initialTrackGlobal,
@@ -31,6 +37,8 @@ export default function ProfileEditForm({
   initialServiceIds,
   initialSpecializationIds,
 }: ProfileEditFormProps) {
+  const [firstName, setFirstName] = useState(initialFirstName);
+  const [lastName, setLastName] = useState(initialLastName);
   const [bio, setBio] = useState(initialBio);
   const [trackNational, setTrackNational] = useState(initialTrackNational);
   const [trackGlobal, setTrackGlobal] = useState(initialTrackGlobal);
@@ -57,6 +65,20 @@ export default function ProfileEditForm({
     setStatus("saving");
     const supabase = createClient();
 
+    const fullName = `${firstName} ${lastName}`.trim();
+
+    const { error: userError } = await supabase
+      .from("users")
+      .update({ first_name: firstName, last_name: lastName, full_name: fullName })
+      .eq("id", userId);
+
+    if (userError) {
+      console.error(userError);
+      setStatus("idle");
+      alert(`Save failed: ${userError.message}`);
+      return;
+    }
+
     const { error: profileError } = await supabase
       .from("nurse_profiles")
       .update({ bio, track_national: trackNational, track_global: trackGlobal })
@@ -71,16 +93,12 @@ export default function ProfileEditForm({
 
     await supabase.from("nurse_skills").delete().eq("nurse_id", nurseId);
     if (skillIds.length > 0) {
-      await supabase
-        .from("nurse_skills")
-        .insert(skillIds.map((skill_id) => ({ nurse_id: nurseId, skill_id })));
+      await supabase.from("nurse_skills").insert(skillIds.map((skill_id) => ({ nurse_id: nurseId, skill_id })));
     }
 
     await supabase.from("nurse_services").delete().eq("nurse_id", nurseId);
     if (serviceIds.length > 0) {
-      await supabase
-        .from("nurse_services")
-        .insert(serviceIds.map((service_id) => ({ nurse_id: nurseId, service_id })));
+      await supabase.from("nurse_services").insert(serviceIds.map((service_id) => ({ nurse_id: nurseId, service_id })));
     }
 
     await supabase.from("nurse_specializations").delete().eq("nurse_id", nurseId);
@@ -96,6 +114,26 @@ export default function ProfileEditForm({
   return (
     <div className="flex flex-col gap-10">
       <div>
+        <label className="text-sm font-medium text-carinex-navy">Name</label>
+        <div className="mt-2 flex gap-3">
+          <input
+            type="text"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            placeholder="First name"
+            className="w-1/2 rounded-lg border border-carinex-navy/20 px-4 py-2.5 focus:border-carinex-emerald focus:outline-none"
+          />
+          <input
+            type="text"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            placeholder="Last name"
+            className="w-1/2 rounded-lg border border-carinex-navy/20 px-4 py-2.5 focus:border-carinex-emerald focus:outline-none"
+          />
+        </div>
+      </div>
+
+      <div>
         <label className="text-sm font-medium text-carinex-navy">
           Which track(s) are you interested in?
         </label>
@@ -105,19 +143,11 @@ export default function ProfileEditForm({
         </p>
         <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:gap-4">
           <label className="flex items-center gap-2 rounded-lg border border-carinex-navy/20 px-4 py-3 text-sm text-carinex-navy">
-            <input
-              type="checkbox"
-              checked={trackNational}
-              onChange={(e) => setTrackNational(e.target.checked)}
-            />
+            <input type="checkbox" checked={trackNational} onChange={(e) => setTrackNational(e.target.checked)} />
             National — Nigeria-based roles
           </label>
           <label className="flex items-center gap-2 rounded-lg border border-carinex-navy/20 px-4 py-3 text-sm text-carinex-navy">
-            <input
-              type="checkbox"
-              checked={trackGlobal}
-              onChange={(e) => setTrackGlobal(e.target.checked)}
-            />
+            <input type="checkbox" checked={trackGlobal} onChange={(e) => setTrackGlobal(e.target.checked)} />
             Global — international roles
           </label>
         </div>
@@ -186,4 +216,4 @@ export default function ProfileEditForm({
       </div>
     </div>
   );
-}
+      }
