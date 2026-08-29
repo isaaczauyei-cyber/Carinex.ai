@@ -23,12 +23,11 @@ export default async function DashboardPage() {
 
   const { data: userRow } = await supabase
     .from("users")
-    .select("full_name")
+    .select("first_name, full_name")
     .eq("id", user.id)
     .maybeSingle();
 
-  const firstName = userRow?.full_name?.split(" ")[0] || "there";
-
+  const firstName = userRow?.first_name || userRow?.full_name?.split(" ")[0] || "there";
   const { data: profile } = await supabase
     .from("nurse_profiles")
     .select("*")
