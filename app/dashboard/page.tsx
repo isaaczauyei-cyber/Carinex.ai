@@ -3,6 +3,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/server";
 import { getSpecializationProgress } from "@/lib/specialization-status";
+import ProfileSummary from "@/components/ProfileSummary";
 
 const statusStyles = {
   not_started: { label: "Not Started", className: "bg-carinex-navy/5 text-carinex-navy/60" },
@@ -26,6 +27,18 @@ export default async function DashboardPage() {
 
   const progress = profile ? await getSpecializationProgress(profile.id) : [];
 
+  const [{ data: nurseSkills }, { data: nurseServices }, { data: nurseSpecs }] = profile
+    ? await Promise.all([
+        supabase.from("nurse_skills").select("skills(id, name)").eq("nurse_id", profile.id),
+        supabase.from("nurse_services").select("services(id, name)").eq("nurse_id", profile.id),
+        supabase.from("nurse_specializations").select("specializations(id, name)").eq("nurse_id", profile.id),
+      ])
+    : [{ data: [] }, { data: [] }, { data: [] }];
+
+  const skills = (nurseSkills || []).map((r) => r.skills as unknown as { id: number; name: string }).filter(Boolean);
+  const services = (nurseServices || []).map((r) => r.services as unknown as { id: number; name: string }).filter(Boolean);
+  const interests = (nurseSpecs || []).map((r) => r.specializations as unknown as { id: number; name: string }).filter(Boolean);
+
   return (
     <main>
       <Navbar />
@@ -37,9 +50,17 @@ export default async function DashboardPage() {
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-carinex-navy">
           Welcome back
         </h1>
-        <p className="mt-2 text-carinex-navy/70">
-          {profile?.bio || "Add a bio and your specializations to get the most from your dashboard."}
-        </p>
+
+        <div className="mt-6">
+          <ProfileSummary
+            bio={profile?.bio || null}
+            trackNational={profile?.track_national || false}
+            trackGlobal={profile?.track_global || false}
+            skills={skills}
+            services={services}
+            interests={interests}
+          />
+        </div>
 
         <div className="mt-12">
           <h2 className="text-xl font-bold text-carinex-navy">Your specializations</h2>
@@ -61,10 +82,7 @@ export default async function DashboardPage() {
               {progress.map((p) => {
                 const style = statusStyles[p.status];
                 return (
-                  <div
-                    key={p.specializationId}
-                    className="rounded-xl border border-carinex-navy/10 p-5"
-                  >
+                  <div key={p.specializationId} className="rounded-xl border border-carinex-navy/10 p-5">
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold text-carinex-navy">{p.name}</h3>
                       <span className={`rounded-full px-3 py-1 text-xs font-semibold ${style.className}`}>
