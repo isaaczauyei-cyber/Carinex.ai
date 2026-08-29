@@ -74,6 +74,7 @@ export default async function PathwayDetailPage({ params }: { params: { slug: st
   let nurseProfileId: string | null = null;
   let trackNational = false;
   let trackGlobal = false;
+  let alreadyEnrolled = false;
 
   if (user) {
     const { data: profile } = await supabase
@@ -92,6 +93,16 @@ export default async function PathwayDetailPage({ params }: { params: { slug: st
         .select("*")
         .eq("nurse_id", profile.id);
       completionByCourseId = new Map((completions || []).map((c) => [c.course_id, c]));
+
+      if (dbSpec) {
+        const { data: enrollment } = await supabase
+          .from("nurse_specializations")
+          .select("nurse_id")
+          .eq("nurse_id", profile.id)
+          .eq("specialization_id", dbSpec.id)
+          .maybeSingle();
+        alreadyEnrolled = !!enrollment;
+      }
     }
   }
 
@@ -215,7 +226,14 @@ export default async function PathwayDetailPage({ params }: { params: { slug: st
           </div>
         </div>
 
-        <SelectPathwayButton slug={spec.slug} />
+        {alreadyEnrolled ? (
+          <div className="mt-10 flex items-center gap-2 text-carinex-emerald">
+            <span className="text-lg">✓</span>
+            <span className="font-semibold">You&apos;re enrolled in this pathway</span>
+          </div>
+        ) : (
+          <SelectPathwayButton slug={spec.slug} />
+        )}
       </section>
 
       <Footer />
