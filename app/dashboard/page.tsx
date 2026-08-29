@@ -3,12 +3,14 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/server";
 import { getSpecializationProgress } from "@/lib/specialization-status";
+import { recordActivityAndGetStreak } from "@/lib/streak";
 import ProfileSummary from "@/components/ProfileSummary";
+import DashboardHero from "@/components/DashboardHero";
 
 const statusStyles = {
-  not_started: { label: "Not Started", className: "bg-carinex-navy/5 text-carinex-navy/60" },
-  in_progress: { label: "In Progress", className: "bg-amber-50 text-amber-700" },
-  unlocked: { label: "Unlocked", className: "bg-carinex-emerald/10 text-carinex-emerald" },
+  not_started: { label: "Not Started", className: "bg-carinex-navy/5 text-carinex-navy/60", border: "border-carinex-navy/10" },
+  in_progress: { label: "In Progress", className: "bg-amber-50 text-amber-700", border: "border-amber-200" },
+  unlocked: { label: "Unlocked", className: "bg-carinex-emerald/10 text-carinex-emerald", border: "border-carinex-emerald/30" },
 };
 
 export default async function DashboardPage() {
@@ -19,13 +21,30 @@ export default async function DashboardPage() {
 
   if (!user) redirect("/login");
 
+  const { data: userRow } = await supabase
+    .from("users")
+    .select("full_name")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const firstName = userRow?.full_name?.split(" ")[0] || "there";
+
   const { data: profile } = await supabase
     .from("nurse_profiles")
     .select("*")
-    .eq("user_id", user!.id)
+    .eq("user_id", user.id)
     .maybeSingle();
 
   const progress = profile ? await getSpecializationProgress(profile.id) : [];
+  const streak = profile ? await recordActivityAndGetStreak(profile.id) : 0;
+
+  const { data: completions } = profile
+    ? await supabase.from("nurse_course_completions").select("status").eq("nurse_id", profile.id)
+    : { data: [] };
+
+  const coursesCompleted = (completions || []).filter((c) => c.status === "completed").length;
+  const coursesInProgress = (completions || []).filter((c) => c.status === "in_progress").length;
+  const specializationsUnlocked = progress.filter((p) => p.status === "unlocked").length;
 
   const [{ data: nurseSkills }, { data: nurseServices }, { data: nurseSpecs }] = profile
     ? await Promise.all([
@@ -43,13 +62,14 @@ export default async function DashboardPage() {
     <main>
       <Navbar />
 
-      <section className="mx-auto max-w-4xl px-6 py-20">
-        <span className="text-sm font-semibold uppercase tracking-wide text-carinex-emerald">
-          Dashboard
-        </span>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-carinex-navy">
-          Welcome back
-        </h1>
+      <section className="mx-auto max-w-4xl px-6 py-12">
+        <DashboardHero
+          firstName={firstName}
+          streak={streak}
+          coursesCompleted={coursesCompleted}
+          coursesInProgress={coursesInProgress}
+          specializationsUnlocked={specializationsUnlocked}
+        />
 
         <div className="mt-6">
           <ProfileSummary
@@ -67,13 +87,8 @@ export default async function DashboardPage() {
 
           {progress.length === 0 ? (
             <div className="mt-4 rounded-2xl border border-dashed border-carinex-navy/20 p-8 text-center">
-              <p className="text-carinex-navy/70">
-                You haven&apos;t selected a specialization yet.
-              </p>
-              <a
-                href="/pathways"
-                className="mt-3 inline-block text-sm font-semibold text-carinex-emerald hover:underline"
-              >
+              <p className="text-carinex-navy/70">You haven&apos;t selected a specialization yet.</p>
+              <a href="/pathways" className="mt-3 inline-block text-sm font-semibold text-carinex-emerald hover:underline">
                 Explore pathways →
               </a>
             </div>
@@ -82,7 +97,7 @@ export default async function DashboardPage() {
               {progress.map((p) => {
                 const style = statusStyles[p.status];
                 return (
-                  <div key={p.specializationId} className="rounded-xl border border-carinex-navy/10 p-5">
+                  <div key={p.specializationId} className={`rounded-xl border-2 ${style.border} p-5`}>
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold text-carinex-navy">{p.name}</h3>
                       <span className={`rounded-full px-3 py-1 text-xs font-semibold ${style.className}`}>
@@ -97,10 +112,7 @@ export default async function DashboardPage() {
                         )}
                       </p>
                     )}
-                    <a
-                      href={`/pathways/${p.slug}`}
-                      className="mt-2 inline-block text-sm font-semibold text-carinex-emerald hover:underline"
-                    >
+                    <a href={`/pathways/${p.slug}`} className="mt-2 inline-block text-sm font-semibold text-carinex-emerald hover:underline">
                       View pathway →
                     </a>
                   </div>
