@@ -23,7 +23,7 @@ export default async function DashboardPage() {
 
   const { data: userRow } = await supabase
     .from("users")
-    .select("first_name, full_name")
+    .select("first_name, last_name, full_name")
     .eq("id", user.id)
     .maybeSingle();
 
