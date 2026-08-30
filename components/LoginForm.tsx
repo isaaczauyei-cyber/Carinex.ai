@@ -75,5 +75,10 @@ export default function LoginForm() {
         {status === "loading" ? "Logging in…" : "Log in"}
       </button>
     </form>
+    <p className="mt-2 text-center text-sm">
+        <a href="/forgot-password" className="font-medium text-carinex-emerald hover:underline">
+          Forgot password?
+        </a>
+      </p>
   );
 }
