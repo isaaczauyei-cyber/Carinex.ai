@@ -26,6 +26,11 @@ export default function SignUpForm() {
       return;
     }
 
+    if (data.session) {
+      router.push("/onboarding");
+      return;
+    }
+
     setStatus("success");
     // Once signed up, create the matching `users` row (see MVP Technical Spec
     // Section 2) — either via a Supabase database trigger on auth.users insert,
