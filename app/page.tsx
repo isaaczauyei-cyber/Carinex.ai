@@ -2,6 +2,7 @@ import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import HowItWorks from "@/components/HowItWorks";
 import Tracks from "@/components/Tracks";
+import JourneySection from "@/components/JourneySection";
 import PathwayPills from "@/components/PathwayPills";
 import ComingSoon from "@/components/ComingSoon";
 import FAQ from "@/components/FAQ";
