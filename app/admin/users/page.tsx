@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/admin";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import AdminTabs from "@/components/AdminTabs";
 
 export default async function AdminUsersPage() {
   const supabase = await requireAdmin();
