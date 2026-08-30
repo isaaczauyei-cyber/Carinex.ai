@@ -18,6 +18,8 @@ export default async function AdminUsersPage() {
         <span className="text-sm font-semibold uppercase tracking-wide text-carinex-emerald">Admin</span>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-carinex-navy">Users</h1>
 
+        <AdminTabs />
+
         <div className="mt-8 flex flex-col divide-y divide-carinex-navy/10 rounded-xl border border-carinex-navy/10">
           {(nurses || []).map((n) => {
             const userInfo = n.users as unknown as { full_name: string } | null;
