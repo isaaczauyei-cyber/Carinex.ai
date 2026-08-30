@@ -1,14 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-
-const quickLinks = [
-  { label: "Explore Pathways", href: "/pathways" },
-  { label: "Create an Account", href: "/signup" },
-  { label: "Log In", href: "/login" },
-];
+import { createClient } from "@/lib/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 const legalLinks = [
   { label: "Terms and Conditions", href: "#" },
@@ -28,7 +25,26 @@ const specializationLinks = [
 
 export default function Footer() {
   const pathname = usePathname();
+  const router = useRouter();
   const hideFooter = pathname?.startsWith("/dashboard") || pathname?.startsWith("/admin");
+
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
 
   if (hideFooter) return null;
 
@@ -53,13 +69,41 @@ export default function Footer() {
               Quick Links
             </h3>
             <ul className="mt-3 flex flex-col gap-2">
-              {quickLinks.map((link) => (
-                <li key={link.href}>
-                  <Link href={link.href} className="text-sm text-carinex-white/70 hover:text-carinex-white">
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
+              <li>
+                <Link href="/pathways" className="text-sm text-carinex-white/70 hover:text-carinex-white">
+                  Explore Pathways
+                </Link>
+              </li>
+              {user ? (
+                <>
+                  <li>
+                    <Link href="/dashboard" className="text-sm text-carinex-white/70 hover:text-carinex-white">
+                      Dashboard
+                    </Link>
+                  </li>
+                  <li>
+                    <button
+                      onClick={handleLogout}
+                      className="text-sm text-carinex-white/70 hover:text-carinex-white"
+                    >
+                      Log Out
+                    </button>
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li>
+                    <Link href="/signup" className="text-sm text-carinex-white/70 hover:text-carinex-white">
+                      Create an Account
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/login" className="text-sm text-carinex-white/70 hover:text-carinex-white">
+                      Log In
+                    </Link>
+                  </li>
+                </>
+              )}
             </ul>
           </div>
 
