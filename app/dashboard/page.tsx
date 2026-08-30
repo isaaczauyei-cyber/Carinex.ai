@@ -28,30 +28,36 @@ export default async function DashboardPage() {
     .maybeSingle();
 
   const firstName = userRow?.first_name || userRow?.full_name?.split(" ")[0] || "there";
+
   const { data: profile } = await supabase
     .from("nurse_profiles")
     .select("*")
     .eq("user_id", user.id)
     .maybeSingle();
 
-  const progress = profile ? await getSpecializationProgress(profile.id) : [];
-  const streak = profile ? await recordActivityAndGetStreak(profile.id) : 0;
+  // Safety check: if onboarding was never finished, send them there instead
+  // of showing a dashboard with missing info.
+  if (!profile || !profile.onboarding_completed) {
+    redirect("/onboarding");
+  }
 
-  const { data: completions } = profile
-    ? await supabase.from("nurse_course_completions").select("status").eq("nurse_id", profile.id)
-    : { data: [] };
+  const progress = await getSpecializationProgress(profile.id);
+  const streak = await recordActivityAndGetStreak(profile.id);
+
+  const { data: completions } = await supabase
+    .from("nurse_course_completions")
+    .select("status")
+    .eq("nurse_id", profile.id);
 
   const coursesCompleted = (completions || []).filter((c) => c.status === "completed").length;
   const coursesInProgress = (completions || []).filter((c) => c.status === "in_progress").length;
   const specializationsUnlocked = progress.filter((p) => p.status === "unlocked").length;
 
-  const [{ data: nurseSkills }, { data: nurseServices }, { data: nurseSpecs }] = profile
-    ? await Promise.all([
-        supabase.from("nurse_skills").select("skills(id, name)").eq("nurse_id", profile.id),
-        supabase.from("nurse_services").select("services(id, name)").eq("nurse_id", profile.id),
-        supabase.from("nurse_specializations").select("specializations(id, name)").eq("nurse_id", profile.id),
-      ])
-    : [{ data: [] }, { data: [] }, { data: [] }];
+  const [{ data: nurseSkills }, { data: nurseServices }, { data: nurseSpecs }] = await Promise.all([
+    supabase.from("nurse_skills").select("skills(id, name)").eq("nurse_id", profile.id),
+    supabase.from("nurse_services").select("services(id, name)").eq("nurse_id", profile.id),
+    supabase.from("nurse_specializations").select("specializations(id, name)").eq("nurse_id", profile.id),
+  ]);
 
   const skills = (nurseSkills || []).map((r) => r.skills as unknown as { id: number; name: string }).filter(Boolean);
   const services = (nurseServices || []).map((r) => r.services as unknown as { id: number; name: string }).filter(Boolean);
@@ -72,9 +78,9 @@ export default async function DashboardPage() {
 
         <div className="mt-6">
           <ProfileSummary
-            bio={profile?.bio || null}
-            trackNational={profile?.track_national || false}
-            trackGlobal={profile?.track_global || false}
+            bio={profile.bio || null}
+            trackNational={profile.track_national || false}
+            trackGlobal={profile.track_global || false}
             skills={skills}
             services={services}
             interests={interests}
