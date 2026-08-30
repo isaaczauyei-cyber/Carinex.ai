@@ -74,6 +74,16 @@ export default function Footer() {
                   Explore Pathways
                 </Link>
               </li>
+              <li>
+                <Link href="/services" className="text-sm text-carinex-white/70 hover:text-carinex-white">
+                  Our Services
+                </Link>
+              </li>
+              <li>
+                <Link href="/contact" className="text-sm text-carinex-white/70 hover:text-carinex-white">
+                  Contact
+                </Link>
+              </li>
               {user ? (
                 <>
                   <li>
@@ -133,7 +143,6 @@ export default function Footer() {
                 </li>
               ))}
             </ul>
-            <p className="mt-4 text-sm text-carinex-white/50">Lagos, Nigeria (registered address TBD)</p>
           </div>
         </div>
 
@@ -143,4 +152,4 @@ export default function Footer() {
       </div>
     </footer>
   );
-}
+ }
