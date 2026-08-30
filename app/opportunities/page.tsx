@@ -156,4 +156,4 @@ export default async function OpportunitiesPage() {
       <Footer />
     </main>
   );
-              }
+}
