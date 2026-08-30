@@ -73,12 +73,12 @@ export default function LoginForm() {
         className="mt-2 rounded-full bg-carinex-emerald px-6 py-3 text-sm font-semibold text-white disabled:opacity-60"
       >
         {status === "loading" ? "Logging in…" : "Log in"}
-      </button>
-    </form>
-    <p className="mt-2 text-center text-sm">
+      </button> <p className="mt-2 text-center text-sm">
         <a href="/forgot-password" className="font-medium text-carinex-emerald hover:underline">
           Forgot password?
         </a>
       </p>
+    </form>
+    
   );
 }
