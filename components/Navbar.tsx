@@ -16,23 +16,39 @@ const menuLinks = [
 
 export default function Navbar() {
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
-  const isDashboardRoute = pathname?.startsWith("/dashboard");
+  const isDashboardRoute = pathname?.startsWith("/dashboard") || pathname?.startsWith("/admin");
 
   useEffect(() => {
     const supabase = createClient();
 
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    async function loadUser(currentUser: User | null) {
+      setUser(currentUser);
+      if (currentUser) {
+        const { data } = await supabase
+          .from("users")
+          .select("user_type")
+          .eq("id", currentUser.id)
+          .maybeSingle();
+        setIsAdmin(data?.user_type === "admin");
+      } else {
+        setIsAdmin(false);
+      }
+    }
+
+    supabase.auth.getUser().then(({ data }) => loadUser(data.user));
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      loadUser(session?.user ?? null);
     });
 
     return () => listener.subscription.unsubscribe();
   }, []);
 
   const initial = user?.email?.charAt(0).toUpperCase() || "?";
+  const links = isAdmin ? [...menuLinks, { href: "/admin/users", label: "Admin" }] : menuLinks;
 
   return (
     <header className="sticky top-0 z-50 border-b border-carinex-navy/10 bg-carinex-white/95 backdrop-blur">
@@ -82,12 +98,14 @@ export default function Navbar() {
 
               {menuOpen && (
                 <div className="absolute right-0 top-12 flex w-56 flex-col gap-1 rounded-xl border border-carinex-navy/10 bg-white p-2 shadow-lg">
-                  {menuLinks.map((link) => (
+                  {links.map((link) => (
                     <Link
                       key={link.href}
                       href={link.href}
                       onClick={() => setMenuOpen(false)}
-                      className="rounded-lg px-4 py-2.5 text-sm font-medium text-carinex-navy transition hover:bg-carinex-emerald/10"
+                      className={`rounded-lg px-4 py-2.5 text-sm font-medium transition hover:bg-carinex-emerald/10 ${
+                        link.label === "Admin" ? "text-amber-700" : "text-carinex-navy"
+                      }`}
                     >
                       {link.label}
                     </Link>
