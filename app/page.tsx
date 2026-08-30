@@ -7,6 +7,7 @@ import PathwayPills from "@/components/PathwayPills";
 import ComingSoon from "@/components/ComingSoon";
 import FAQ from "@/components/FAQ";
 import Footer from "@/components/Footer";
+import LearningHubCTA from "@/components/LearningHubCTA";
 
 export default function Home() {
   return (
@@ -43,12 +44,7 @@ export default function Home() {
             </p>
           </div>
 
-          <a
-            href="/signup"
-            className="inline-block rounded-full bg-carinex-emerald px-8 py-4 text-base font-semibold text-carinex-white shadow-lg shadow-carinex-emerald/20 transition hover:bg-carinex-emerald/90"
-          >
-            Get Started
-          </a>
+          <LearningHubCTA />
         </div>
       </section>
 
