@@ -8,8 +8,8 @@ import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
 const legalLinks = [
-  { label: "Terms and Conditions", href: "#" },
-  { label: "Privacy Policy", href: "#" },
+  { label: "Terms and Conditions", href: "/terms" },
+  { label: "Privacy Policy", href: "/privacy" },
 ];
 
 const specializationLinks = [
