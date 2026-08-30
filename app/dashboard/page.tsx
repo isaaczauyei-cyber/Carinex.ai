@@ -78,6 +78,8 @@ export default async function DashboardPage() {
 
         <div className="mt-6">
           <ProfileSummary
+            firstName={firstName}
+            lastName={userRow?.last_name || ""}
             bio={profile.bio || null}
             trackNational={profile.track_national || false}
             trackGlobal={profile.track_global || false}
