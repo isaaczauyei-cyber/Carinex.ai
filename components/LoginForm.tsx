@@ -28,7 +28,13 @@ export default function LoginForm() {
       return;
     }
 
-    router.push("/dashboard");
+    const { data: profile } = await supabase
+      .from("nurse_profiles")
+      .select("onboarding_completed")
+      .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
+      .maybeSingle();
+
+    router.push(profile?.onboarding_completed ? "/dashboard" : "/onboarding");
   }
 
   return (
