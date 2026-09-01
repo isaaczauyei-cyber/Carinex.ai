@@ -12,6 +12,11 @@ export const metadata: Metadata = {
   title: "Carinex — Your Next Care, Connected",
   description:
     "Carinex helps licensed Nigerian nurses discover, prepare for, and access global remote healthcare careers.",
+     verification: {
+    other: {
+      'impact-site-verification': ['a7208ff9-2558-47b2-bf2a-91aaebd15d8'],
+    },
+  },
 };
 
 export default function RootLayout({
