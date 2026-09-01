@@ -124,9 +124,14 @@ export default async function DashboardPage() {
                         )}
                       </p>
                     )}
-                    <a href={`/pathways/${p.slug}`} className="mt-2 inline-block text-sm font-semibold text-carinex-emerald hover:underline">
-                      View pathway →
-                    </a>
+                    <div className="mt-2 flex gap-4">
+                      <a href={`/pathways/${p.slug}`} className="text-sm font-semibold text-carinex-emerald hover:underline">
+                        View pathway →
+                      </a>
+                      <a href={`/dashboard/roadmap/${p.slug}`} className="text-sm font-semibold text-carinex-navy hover:underline">
+                        View roadmap →
+                      </a>
+                    </div>
                   </div>
                 );
               })}
