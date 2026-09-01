@@ -90,7 +90,12 @@ export default async function DashboardPage() {
         </div>
 
         <div className="mt-12">
-          <h2 className="text-xl font-bold text-carinex-navy">Your specializations</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-carinex-navy">Your specializations</h2>
+            <a href="/assessment" className="text-sm font-semibold text-carinex-emerald hover:underline">
+              Take assessment →
+            </a>
+          </div>
 
           {progress.length === 0 ? (
             <div className="mt-4 rounded-2xl border border-dashed border-carinex-navy/20 p-8 text-center">
