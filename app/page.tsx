@@ -23,7 +23,7 @@ export default function Home() {
         <div className="mx-auto max-w-6xl px-6">
           <ComingSoon
             eyebrow="Opportunity Intelligence"
-            title="Roles Matched to What You're Actually Eligible For Impact-Site-Verification: a7208ff9-2558-47b2-bf2a-91aaeabd15d8"
+            title="Roles Matched to What You're Actually Eligible For"
             description="Carinex shows opportunities you can realistically pursue.."
           />
         </div>
