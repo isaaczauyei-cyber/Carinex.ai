@@ -23,7 +23,7 @@ export default async function RoadmapPage({ params }: { params: { slug: string }
   const roadmap = await getRoadmap(user.id, profile.id, params.slug);
   if (!roadmap) notFound();
 
-  const { spec, skillsHave, skillsGap, courses, completionByCourseId, certifications, milestones } = roadmap;
+  const { spec, skillsHave, skillsGap, courses, completionByCourseId, certifications, milestones, portfolioChecklist } = roadmap;
 
   return (
     <main>
@@ -133,13 +133,26 @@ export default async function RoadmapPage({ params }: { params: { slug: string }
           </a>
         </div>
 
-        {/* Portfolio — honest gap */}
-        <div className="mt-10 rounded-xl border border-dashed border-carinex-navy/20 p-5">
-          <h2 className="text-lg font-bold text-carinex-navy/70">Portfolio requirements</h2>
-          <p className="mt-2 text-sm text-carinex-navy/50">
-            Not yet defined for this pathway — this section will be added once
-            specific portfolio requirements are established.
+        {/* Application readiness */}
+        <div className="mt-10">
+          <h2 className="text-lg font-bold text-carinex-navy">Application readiness</h2>
+          <p className="mt-1 text-sm text-carinex-navy/50">
+            Based on what remote healthcare employers commonly ask for — not
+            specific to any one employer, since Carinex doesn&apos;t have
+            verified employer requirements yet.
           </p>
+          <div className="mt-3 flex flex-col gap-2">
+            {portfolioChecklist.map((item) => (
+              <div key={item.label} className="flex items-center gap-3 rounded-lg border border-carinex-navy/10 p-3">
+                <span className={`text-lg ${item.done ? "text-carinex-emerald" : "text-carinex-navy/20"}`}>
+                  {item.done ? "✓" : "○"}
+                </span>
+                <span className={`text-sm ${item.done ? "text-carinex-navy" : "text-carinex-navy/50"}`}>
+                  {item.label}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
       <Footer />
