@@ -24,6 +24,7 @@ export default async function RoadmapPage({ params }: { params: { slug: string }
   if (!roadmap) notFound();
 
   const { spec, skillsHave, skillsGap, courses, completionByCourseId, certifications, milestones } = roadmap;
+
   return (
     <main>
       <Navbar />
@@ -37,7 +38,6 @@ export default async function RoadmapPage({ params }: { params: { slug: string }
         </span>
         <h1 className="mt-1 text-3xl font-bold tracking-tight text-carinex-navy">{spec.title}</h1>
 
-        {/* Milestones */}
         <div className="mt-10">
           <h2 className="text-lg font-bold text-carinex-navy">Milestones</h2>
           <div className="mt-3 flex flex-col gap-2">
@@ -54,7 +54,6 @@ export default async function RoadmapPage({ params }: { params: { slug: string }
           </div>
         </div>
 
-        {/* Skills */}
         <div className="mt-10">
           <h2 className="text-lg font-bold text-carinex-navy">Current skills for this pathway</h2>
           {skillsHave.length === 0 ? (
@@ -88,7 +87,6 @@ export default async function RoadmapPage({ params }: { params: { slug: string }
           )}
         </div>
 
-        {/* Courses */}
         <div className="mt-10">
           <h2 className="text-lg font-bold text-carinex-navy">Recommended courses</h2>
           {courses.length === 0 ? (
@@ -101,7 +99,13 @@ export default async function RoadmapPage({ params }: { params: { slug: string }
                   <div key={c.id} className="flex items-center justify-between rounded-lg border border-carinex-navy/10 p-3">
                     <span className="text-sm text-carinex-navy">{c.title}</span>
                     <span className="text-xs font-semibold text-carinex-navy/50">
-                      {completion?.status === "completed" ? "Completed" : completion?.status === "verification_pending" ? "Pending review" : completion?.status === "in_progress" ? "In progress" : "Not started"}
+                      {completion?.status === "completed"
+                        ? "Completed"
+                        : completion?.status === "verification_pending"
+                        ? "Pending review"
+                        : completion?.status === "in_progress"
+                        ? "In progress"
+                        : "Not started"}
                     </span>
                   </div>
                 );
@@ -113,7 +117,6 @@ export default async function RoadmapPage({ params }: { params: { slug: string }
           </a>
         </div>
 
-        {/* Certifications */}
         <div className="mt-10">
           <h2 className="text-lg font-bold text-carinex-navy">Certifications</h2>
           {certifications.length === 0 ? (
@@ -130,8 +133,6 @@ export default async function RoadmapPage({ params }: { params: { slug: string }
           <a href="/dashboard/profile" className="mt-3 inline-block text-sm font-semibold text-carinex-emerald hover:underline">
             Add a certification →
           </a>
-        </div>
-            ))}
         </div>
       </section>
       <Footer />
