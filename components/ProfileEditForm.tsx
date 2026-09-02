@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import TagInput, { TagOption } from "@/components/TagInput";
 import ExperienceEditor from "@/components/ExperienceEditor";
 import CertificationEditor from "@/components/CertificationEditor";
+import ReferenceEditor from "@/components/ReferenceEditor";
 
 type ProfileEditFormProps = {
   userId: string;
@@ -201,6 +202,13 @@ export default function ProfileEditForm({
         <h2 className="text-lg font-bold text-carinex-navy">Certifications</h2>
         <div className="mt-4">
           <CertificationEditor nurseId={nurseId} />
+        </div>
+      </div>
+
+      <div>
+        <h2 className="text-lg font-bold text-carinex-navy">References</h2>
+        <div className="mt-4">
+          <ReferenceEditor nurseId={nurseId} />
         </div>
       </div>
 
