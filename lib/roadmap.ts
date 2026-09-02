@@ -63,6 +63,17 @@ export async function getRoadmap(userId: string, nurseId: string, slug: string) 
     .select("*")
     .eq("nurse_id", nurseId);
 
+  const { data: nurseProfile } = await supabase
+    .from("nurse_profiles")
+    .select("bio")
+    .eq("id", nurseId)
+    .single();
+
+  const { data: references } = await supabase
+    .from("nurse_references")
+    .select("*")
+    .eq("nurse_id", nurseId);
+
   const licenseSubmitted = !!profile?.license_status;
   const licenseVerified = !!profile?.license_verified;
 
