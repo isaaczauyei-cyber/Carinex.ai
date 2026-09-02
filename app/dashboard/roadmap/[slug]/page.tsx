@@ -24,7 +24,6 @@ export default async function RoadmapPage({ params }: { params: { slug: string }
   if (!roadmap) notFound();
 
   const { spec, skillsHave, skillsGap, courses, completionByCourseId, certifications, milestones } = roadmap;
-  
   return (
     <main>
       <Navbar />
@@ -133,7 +132,6 @@ export default async function RoadmapPage({ params }: { params: { slug: string }
           </a>
         </div>
             ))}
-          </div>
         </div>
       </section>
       <Footer />
