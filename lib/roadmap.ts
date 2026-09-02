@@ -6,6 +6,11 @@ export type RoadmapMilestone = {
   done: boolean;
 };
 
+export type PortfolioChecklistItem = {
+  label: string;
+  done: boolean;
+};
+
 export async function getRoadmap(userId: string, nurseId: string, slug: string) {
   const supabase = await createClient();
   const spec = getSpecializationBySlug(slug);
@@ -74,6 +79,11 @@ export async function getRoadmap(userId: string, nurseId: string, slug: string) 
     .select("*")
     .eq("nurse_id", nurseId);
 
+  const { data: experience } = await supabase
+    .from("nurse_experience")
+    .select("id")
+    .eq("nurse_id", nurseId);
+
   const licenseSubmitted = !!profile?.license_status;
   const licenseVerified = !!profile?.license_verified;
 
@@ -106,6 +116,23 @@ export async function getRoadmap(userId: string, nurseId: string, slug: string) 
     done: licenseVerified && coursesComplete && meetsExperience,
   });
 
+  // --- Application readiness / portfolio checklist ---
+  const bioWritten = !!(nurseProfile?.bio && nurseProfile.bio.trim().length > 0);
+
+  const techSkillTags = ["Digital Health Tools", "EHR Systems", "Clinical Documentation", "Healthcare Data", "Automation"];
+  const techSkillOverlap =
+    spec.skills.some((s) => techSkillTags.includes(s)) &&
+    skillsHave.some((s) => techSkillTags.includes(s));
+
+  const portfolioChecklist: PortfolioChecklistItem[] = [
+    { label: "Professional summary written (bio)", done: bioWritten },
+    { label: "At least one work experience logged", done: (experience || []).length > 0 },
+    { label: "License documentation submitted", done: licenseSubmitted },
+    { label: "At least one certification or completed course", done: (certifications || []).length > 0 || completedCount > 0 },
+    { label: "At least one professional reference", done: (references || []).length > 0 },
+    { label: "Relevant technology/documentation skill demonstrated", done: techSkillOverlap },
+  ];
+
   return {
     spec,
     skillsHave,
@@ -114,5 +141,6 @@ export async function getRoadmap(userId: string, nurseId: string, slug: string) 
     completionByCourseId,
     certifications: certifications || [],
     milestones,
+    portfolioChecklist,
   };
 }
