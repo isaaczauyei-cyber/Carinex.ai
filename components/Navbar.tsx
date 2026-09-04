@@ -12,7 +12,6 @@ const menuLinks = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/dashboard/learning", label: "Learning Hub" },
   { href: "/dashboard/opportunities", label: "Opportunity Intelligence" },
-  { href: "/dashboard/portfolio", label: "Application Readiness" },
 ];
 
 export default function Navbar() {
