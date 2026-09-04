@@ -10,7 +10,7 @@ import DashboardHero from "@/components/DashboardHero";
 const statusStyles = {
   not_started: { label: "Not Started", className: "bg-carinex-navy/5 text-carinex-navy/60", border: "border-carinex-navy/10" },
   in_progress: { label: "In Progress", className: "bg-amber-50 text-amber-700", border: "border-amber-200" },
-  unlocked: { label: "Unlocked", className: "bg-carinex-emerald/10 text-carinex-emerald", border: "border-carinex-emerald/30" },
+  unlocked: { label: "Completed", className: "bg-carinex-emerald/10 text-carinex-emerald", border: "border-carinex-emerald/30" },
 };
 
 export default async function DashboardPage() {
@@ -93,7 +93,7 @@ export default async function DashboardPage() {
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold text-carinex-navy">Your specializations</h2>
             <a href="/assessment" className="text-sm font-semibold text-carinex-emerald hover:underline">
-              Take assessment →
+              Take assessment
             </a>
           </div>
 
@@ -101,38 +101,53 @@ export default async function DashboardPage() {
             <div className="mt-4 rounded-2xl border border-dashed border-carinex-navy/20 p-8 text-center">
               <p className="text-carinex-navy/70">You haven&apos;t selected a specialization yet.</p>
               <a href="/pathways" className="mt-3 inline-block text-sm font-semibold text-carinex-emerald hover:underline">
-                Explore pathways →
+                Explore pathways
               </a>
             </div>
           ) : (
-            <div className="mt-4 flex flex-col gap-3">
+            <div className="mt-4 flex flex-col gap-4">
               {progress.map((p) => {
                 const style = statusStyles[p.status];
+                const progressPct =
+                  p.requiredCourses > 0
+                    ? Math.min(100, Math.round((p.completedCourses / p.requiredCourses) * 100))
+                    : 0;
+
                 return (
-                  <div key={p.specializationId} className={`rounded-xl border-2 ${style.border} p-5`}>
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold text-carinex-navy">{p.name}</h3>
-                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${style.className}`}>
+                  <div key={p.specializationId} className={`rounded-2xl border ${style.border} bg-white p-6`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <h3 className="text-base font-semibold text-carinex-navy">{p.name}</h3>
+                      <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${style.className}`}>
                         {style.label}
                       </span>
                     </div>
+
                     {p.requiredCourses > 0 && (
-                      <p className="mt-2 text-sm text-carinex-navy/60">
-                        {p.completedCourses} of {p.requiredCourses} required courses complete
-                        {p.minYearsExperience && !p.meetsExperienceGate && (
-                          <> · requires {p.minYearsExperience}+ years experience</>
-                        )}
-                      </p>
+                      <div className="mt-4">
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-carinex-navy/10">
+                          <div
+                            className="h-full rounded-full bg-carinex-emerald transition-all"
+                            style={{ width: `${progressPct}%` }}
+                          />
+                        </div>
+                        <p className="mt-2 text-sm text-carinex-navy/60">
+                          {p.completedCourses} of {p.requiredCourses} required courses complete
+                          {p.minYearsExperience && !p.meetsExperienceGate && (
+                            <> · requires {p.minYearsExperience}+ years experience</>
+                          )}
+                        </p>
+                      </div>
                     )}
-                    <div className="mt-3 flex flex-wrap items-center gap-3">
+
+                    <div className="mt-5 flex items-center gap-5">
                       <a
                         href={`/pathways/${p.slug}`}
                         className="rounded-full bg-carinex-emerald px-4 py-2 text-sm font-semibold text-carinex-white transition hover:bg-carinex-emerald/90"
                       >
-                        View pathway →
+                        View pathway
                       </a>
                       <a href={`/dashboard/roadmap/${p.slug}`} className="text-sm font-semibold text-carinex-navy hover:underline">
-                        View roadmap →
+                        View roadmap
                       </a>
                     </div>
                   </div>
