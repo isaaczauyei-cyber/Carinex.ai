@@ -36,7 +36,7 @@ export default function DashboardHero({
         </div>
         <div className="rounded-xl bg-carinex-white/10 p-4">
           <p className="text-2xl font-bold">{specializationsUnlocked}</p>
-          <p className="mt-1 text-xs text-carinex-white/70">Unlocked</p>
+          <p className="mt-1 text-xs text-carinex-white/70">Completed</p>
         </div>
       </div>
     </div>
