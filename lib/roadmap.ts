@@ -91,7 +91,7 @@ export async function getRoadmap(userId: string, nurseId: string, slug: string) 
   }
 
   milestones.push({
-    label: "Unlocked for opportunity matching",
+    label: "Roadmap completed",
     done: licenseVerified && coursesComplete && meetsExperience,
   });
 
