@@ -35,8 +35,6 @@ export default async function DashboardPage() {
     .eq("user_id", user.id)
     .maybeSingle();
 
-  // Safety check: if onboarding was never finished, send them there instead
-  // of showing a dashboard with missing info.
   if (!profile || !profile.onboarding_completed) {
     redirect("/onboarding");
   }
@@ -44,14 +42,23 @@ export default async function DashboardPage() {
   const progress = await getSpecializationProgress(profile.id);
   const streak = await recordActivityAndGetStreak(profile.id);
 
+  // Fetch with course titles so we can dedupe — duplicate course rows
+  // (one per track) would otherwise inflate this count.
   const { data: completions } = await supabase
     .from("nurse_course_completions")
-    .select("status")
+    .select("status, courses(title)")
     .eq("nurse_id", profile.id);
 
-  const coursesCompleted = (completions || []).filter((c) => c.status === "completed").length;
-  const coursesInProgress = (completions || []).filter((c) => c.status === "in_progress").length;
-  const specializationsCompleted = progress.filter((p) => p.status === "unlocked").length;
+  const completedTitles = new Set(
+    (completions || [])
+      .filter((c) => c.status === "completed")
+      .map((c) => (c.courses as unknown as { title: string })?.title)
+      .filter(Boolean)
+  );
+  const coursesCompleted = completedTitles.size;
+
+  const specializationsEnrolled = progress.length;
+  const roadmapsCompleted = progress.filter((p) => p.status === "unlocked").length;
 
   const [{ data: nurseSkills }, { data: nurseServices }, { data: nurseSpecs }] = await Promise.all([
     supabase.from("nurse_skills").select("skills(id, name)").eq("nurse_id", profile.id),
@@ -72,8 +79,8 @@ export default async function DashboardPage() {
           firstName={firstName}
           streak={streak}
           coursesCompleted={coursesCompleted}
-          coursesInProgress={coursesInProgress}
-          specializationsCompleted={specializationsCompleted}
+          specializationsEnrolled={specializationsEnrolled}
+          roadmapsCompleted={roadmapsCompleted}
         />
 
         <div className="mt-6">
@@ -112,7 +119,7 @@ export default async function DashboardPage() {
                   p.requiredCourses > 0
                     ? Math.min(100, Math.round((p.completedCourses / p.requiredCourses) * 100))
                     : 0;
-                const hasStarted = p.status !== "not_started";
+                const hasProgress = p.completedCourses > 0;
 
                 return (
                   <div key={p.specializationId} className={`rounded-2xl border ${style.border} bg-white p-6`}>
@@ -145,7 +152,7 @@ export default async function DashboardPage() {
                         href={`/pathways/${p.slug}`}
                         className="rounded-full bg-carinex-emerald px-4 py-2 text-sm font-semibold text-carinex-white transition hover:bg-carinex-emerald/90"
                       >
-                        {hasStarted ? "Continue course" : "View pathway"}
+                        {hasProgress ? "Continue course" : "Start course"}
                       </a>
                       <a href={`/dashboard/roadmap/${p.slug}`} className="text-sm font-semibold text-carinex-navy hover:underline">
                         View roadmap
