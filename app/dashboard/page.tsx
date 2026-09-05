@@ -51,7 +51,7 @@ export default async function DashboardPage() {
 
   const coursesCompleted = (completions || []).filter((c) => c.status === "completed").length;
   const coursesInProgress = (completions || []).filter((c) => c.status === "in_progress").length;
-  const specializationsUnlocked = progress.filter((p) => p.status === "unlocked").length;
+  const specializationsCompleted = progress.filter((p) => p.status === "unlocked").length;
 
   const [{ data: nurseSkills }, { data: nurseServices }, { data: nurseSpecs }] = await Promise.all([
     supabase.from("nurse_skills").select("skills(id, name)").eq("nurse_id", profile.id),
@@ -73,7 +73,7 @@ export default async function DashboardPage() {
           streak={streak}
           coursesCompleted={coursesCompleted}
           coursesInProgress={coursesInProgress}
-          specializationsUnlocked={specializationsUnlocked}
+          specializationsCompleted={specializationsCompleted}
         />
 
         <div className="mt-6">
@@ -112,6 +112,7 @@ export default async function DashboardPage() {
                   p.requiredCourses > 0
                     ? Math.min(100, Math.round((p.completedCourses / p.requiredCourses) * 100))
                     : 0;
+                const hasStarted = p.status !== "not_started";
 
                 return (
                   <div key={p.specializationId} className={`rounded-2xl border ${style.border} bg-white p-6`}>
@@ -144,7 +145,7 @@ export default async function DashboardPage() {
                         href={`/pathways/${p.slug}`}
                         className="rounded-full bg-carinex-emerald px-4 py-2 text-sm font-semibold text-carinex-white transition hover:bg-carinex-emerald/90"
                       >
-                        View pathway
+                        {hasStarted ? "Continue course" : "View pathway"}
                       </a>
                       <a href={`/dashboard/roadmap/${p.slug}`} className="text-sm font-semibold text-carinex-navy hover:underline">
                         View roadmap
