@@ -4,6 +4,32 @@ import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/server";
 import { getRoadmap } from "@/lib/roadmap";
 
+type Course = { id: string; title: string; [key: string]: unknown };
+
+const courseStatusStyles: Record<string, { label: string; className: string }> = {
+  completed: { label: "Completed", className: "bg-carinex-emerald/10 text-carinex-emerald" },
+  verification_pending: { label: "Pending review", className: "bg-amber-50 text-amber-700" },
+  in_progress: { label: "In progress", className: "bg-blue-50 text-blue-700" },
+};
+const notStartedStyle = { label: "Not started", className: "bg-carinex-navy/5 text-carinex-navy/50" };
+
+function dedupeCourses(courses: Course[], completionByCourseId: Map<string, { status: string }>) {
+  const seen = new Map<string, Course>();
+  for (const c of courses) {
+    const existing = seen.get(c.title);
+    if (!existing) {
+      seen.set(c.title, c);
+      continue;
+    }
+    const existingHasProgress = completionByCourseId.has(existing.id);
+    const currentHasProgress = completionByCourseId.has(c.id);
+    if (!existingHasProgress && currentHasProgress) {
+      seen.set(c.title, c);
+    }
+  }
+  return Array.from(seen.values());
+}
+
 export default async function RoadmapPage({ params }: { params: { slug: string } }) {
   const supabase = await createClient();
   const {
@@ -24,6 +50,7 @@ export default async function RoadmapPage({ params }: { params: { slug: string }
   if (!roadmap) notFound();
 
   const { spec, skillsHave, skillsGap, courses, completionByCourseId, certifications, milestones } = roadmap;
+  const dedupedCourses = dedupeCourses(courses as Course[], completionByCourseId);
 
   return (
     <main>
@@ -89,30 +116,28 @@ export default async function RoadmapPage({ params }: { params: { slug: string }
 
         <div className="mt-10">
           <h2 className="text-lg font-bold text-carinex-navy">Recommended courses</h2>
-          {courses.length === 0 ? (
+          {dedupedCourses.length === 0 ? (
             <p className="mt-2 text-sm text-carinex-navy/50">No courses available for this pathway yet.</p>
           ) : (
-            <div className="mt-2 flex flex-col gap-2">
-              {courses.map((c) => {
+            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {dedupedCourses.map((c) => {
                 const completion = completionByCourseId.get(c.id);
+                const style = completion?.status ? courseStatusStyles[completion.status] || notStartedStyle : notStartedStyle;
                 return (
-                  <div key={c.id} className="flex items-center justify-between rounded-lg border border-carinex-navy/10 p-3">
-                    <span className="text-sm text-carinex-navy">{c.title}</span>
-                    <span className="text-xs font-semibold text-carinex-navy/50">
-                      {completion?.status === "completed"
-                        ? "Completed"
-                        : completion?.status === "verification_pending"
-                        ? "Pending review"
-                        : completion?.status === "in_progress"
-                        ? "In progress"
-                        : "Not started"}
+                  <div
+                    key={c.id}
+                    className="flex flex-col justify-between rounded-xl border border-carinex-navy/10 bg-white p-4 transition hover:border-carinex-emerald/40 hover:shadow-sm"
+                  >
+                    <span className="text-sm font-semibold text-carinex-navy">{c.title}</span>
+                    <span className={`mt-3 inline-block w-fit rounded-full px-2.5 py-1 text-xs font-semibold ${style.className}`}>
+                      {style.label}
                     </span>
                   </div>
                 );
               })}
             </div>
           )}
-          <a href={`/pathways/${spec.slug}`} className="mt-3 inline-block text-sm font-semibold text-carinex-emerald hover:underline">
+          <a href={`/pathways/${spec.slug}`} className="mt-4 inline-block text-sm font-semibold text-carinex-emerald hover:underline">
             Go to course pathway →
           </a>
         </div>
