@@ -45,14 +45,22 @@ export async function getSpecializationProgress(
     };
     if (!spec) continue;
 
-    const { count: completedCount } = await supabase
+    // Fetch completed rows with course title so we can dedupe — some
+    // courses exist as duplicate rows (one per track) with the same
+    // title, and a nurse should only get credit once per real course.
+    const { data: completedRows } = await supabase
       .from("nurse_course_completions")
-      .select("id, courses!inner(specialization_id)", { count: "exact", head: true })
+      .select("courses!inner(specialization_id, title)")
       .eq("nurse_id", nurseProfileId)
       .eq("status", "completed")
       .eq("courses.specialization_id", spec.id);
 
-    const completedCourses = completedCount || 0;
+    const completedCourseTitles = new Set(
+      (completedRows || [])
+        .map((r) => (r.courses as unknown as { title: string })?.title)
+        .filter(Boolean)
+    );
+    const completedCourses = completedCourseTitles.size;
     const requiredCourses = spec.required_course_count || 0;
 
     const licenseActive = profile?.license_status === "active";
