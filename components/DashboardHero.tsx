@@ -3,13 +3,13 @@ export default function DashboardHero({
   streak,
   coursesCompleted,
   coursesInProgress,
-  specializationsUnlocked,
+  specializationsCompleted,
 }: {
   firstName: string;
   streak: number;
   coursesCompleted: number;
   coursesInProgress: number;
-  specializationsUnlocked: number;
+  specializationsCompleted: number;
 }) {
   return (
     <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-carinex-navy via-carinex-navy to-carinex-emerald p-8 text-carinex-white">
@@ -35,7 +35,7 @@ export default function DashboardHero({
           <p className="mt-1 text-xs text-carinex-white/70">In progress</p>
         </div>
         <div className="rounded-xl bg-carinex-white/10 p-4">
-          <p className="text-2xl font-bold">{specializationsUnlocked}</p>
+          <p className="text-2xl font-bold">{specializationsCompleted}</p>
           <p className="mt-1 text-xs text-carinex-white/70">Completed</p>
         </div>
       </div>
