@@ -17,12 +17,6 @@ export async function getRoadmap(userId: string, nurseId: string, slug: string) 
     .eq("slug", slug)
     .maybeSingle();
 
-  const { data: profile } = await supabase
-    .from("nurse_profiles")
-    .select("license_status, license_verified")
-    .eq("id", nurseId)
-    .maybeSingle();
-
   const { data: userRow } = await supabase
     .from("users")
     .select("years_experience")
@@ -63,18 +57,11 @@ export async function getRoadmap(userId: string, nurseId: string, slug: string) 
     .select("*")
     .eq("nurse_id", nurseId);
 
-  const licenseSubmitted = !!profile?.license_status;
-  const licenseVerified = !!profile?.license_verified;
-
   const meetsExperience = dbSpec?.min_years_experience
     ? (userRow?.years_experience || 0) >= dbSpec.min_years_experience
     : true;
 
-  const milestones: RoadmapMilestone[] = [
-    { label: "Selected this pathway", done: true },
-    { label: "License status submitted", done: licenseSubmitted },
-    { label: "License verified by Carinex", done: licenseVerified },
-  ];
+  const milestones: RoadmapMilestone[] = [{ label: "Selected this pathway", done: true }];
 
   if (dbSpec?.min_years_experience) {
     milestones.push({
@@ -92,7 +79,7 @@ export async function getRoadmap(userId: string, nurseId: string, slug: string) 
 
   milestones.push({
     label: "Roadmap completed",
-    done: licenseVerified && coursesComplete && meetsExperience,
+    done: coursesComplete && meetsExperience,
   });
 
   return {
