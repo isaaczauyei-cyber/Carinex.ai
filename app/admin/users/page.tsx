@@ -21,12 +21,9 @@ export default async function AdminUsersPage() {
 
   const incompleteUsers = (allUsers || []).filter((u) => !nurseUserIds.has(u.id));
 
-  // Pull emails from auth.users for just the incomplete signups.
-  let emailById = new Map<string, string>();
-  if (incompleteUsers.length > 0) {
-    const { data: authData } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
-    emailById = new Map((authData?.users || []).map((u) => [u.id, u.email || "—"]));
-  }
+  // Pull emails from auth.users for everyone — both onboarded nurses and incomplete signups.
+  const { data: authData } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
+  const emailById = new Map((authData?.users || []).map((u) => [u.id, u.email || "—"]));
 
   return (
     <main>
@@ -50,6 +47,7 @@ export default async function AdminUsersPage() {
                 <div>
                   <p className="text-sm font-mono text-carinex-navy/50">{n.nurse_code}</p>
                   <p className="font-semibold text-carinex-navy">{userInfo?.full_name || "Unnamed"}</p>
+                  <p className="text-sm text-carinex-navy/50">{emailById.get(n.user_id) || "—"}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   {n.license_verified ? (
