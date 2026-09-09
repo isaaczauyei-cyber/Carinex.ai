@@ -21,7 +21,6 @@ export default async function AdminUsersPage() {
 
   const incompleteUsers = (allUsers || []).filter((u) => !nurseUserIds.has(u.id));
 
-  // Pull emails from auth.users for everyone — both onboarded nurses and incomplete signups.
   const { data: authData } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
   const emailById = new Map((authData?.users || []).map((u) => [u.id, u.email || "—"]));
 
@@ -50,15 +49,15 @@ export default async function AdminUsersPage() {
                   <p className="text-sm text-carinex-navy/50">{emailById.get(n.user_id) || "—"}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {n.license_verified ? (
-                    <span className="rounded-full bg-carinex-emerald/10 px-3 py-1 text-xs font-semibold text-carinex-emerald">
-                      Verified
-                    </span>
-                  ) : (
-                    <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
-                      Unverified
-                    </span>
-                  )}
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                      n.license_verified
+                        ? "bg-carinex-emerald/10 text-carinex-emerald"
+                        : "bg-carinex-navy/5 text-carinex-navy/50"
+                    }`}
+                  >
+                    {n.license_verified ? "License verified" : "License pending"}
+                  </span>
                 </div>
               </Link>
             );
