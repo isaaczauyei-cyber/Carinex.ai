@@ -1,16 +1,32 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/admin";
+import { requireAdminWithService } from "@/lib/admin";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AdminTabs from "@/components/AdminTabs";
 
 export default async function AdminUsersPage() {
-  const supabase = await requireAdmin();
+  const { supabase, adminClient } = await requireAdminWithService();
 
   const { data: nurses } = await supabase
     .from("nurse_profiles")
     .select("id, nurse_code, license_status, license_verified, user_id, users(full_name)")
     .order("nurse_code");
+
+  const nurseUserIds = new Set((nurses || []).map((n) => n.user_id));
+
+  const { data: allUsers } = await supabase
+    .from("users")
+    .select("id, full_name, first_name, created_at")
+    .order("created_at", { ascending: false });
+
+  const incompleteUsers = (allUsers || []).filter((u) => !nurseUserIds.has(u.id));
+
+  // Pull emails from auth.users for just the incomplete signups.
+  let emailById = new Map<string, string>();
+  if (incompleteUsers.length > 0) {
+    const { data: authData } = await adminClient.auth.admin.listUsers({ perPage: 1000 });
+    emailById = new Map((authData?.users || []).map((u) => [u.id, u.email || "—"]));
+  }
 
   return (
     <main>
@@ -21,7 +37,8 @@ export default async function AdminUsersPage() {
 
         <AdminTabs />
 
-        <div className="mt-8 flex flex-col divide-y divide-carinex-navy/10 rounded-xl border border-carinex-navy/10">
+        <h2 className="mt-8 text-lg font-bold text-carinex-navy">Nurses (onboarding complete)</h2>
+        <div className="mt-3 flex flex-col divide-y divide-carinex-navy/10 rounded-xl border border-carinex-navy/10">
           {(nurses || []).map((n) => {
             const userInfo = n.users as unknown as { full_name: string } | null;
             return (
@@ -50,6 +67,27 @@ export default async function AdminUsersPage() {
           })}
           {(!nurses || nurses.length === 0) && (
             <p className="px-5 py-8 text-center text-sm text-carinex-navy/50">No users yet.</p>
+          )}
+        </div>
+
+        <h2 className="mt-10 text-lg font-bold text-carinex-navy">Incomplete signups</h2>
+        <p className="mt-1 text-sm text-carinex-navy/50">
+          Signed up but never finished onboarding — no nurse profile was created.
+        </p>
+        <div className="mt-3 flex flex-col divide-y divide-carinex-navy/10 rounded-xl border border-carinex-navy/10">
+          {incompleteUsers.map((u) => (
+            <div key={u.id} className="flex items-center justify-between px-5 py-4">
+              <div>
+                <p className="font-semibold text-carinex-navy">{u.full_name || u.first_name || "Unnamed"}</p>
+                <p className="text-sm text-carinex-navy/50">{emailById.get(u.id) || "—"}</p>
+              </div>
+              <span className="rounded-full bg-carinex-navy/5 px-3 py-1 text-xs font-semibold text-carinex-navy/60">
+                {u.created_at ? new Date(u.created_at).toLocaleDateString() : ""}
+              </span>
+            </div>
+          ))}
+          {incompleteUsers.length === 0 && (
+            <p className="px-5 py-8 text-center text-sm text-carinex-navy/50">No incomplete signups.</p>
           )}
         </div>
       </section>
