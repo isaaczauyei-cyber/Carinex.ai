@@ -55,8 +55,6 @@ export default async function LearningHubPage() {
     (completions || []).map((c) => [c.course_id, c])
   );
 
-  // Dedupe courses that were seeded twice (once per track) so a nurse
-  // sees each course once, preferring the row matching her selected track.
   function dedupeCourses(courses: CourseRow[]): CourseRow[] {
     const byTitle = new Map<string, CourseRow>();
     for (const course of courses) {
@@ -77,7 +75,7 @@ export default async function LearningHubPage() {
     <main>
       <Navbar />
 
-      <section className="mx-auto max-w-4xl px-6 py-20">
+      <section className="mx-auto max-w-4xl px-6 py-16">
         <span className="text-sm font-semibold uppercase tracking-wide text-carinex-emerald">
           Learning Hub
         </span>
@@ -102,24 +100,34 @@ export default async function LearningHubPage() {
             </a>
           </div>
         ) : (
-          <div className="mt-10 flex flex-col gap-10">
+          <div className="mt-10 flex flex-col gap-14">
             {specializations.map((spec) => {
               const specCourses = dedupeCourses(
                 (allCourses || []).filter((c) => c.specialization_id === spec.id)
               );
+              const completedCount = specCourses.filter(
+                (c) => completionByCourseId.get(c.id)?.status === "completed"
+              ).length;
 
               return (
                 <div key={spec.id}>
-                  <a href={`/pathways/${spec.slug}`} className="text-xl font-bold text-carinex-navy hover:text-carinex-emerald">
-                    {spec.name} →
-                  </a>
+                  <div className="flex items-center justify-between border-b border-carinex-navy/10 pb-3">
+                    <a href={`/pathways/${spec.slug}`} className="text-xl font-bold text-carinex-navy hover:text-carinex-emerald">
+                      {spec.name}
+                    </a>
+                    {specCourses.length > 0 && (
+                      <span className="text-sm font-semibold text-carinex-navy/50">
+                        {completedCount} of {specCourses.length} complete
+                      </span>
+                    )}
+                  </div>
 
                   {specCourses.length === 0 ? (
-                    <p className="mt-3 text-sm text-carinex-navy/50">
+                    <p className="mt-4 text-sm text-carinex-navy/50">
                       No courses available for this specialization yet.
                     </p>
                   ) : (
-                    <div className="mt-4 flex flex-col gap-3">
+                    <div className="mt-5 flex flex-col gap-4">
                       {specCourses.map((course) => (
                         <CourseTracker
                           key={course.id}
@@ -140,4 +148,4 @@ export default async function LearningHubPage() {
       <Footer />
     </main>
   );
-            }
+}
