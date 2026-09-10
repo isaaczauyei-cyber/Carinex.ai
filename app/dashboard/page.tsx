@@ -8,9 +8,9 @@ import ProfileSummary from "@/components/ProfileSummary";
 import DashboardHero from "@/components/DashboardHero";
 
 const statusStyles = {
-  not_started: { label: "Not Started", className: "bg-carinex-navy/5 text-carinex-navy/60", border: "border-carinex-navy/10" },
-  in_progress: { label: "In Progress", className: "bg-amber-50 text-amber-700", border: "border-amber-200" },
-  unlocked: { label: "Completed", className: "bg-carinex-emerald/10 text-carinex-emerald", border: "border-carinex-emerald/30" },
+  not_started: { label: "Not Started", badgeClass: "bg-white/10 text-white/70" },
+  in_progress: { label: "In Progress", badgeClass: "bg-amber-400/20 text-amber-200" },
+  unlocked: { label: "Completed", badgeClass: "bg-carinex-emerald/25 text-emerald-200" },
 };
 
 export default async function DashboardPage() {
@@ -42,8 +42,6 @@ export default async function DashboardPage() {
   const progress = await getSpecializationProgress(profile.id);
   const streak = await recordActivityAndGetStreak(profile.id);
 
-  // Fetch with course titles so we can dedupe — duplicate course rows
-  // (one per track) would otherwise inflate this count.
   const { data: completions } = await supabase
     .from("nurse_course_completions")
     .select("status, courses(title)")
@@ -122,23 +120,31 @@ export default async function DashboardPage() {
                 const hasProgress = p.completedCourses > 0;
 
                 return (
-                  <div key={p.specializationId} className={`rounded-2xl border ${style.border} bg-white p-6`}>
+                  <div key={p.specializationId} className="rounded-2xl bg-carinex-navy p-6">
                     <div className="flex items-start justify-between gap-3">
-                      <h3 className="text-base font-semibold text-carinex-navy">{p.name}</h3>
-                      <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${style.className}`}>
-                        {style.label}
-                      </span>
+                      <h3 className="text-base font-semibold text-white">{p.name}</h3>
+                      <div className="flex shrink-0 flex-col items-end gap-2">
+                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${style.badgeClass}`}>
+                          {style.label}
+                        </span>
+                        <a
+                          href={`/dashboard/roadmap/${p.slug}`}
+                          className="text-xs font-semibold text-white/70 transition hover:text-white hover:underline"
+                        >
+                          View roadmap
+                        </a>
+                      </div>
                     </div>
 
                     {p.requiredCourses > 0 && (
                       <div className="mt-4">
-                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-carinex-navy/10">
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/15">
                           <div
                             className="h-full rounded-full bg-carinex-emerald transition-all"
                             style={{ width: `${progressPct}%` }}
                           />
                         </div>
-                        <p className="mt-2 text-sm text-carinex-navy/60">
+                        <p className="mt-2 text-sm text-white/60">
                           {p.completedCourses} of {p.requiredCourses} required courses complete
                           {p.minYearsExperience && !p.meetsExperienceGate && (
                             <> · requires {p.minYearsExperience}+ years experience</>
@@ -147,15 +153,12 @@ export default async function DashboardPage() {
                       </div>
                     )}
 
-                    <div className="mt-5 flex items-center gap-5">
+                    <div className="mt-5">
                       <a
                         href={`/pathways/${p.slug}`}
-                        className="rounded-full bg-carinex-emerald px-4 py-2 text-sm font-semibold text-carinex-white transition hover:bg-carinex-emerald/90"
+                        className="inline-block rounded-full bg-carinex-emerald px-4 py-2 text-sm font-semibold text-white transition hover:bg-carinex-emerald/90"
                       >
                         {hasProgress ? "Continue course" : "Start course"}
-                      </a>
-                      <a href={`/dashboard/roadmap/${p.slug}`} className="text-sm font-semibold text-carinex-navy hover:underline">
-                        View roadmap
                       </a>
                     </div>
                   </div>
