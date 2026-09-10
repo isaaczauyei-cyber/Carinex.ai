@@ -19,6 +19,15 @@ export default async function AssessmentPage() {
 
   if (!profile) redirect("/onboarding");
 
+  const { data: nurseSpecs } = await supabase
+    .from("nurse_specializations")
+    .select("specializations(slug)")
+    .eq("nurse_id", profile.id);
+
+  const initialEnrolledSlugs = (nurseSpecs || [])
+    .map((r) => (r.specializations as unknown as { slug: string })?.slug)
+    .filter(Boolean) as string[];
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-carinex-navy via-carinex-navy to-carinex-emerald/20">
       <Navbar />
@@ -57,6 +66,7 @@ export default async function AssessmentPage() {
             nurseId={profile.id}
             initialLicenseStatus={profile.license_status || ""}
             initialCareerGoal={profile.career_goal || ""}
+            initialEnrolledSlugs={initialEnrolledSlugs}
           />
         </div>
       </section>
