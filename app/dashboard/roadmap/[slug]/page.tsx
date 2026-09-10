@@ -98,19 +98,23 @@ export default async function RoadmapPage({ params }: { params: { slug: string }
           )}
 
           {skillsGap.length > 0 && (
-            <>
-              <h3 className="mt-5 text-sm font-semibold text-carinex-navy/70">Skills gap</h3>
-              <p className="mt-1 text-sm text-carinex-navy/50">
-                Add these to your profile once you&apos;ve built them, or work on them through the courses below.
+            <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🎯</span>
+                <h3 className="text-sm font-bold text-amber-900">Skills gap to close</h3>
+              </div>
+              <p className="mt-1 text-sm text-amber-800/80">
+                Building these will make you stronger for this pathway. Add them to your
+                profile once you&apos;ve developed them, or work on them through the courses below.
               </p>
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
                 {skillsGap.map((s) => (
-                  <span key={s} className="rounded-full border border-dashed border-carinex-navy/20 px-3 py-1 text-xs text-carinex-navy/50">
+                  <span key={s} className="rounded-full bg-amber-100 px-3 py-1.5 text-xs font-semibold text-amber-800">
                     {s}
                   </span>
                 ))}
               </div>
-            </>
+            </div>
           )}
         </div>
 
