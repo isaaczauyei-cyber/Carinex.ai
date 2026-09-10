@@ -94,13 +94,30 @@ export default async function DashboardPage() {
           />
         </div>
 
+        <div className="mt-8 overflow-hidden rounded-2xl bg-gradient-to-br from-carinex-emerald to-carinex-navy p-8 text-white">
+          <span className="text-xs font-semibold uppercase tracking-wide text-white/70">
+            Career Fit Assessment
+          </span>
+          <h2 className="mt-2 text-2xl font-bold tracking-tight">
+            Find out exactly where your clinical experience fits, globally.
+          </h2>
+          <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/80">
+            Most nurses guess which remote pathway suits them and waste months on the
+            wrong courses. This assessment reads your real clinical background —
+            ICU, public health, call-centre, whatever it is — and tells you precisely
+            which specializations you&apos;re already strong in, and what stands between
+            you and the rest.
+          </p>
+          <a
+            href="/assessment"
+            className="mt-5 inline-block rounded-full bg-white px-6 py-3 text-sm font-bold text-carinex-navy transition hover:bg-white/90"
+          >
+            Take the assessment →
+          </a>
+        </div>
+
         <div className="mt-12">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-carinex-navy">Your specializations</h2>
-            <a href="/assessment" className="text-sm font-semibold text-carinex-emerald hover:underline">
-              Take assessment
-            </a>
-          </div>
+          <h2 className="text-xl font-bold text-carinex-navy">Your specializations</h2>
 
           {progress.length === 0 ? (
             <div className="mt-4 rounded-2xl border border-dashed border-carinex-navy/20 p-8 text-center">
@@ -172,4 +189,4 @@ export default async function DashboardPage() {
       <Footer />
     </main>
   );
-}
+          }
