@@ -20,14 +20,18 @@ const fitLabels: Record<string, string> = {
 
 const TOTAL_STEPS = 4;
 
+type AddState = "idle" | "adding" | "added";
+
 export default function AssessmentForm({
   nurseId,
   initialLicenseStatus,
   initialCareerGoal,
+  initialEnrolledSlugs = [],
 }: {
   nurseId: string;
   initialLicenseStatus: string;
   initialCareerGoal: string;
+  initialEnrolledSlugs?: string[];
 }) {
   const [step, setStep] = useState(0);
   const [yearsExperience, setYearsExperience] = useState(0);
@@ -36,6 +40,9 @@ export default function AssessmentForm({
   const [careerGoal, setCareerGoal] = useState(initialCareerGoal || "");
   const [results, setResults] = useState<Recommendation[] | null>(null);
   const [saving, setSaving] = useState(false);
+  const [addStates, setAddStates] = useState<Record<string, AddState>>(
+    Object.fromEntries(initialEnrolledSlugs.map((slug) => [slug, "added"]))
+  );
 
   function toggleBackground(option: string) {
     setBackground((prev) =>
@@ -44,7 +51,7 @@ export default function AssessmentForm({
   }
 
   const canAdvance = [
-    true, // years is a number, always valid
+    true,
     background.length > 0,
     licenseStatus !== "",
     careerGoal !== "",
@@ -75,13 +82,20 @@ export default function AssessmentForm({
   }
 
   async function addInterest(slug: string) {
+    setAddStates((prev) => ({ ...prev, [slug]: "adding" }));
     const supabase = createClient();
     const { data: spec } = await supabase.from("specializations").select("id").eq("slug", slug).maybeSingle();
-    if (spec) {
-      await supabase
-        .from("nurse_specializations")
-        .upsert({ nurse_id: nurseId, specialization_id: spec.id }, { onConflict: "nurse_id,specialization_id" });
+
+    if (!spec) {
+      setAddStates((prev) => ({ ...prev, [slug]: "idle" }));
+      return;
     }
+
+    const { error } = await supabase
+      .from("nurse_specializations")
+      .upsert({ nurse_id: nurseId, specialization_id: spec.id }, { onConflict: "nurse_id,specialization_id" });
+
+    setAddStates((prev) => ({ ...prev, [slug]: error ? "idle" : "added" }));
   }
 
   if (results) {
@@ -99,43 +113,53 @@ export default function AssessmentForm({
         <p className="text-sm text-carinex-navy/60">
           Based on what you shared — no scores, just what the actual requirements say.
         </p>
-        {results.map((r) => (
-          <div key={r.slug} className="rounded-xl border border-carinex-navy/10 p-5">
-            <div className="flex items-center justify-between">
-              <p className="font-semibold text-carinex-navy">{r.title}</p>
-              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${fitStyles[r.fit]}`}>
-                {fitLabels[r.fit]}
-              </span>
-            </div>
-            <ul className="mt-2 flex flex-col gap-1">
-              {r.reasons.map((reason, i) => (
-                <li key={i} className="text-sm text-carinex-navy/70">
-                  · {reason}
-                </li>
-              ))}
-            </ul>
-            <div className="mt-3 flex gap-3">
-              <a href={`/pathways/${r.slug}`} className="text-sm font-semibold text-carinex-emerald hover:underline">
-                View pathway →
-              </a>
-              {r.fit !== "not_yet" && (
-                <button
-                  onClick={() => addInterest(r.slug)}
-                  className="text-sm font-semibold text-carinex-navy hover:underline"
+        {results.map((r) => {
+          const addState = addStates[r.slug] || "idle";
+          return (
+            <div key={r.slug} className="rounded-xl border border-carinex-navy/10 p-5">
+              <div className="flex items-center justify-between">
+                <p className="font-semibold text-carinex-navy">{r.title}</p>
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${fitStyles[r.fit]}`}>
+                  {fitLabels[r.fit]}
+                </span>
+              </div>
+              <ul className="mt-2 flex flex-col gap-1">
+                {r.reasons.map((reason, i) => (
+                  <li key={i} className="text-sm text-carinex-navy/70">
+                    · {reason}
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-4 flex items-center gap-3">
+                <a
+                  href={`/pathways/${r.slug}`}
+                  className="rounded-full bg-carinex-navy px-4 py-2 text-sm font-semibold text-white transition hover:bg-carinex-navy/90"
                 >
-                  Add to my pathways
-                </button>
-              )}
+                  View pathway
+                </a>
+                {r.fit !== "not_yet" && (
+                  <button
+                    onClick={() => addInterest(r.slug)}
+                    disabled={addState !== "idle"}
+                    className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                      addState === "added"
+                        ? "bg-carinex-emerald/10 text-carinex-emerald"
+                        : "border border-carinex-navy/20 text-carinex-navy hover:bg-carinex-navy/5"
+                    } disabled:cursor-default`}
+                  >
+                    {addState === "added" ? "Added ✓" : addState === "adding" ? "Adding…" : "Add to my pathways"}
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   }
 
   return (
     <div>
-      {/* Progress bar */}
       <div className="flex items-center gap-2">
         {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
           <div key={i} className="h-1.5 flex-1 overflow-hidden rounded-full bg-carinex-navy/10">
