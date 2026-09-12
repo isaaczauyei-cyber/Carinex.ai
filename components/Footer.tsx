@@ -52,7 +52,7 @@ export default function Footer() {
     <footer className="border-t border-carinex-navy/10 bg-carinex-navy text-carinex-white">
       <div className="mx-auto max-w-6xl px-6 py-14">
         <Link href="/" className="flex items-center gap-2">
-          <Image src="/carinex-logo.svg" alt="Carinex" width={40} height={40} />
+          <Image src="/carinex-logo.png" alt="Carinex" width={40} height={40} />
           <span className="text-2xl font-bold">Carinex</span>
         </Link>
 
