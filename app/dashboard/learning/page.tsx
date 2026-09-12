@@ -159,7 +159,7 @@ export default async function LearningHubPage() {
                               <div className="absolute left-[15px] top-8 h-full w-0.5 bg-carinex-navy/10" />
                             )}
                             <div
-                              className={`z-10 mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                              className={`z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
                                 stepDone
                                   ? "bg-carinex-emerald text-white"
                                   : stepActive
