@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope } from "next/font/google";
 import "./globals.css";
+import CookieConsent from "@/components/CookieConsent";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -46,7 +47,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={manrope.variable}>
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased">
+        {children}
+        <CookieConsent />
+      </body>
     </html>
   );
 }
