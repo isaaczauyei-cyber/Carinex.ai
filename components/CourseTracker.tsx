@@ -147,7 +147,7 @@ export default function CourseTracker({
         )}
       </div>
 
-      {current?.status === "in_progress" && (
+      {current?.status === "in_progress" && !linkPending && (
         <div className="mt-4 rounded-lg bg-carinex-navy/[0.03] p-4">
           <p className="text-sm font-semibold text-carinex-navy">
             Finished? Upload your certificate to submit for review.
@@ -169,6 +169,12 @@ export default function CourseTracker({
           </div>
           {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
         </div>
+      )}
+
+      {current?.status === "in_progress" && linkPending && (
+        <p className="mt-3 text-sm text-carinex-navy/50">
+          You&apos;ll be able to submit your certificate once the course link is live.
+        </p>
       )}
 
       {current?.status === "verification_pending" && (
