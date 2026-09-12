@@ -154,7 +154,7 @@ export default async function LearningHubPage() {
                         const stepActive = completion && !stepDone;
 
                         return (
-                          <div key={course.id} className="relative flex gap-4 pb-6 last:pb-0">
+                          <div key={course.id} className="relative flex items-start gap-4 pb-6 last:pb-0">
                             {idx < specCourses.length - 1 && (
                               <div className="absolute left-[15px] top-8 h-full w-0.5 bg-carinex-navy/10" />
                             )}
