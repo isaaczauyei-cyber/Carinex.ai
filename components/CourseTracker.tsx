@@ -129,15 +129,21 @@ export default function CourseTracker({
           </button>
         )}
 
-        {current && !linkPending && current.status !== "completed" && (
-          <a
-            href={course.affiliate_link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm font-semibold text-carinex-emerald hover:underline"
-          >
-            Continue course →
-          </a>
+        {current && current.status !== "completed" && (
+          linkPending ? (
+            <span className="rounded-full bg-carinex-navy/10 px-4 py-2 text-sm font-semibold text-carinex-navy/40">
+              Course link coming soon
+            </span>
+          ) : (
+            <a
+              href={course.affiliate_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-semibold text-carinex-emerald hover:underline"
+            >
+              Continue course →
+            </a>
+          )
         )}
       </div>
 
