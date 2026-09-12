@@ -65,7 +65,7 @@ export default function Navbar() {
           )}
           {!isDashboardRoute && (
             <Link href="/" className="flex items-center gap-2">
-              <Image src="/carinex-logo.svg" alt="Carinex" width={32} height={32} className="rounded-lg" />
+              <Image src="/carinex-logo.png" alt="Carinex" width={32} height={32} className="rounded-lg" />
               <span className="text-lg font-bold tracking-tight text-carinex-navy">Carinex</span>
             </Link>
           )}
