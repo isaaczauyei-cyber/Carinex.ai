@@ -8,37 +8,45 @@ type Extras = {
 export const specializationExtras: Record<string, Extras> = {
   "telehealth-nursing": {
     evidence: [
-      { tier: "gated", label: "Gated (Global)" },
       { tier: "strong", label: "Strong (National)" },
+      { tier: "gated", label: "Gated (Global)" },
     ],
     globalCaveat:
-      "Completing this roadmap prepares you for the work, but does not itself grant a foreign nursing license. Live clinical telehealth roles abroad (e.g. with Teladoc, Amwell, MDLIVE) require the patient's own country's nursing license — there is no international licensing compact. Look into that country's own licensing pathway (e.g. NCLEX-RN for the US) before applying to clinical roles specifically.",
+      "Completing this roadmap prepares you for the work, but does not itself grant a foreign nursing license. Live clinical telehealth roles abroad require the patient's own country's nursing license — there is no international licensing compact. Guidance on foreign-licensing pathways (like the NCLEX-RN for the US) is planned as a future addition.",
   },
   "remote-patient-monitoring": {
     evidence: [
-      { tier: "gated", label: "Gated (Global)" },
       { tier: "strong", label: "Strong (National)" },
+      { tier: "gated", label: "Gated (Global)" },
     ],
     globalCaveat:
-      "As with Telehealth Nursing, completing this roadmap does not grant a foreign nursing license. Global-track RPM roles involving direct clinical oversight require the patient's own country's license. National-track RPM (Nigerian HMOs/health-tech) is directly accessible with an active NMCN license.",
-  },
-  "telemedicine-coordination": {
-    evidence: [{ tier: "weak", label: "Weak — needs employer outreach" }],
-  },
-  "healthcare-data-ai-automation": {
-    evidence: [{ tier: "moderate", label: "Moderate" }],
-  },
-  "medical-scribing": {
-    evidence: [{ tier: "moderate", label: "Moderate" }],
-  },
-  "virtual-assistance": {
-    evidence: [{ tier: "moderate", label: "Moderate" }],
+      "As with Telehealth Nursing, completing this roadmap does not grant a foreign nursing license. Global-track RPM roles involving direct clinical oversight require the patient's own country's license. National-track RPM is directly accessible with an active NMCN license.",
   },
   "medical-coding-billing": {
     evidence: [{ tier: "strong", label: "Strong" }],
   },
   "case-management": {
-    evidence: [{ tier: "strong", label: "Strong (National)" }],
+    evidence: [
+      { tier: "strong", label: "Strong (National)" },
+      { tier: "moderate", label: "Global — certification path accessible" },
+    ],
+    globalCaveat:
+      "Direct employment with a US case management team requires the full US RN pathway (a nursing degree, the NCLEX-RN exam, and state licensure) — NMCN licensure doesn't substitute for this. However, the CMGT-BC certification that sits on top of that role has its own international application track that doesn't require a US license, which matters for a longer-horizon global strategy even while direct US employment stays out of reach for now.",
+  },
+  "health-content-patient-education": {
+    evidence: [{ tier: "weak", label: "Weak — course-ready, employer leads still thin" }],
+  },
+  "healthcare-data-ai": {
+    evidence: [{ tier: "moderate", label: "Moderate" }],
+  },
+  "telemedicine-coordination": {
+    evidence: [{ tier: "weak", label: "Weak — certification path is solid, employer demand unconfirmed" }],
+  },
+  "virtual-assistance": {
+    evidence: [{ tier: "moderate", label: "Moderate" }],
+  },
+  "medical-scribing": {
+    evidence: [{ tier: "moderate", label: "Moderate" }],
   },
 };
 
@@ -47,53 +55,4 @@ export const tierStyles: Record<EvidenceTier, string> = {
   gated: "bg-amber-50 text-amber-700",
   moderate: "bg-sky-50 text-sky-700",
   weak: "bg-red-50 text-red-700",
-};
-
-export type Eligibility = {
-  license: string;
-  experience: string | null;
-  keyTraits: string;
-};
-
-export const specializationEligibility: Record<string, Eligibility> = {
-  "telehealth-nursing": {
-    license: "Active NMCN license required.",
-    experience: "No prior remote-work experience needed, but clinical experience in any setting is expected.",
-    keyTraits: "Comfort with video/phone consultations and real-time triage decisions.",
-  },
-  "remote-patient-monitoring": {
-    license: "Active NMCN license required.",
-    experience: null,
-    keyTraits: "Comfort with digital dashboards and data interpretation matters more here than in bedside-equivalent roles.",
-  },
-  "telemedicine-coordination": {
-    license: "Active NMCN license preferred, not strictly required.",
-    experience: null,
-    keyTraits: "Strong communication and organizational skills are the core requirement — this role is coordination-first.",
-  },
-  "healthcare-data-ai-automation": {
-    license: "Active NMCN license required.",
-    experience: null,
-    keyTraits: "No AI/data background required to start — the course pathway is designed to build this from a clinical foundation.",
-  },
-  "medical-scribing": {
-    license: "Active NMCN license required.",
-    experience: null,
-    keyTraits: "Strong typing speed and medical terminology fluency matter more here than in most other specializations.",
-  },
-  "virtual-assistance": {
-    license: "Active NMCN license preferred — adds credibility even though the role itself is non-clinical.",
-    experience: null,
-    keyTraits: "This is the most accessible specialization for nurses newer to remote work generally.",
-  },
-  "medical-coding-billing": {
-    license: "Active NMCN license preferred.",
-    experience: null,
-    keyTraits: "Rewards attention to detail and comfort with rules-based, detail-heavy work.",
-  },
-  "case-management": {
-    license: "Active NMCN license required.",
-    experience: "2–5 years post-qualification clinical experience — ICU, emergency, or public health experience most valued.",
-    keyTraits: "This is a stricter experience gate than most other specializations — worth confirming you meet it before starting the courses below.",
-  },
 };
