@@ -3,12 +3,12 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
 const menuLinks = [
-  { href: "/", label: "Home" },
+  { href: "/dashboard/profile", label: "Profile" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/dashboard/learning", label: "Learning Hub" },
   { href: "/dashboard/opportunities", label: "Opportunity Intelligence" },
@@ -17,9 +17,9 @@ const menuLinks = [
 export default function Navbar() {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const pathname = usePathname();
-  const isDashboardRoute = pathname?.startsWith("/dashboard") || pathname?.startsWith("/admin");
+  const [fullName, setFullName] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const supabase = createClient();
@@ -29,12 +29,14 @@ export default function Navbar() {
       if (currentUser) {
         const { data } = await supabase
           .from("users")
-          .select("user_type")
+          .select("user_type, full_name")
           .eq("id", currentUser.id)
           .maybeSingle();
         setIsAdmin(data?.user_type === "admin");
+        setFullName(data?.full_name || null);
       } else {
         setIsAdmin(false);
+        setFullName(null);
       }
     }
 
@@ -47,74 +49,47 @@ export default function Navbar() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    setDrawerOpen(false);
+    router.push("/");
+    router.refresh();
+  }
+
   const initial = user?.email?.charAt(0).toUpperCase() || "?";
   const links = isAdmin ? [...menuLinks, { href: "/admin/users", label: "Admin" }] : menuLinks;
 
   return (
-    <header className="sticky top-0 z-50 border-b border-carinex-navy/10 bg-carinex-white/95 backdrop-blur">
-      <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <div className="flex items-center gap-3">
-          {user && (
-            <Link
-              href="/dashboard/profile"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-carinex-navy text-sm font-bold text-carinex-white"
-              aria-label="Edit profile"
-            >
-              {initial}
-            </Link>
-          )}
-          {!isDashboardRoute && (
+    <>
+      <header className="sticky top-0 z-50 border-b border-carinex-navy/10 bg-carinex-white/95 backdrop-blur">
+        <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-3">
+            {user && (
+              <button
+                onClick={() => setDrawerOpen(true)}
+                aria-label="Open menu"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-carinex-navy text-sm font-bold leading-none text-carinex-white"
+              >
+                {initial}
+              </button>
+            )}
             <Link href="/" className="flex items-center gap-2">
-              <Image src="/carinex-logo.png" alt="Carinex" width={32} height={32} className="rounded-lg" />
-              <span className="text-lg font-bold tracking-tight text-carinex-navy">Carinex</span>
-            </Link>
-          )}
-        </div>
-
-        {!user && (
-          <div className="hidden items-center gap-8 md:flex">
-            <Link href="/pathways" className="text-sm font-medium text-carinex-navy/70 transition hover:text-carinex-navy">
-              Pathways
-            </Link>
-            <Link href="/dashboard" className="text-sm font-medium text-carinex-navy/70 transition hover:text-carinex-navy">
-              Dashboard
+              <Image
+                src="/carinex-logo.svg"
+                alt="Carinex"
+                width={32}
+                height={32}
+                className="shrink-0 rounded-lg object-contain"
+              />
+              <span className="text-lg font-bold leading-none tracking-tight text-carinex-navy">
+                Carinex
+              </span>
             </Link>
           </div>
-        )}
 
-        <div className="flex items-center gap-3">
-          {user ? (
-            <div className="relative">
-              <button
-                onClick={() => setMenuOpen((prev) => !prev)}
-                className="flex h-10 w-10 flex-col items-center justify-center gap-1.5 rounded-full border border-carinex-navy/15 transition hover:bg-carinex-navy/5"
-                aria-label="Open menu"
-                aria-expanded={menuOpen}
-              >
-                <span className="block h-0.5 w-5 bg-carinex-navy" />
-                <span className="block h-0.5 w-5 bg-carinex-navy" />
-                <span className="block h-0.5 w-5 bg-carinex-navy" />
-              </button>
-
-              {menuOpen && (
-                <div className="absolute right-0 top-12 flex w-56 flex-col gap-1 rounded-xl border border-carinex-navy/10 bg-white p-2 shadow-lg">
-                  {links.map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      onClick={() => setMenuOpen(false)}
-                      className={`rounded-lg px-4 py-2.5 text-sm font-medium transition hover:bg-carinex-emerald/10 ${
-                        link.label === "Admin" ? "text-amber-700" : "text-carinex-navy"
-                      }`}
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : (
-            <>
+          {!user && (
+            <div className="flex items-center gap-3">
               <Link
                 href="/login"
                 className="hidden text-sm font-medium text-carinex-navy/70 transition hover:text-carinex-navy sm:inline"
@@ -127,10 +102,59 @@ export default function Navbar() {
               >
                 Get Started
               </Link>
-            </>
+            </div>
           )}
-        </div>
-      </nav>
-    </header>
+        </nav>
+      </header>
+
+      {user && (
+        <>
+          <div
+            className={`fixed inset-0 z-[60] bg-black/40 transition-opacity ${
+              drawerOpen ? "opacity-100" : "pointer-events-none opacity-0"
+            }`}
+            onClick={() => setDrawerOpen(false)}
+          />
+          <div
+            className={`fixed left-0 top-0 z-[70] h-full w-72 bg-white shadow-xl transition-transform duration-300 ${
+              drawerOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
+          >
+            <div className="flex items-center gap-3 border-b border-carinex-navy/10 p-5">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-carinex-navy text-base font-bold text-carinex-white">
+                {initial}
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-carinex-navy">
+                  {fullName || "Carinex Nurse"}
+                </p>
+                {isAdmin && <p className="text-xs font-semibold text-amber-600">Admin</p>}
+              </div>
+            </div>
+
+            <div className="flex flex-col p-3">
+              {links.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setDrawerOpen(false)}
+                  className={`rounded-lg px-4 py-3 text-sm font-medium transition hover:bg-carinex-emerald/10 ${
+                    link.label === "Admin" ? "text-amber-700" : "text-carinex-navy"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ))}
+              <button
+                onClick={handleLogout}
+                className="mt-2 rounded-lg px-4 py-3 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
+              >
+                Log out
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+    </>
   );
 }
