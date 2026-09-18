@@ -306,4 +306,169 @@ export const specializations: Specialization[] = [
       },
       {
         name: "Google Advanced Data Analytics Professional Certificate",
-        bod
+        body: "Google (Coursera)",
+        note: "Already hosted on Coursera — no new partnership required to access it.",
+      },
+    ],
+    coursePathway: [
+      "AI-Driven Electronic Health Records & Data Management — Starweaver (Coursera)",
+      "A general Udacity data/AI foundations course, as a technical pairing",
+      "AI for Health & Nursing — Coursera, a short, no-code, practical starting point",
+    ],
+    salaryNational: SALARY_NATIONAL_GAP,
+    salaryGlobalRealistic:
+      "Not yet confirmed — figures for \"elite international\" contractors likely describe already-established developers, not a realistic entry point. A priority follow-up.",
+    salaryGlobalAspirational:
+      "US-based: $95,000–$140,000+/year. \"Elite\" international remote contractors: $50,000–$90,000+/year — accessibility from a Nigeria-based entry point isn't confirmed yet.",
+    employersNational: ["Nigerian health-tech startups building internal tooling"],
+    employersGlobal: [],
+  },
+  {
+    slug: "telemedicine-coordination",
+    title: "Telemedicine Coordination",
+    track: "both",
+    trackDescription: "National + Global — no clinical license required",
+    workMode: "async",
+    skills: ["Scheduling", "Patient Liaison", "Care Team Coordination"],
+    teaser:
+      "The scheduling, logistics, and patient-liaison layer that makes telemedicine visits actually happen — an operational role, not a clinical one.",
+    whatItIs:
+      "Telemedicine Coordination is the scheduling, logistics, and patient-liaison layer that makes telemedicine visits actually happen — testing virtual links with patients, troubleshooting tech issues, coordinating physician schedules across time zones, verifying insurance eligibility before a call connects, and ensuring the visit's data syncs correctly back into the patient's EHR. Coordinators don't provide clinical care or diagnose, and no state or professional license is legally required to do this work anywhere.",
+    whyItMatters:
+      "That structural openness makes this worth taking seriously even though confirmed job-market evidence is currently thin — the certification pathway is genuinely accessible, and a real, purpose-built, no-prerequisite credential exists.",
+    dayToDay: [
+      "Test virtual links with patients and troubleshoot tech issues",
+      "Coordinate doctor schedules across multiple time zones",
+      "Verify insurance data before calls connect and document connectivity logs",
+    ],
+    eligibilityNational: ["Active NMCN license preferred", "Strong communication and organizational skills are the core requirement"],
+    eligibilityGlobal: [
+      "No state license legally required — an operational/customer-service role",
+      "Minimum high school diploma; an associate degree or healthcare/IT background is preferred by some employers",
+    ],
+    certifications: [
+      {
+        name: "CTC (Certified Telehealth Coordinator)",
+        body: "CCHE / NSAT",
+        note: "No prerequisite. $99, self-paced within 30 days, 3.0 CEU. CCHE and NSAT host the same curriculum — reachable via either channel.",
+      },
+      {
+        name: "CEHRS (Certified EHR Specialist)",
+        body: "NHA",
+        note: "Nationally accredited, with Live Remote Proctoring offered as a testing option — a strong accessibility signal.",
+      },
+    ],
+    coursePathway: ["GenAI for Patient Care Coordinators and Case Management — Coursera (shared with Case Management)"],
+    salaryNational: SALARY_NATIONAL_GAP,
+    salaryGlobalRealistic: "$5,000–$12,000/year — a BPO-wage benchmark, the most directly comparable tier given the operational nature of this role.",
+    salaryGlobalAspirational: "US-based: $42,000–$58,000/year ($20–$28/hr).",
+    employersNational: [],
+    employersGlobal: [],
+  },
+  {
+    slug: "virtual-assistance",
+    title: "Medical Virtual Assistance (MVA)",
+    track: "both",
+    trackDescription: "National + Global — no clinical license required",
+    workMode: "async",
+    skills: ["Scheduling", "Patient Support", "EHR Systems"],
+    teaser:
+      "Remote administrative and light clinical support for private medical practices — a digital extension of a doctor's front desk.",
+    whatItIs:
+      "Medical Virtual Assistance is remote, day-to-day administrative and light clinical support for private medical practices — live scribing during patient exams, calendar and phone management, insurance eligibility checks, referral processing, and following up on lab results or prescription refills. No state or medical license is legally required anywhere for this work.",
+    whyItMatters:
+      "This is a genuinely internationalized field, heavily outsourced globally. It's worth knowing upfront which agencies are actually open to Nigerian applicants before pursuing a specific employer — see the notes below.",
+    dayToDay: [
+      "Live scribing during patient exams via secure video/audio",
+      "Manage calendar appointments, phone calls, and insurance eligibility checks",
+      "Follow up on lab results and call in prescription refills",
+    ],
+    eligibilityNational: ["Active NMCN license preferred — adds credibility even though the role itself is non-clinical"],
+    eligibilityGlobal: ["No state or medical license legally required", "Excellent English fluency and administrative competency expected"],
+    certifications: [
+      {
+        name: "CEHRS / CMAA",
+        body: "NHA",
+        note: "The same certifications and eligibility notes as Telemedicine Coordination cross-apply here.",
+      },
+    ],
+    coursePathway: [],
+    salaryNational: SALARY_NATIONAL_GAP,
+    salaryGlobalRealistic: "Not yet confirmed for a Nigeria-based applicant specifically — a genuine open gap.",
+    salaryGlobalAspirational: "US-based: $35,000–$48,000/year ($17–$23/hr).",
+    employersNational: [],
+    employersGlobal: [
+      { name: "Himalayas job board", note: "Real, active Nigeria-based Medical Virtual Assistant and EHR Specialist talent already found directly on this platform — the most reliable channel found for this specialization." },
+    ],
+  },
+  {
+    slug: "medical-scribing",
+    title: "Medical Scribing",
+    track: "global",
+    trackDescription: "Primarily Global — no state license required",
+    workMode: "sync",
+    skills: ["Medical Terminology", "Real-Time Documentation", "EHR Systems"],
+    teaser:
+      "Real-time clinical documentation during a patient encounter, so the clinician can focus entirely on the patient.",
+    whatItIs:
+      "Medical Scribing is real-time clinical documentation during a patient encounter — listening to a live or recorded visit and charting it accurately into the EHR. It's one of the most established, well-defined remote healthcare roles internationally, with dedicated certification bodies and a clear credentialing path. No state license is required, but typing speed (60+ WPM) and medical terminology fluency matter more here than in almost any other specialization.",
+    whyItMatters:
+      "This is a well-trodden route into remote work with a real credentialing path — worth knowing that the long-term format across this industry is shifting toward supervising ambient AI scribing tools rather than pure manual transcription.",
+    dayToDay: [
+      "Listen to live or recorded patient encounters",
+      "Document in real time and build chart templates",
+      "Track ordered labs and transcribe diagnoses under physician review",
+    ],
+    eligibilityNational: ["Active NMCN license", "Strong typing speed and medical terminology fluency matter more here than in most specializations"],
+    eligibilityGlobal: ["No state license required", "Typing speed 60+ WPM; sharp mastery of medical terminology expected"],
+    certifications: [
+      {
+        name: "CMAA",
+        body: "NHA",
+        note: "The same certification and eligibility notes as Telemedicine Coordination and MVA cross-apply here.",
+      },
+    ],
+    coursePathway: ["AI-Driven Electronic Health Records & Data Management — Starweaver (Coursera), as a foundation"],
+    salaryNational: SALARY_NATIONAL_GAP,
+    salaryGlobalRealistic:
+      "$6,000–$12,000/year is the general BPO-wage benchmark — it's genuinely unclear yet whether a Nigeria-based hire is paid at that rate or a higher onshore rate, so don't assume the higher figure.",
+    salaryGlobalAspirational:
+      "US-based: $32,000–$42,000/year ($15–$20/hr) — often used as a stepping-stone role.",
+    employersNational: [],
+    employersGlobal: [
+      { name: "Himalayas job board", note: "Real, active Nigeria-based scribe-adjacent talent already found directly." },
+    ],
+  },
+];
+
+export function getSpecializationBySlug(slug: string) {
+  return specializations.find((s) => s.slug === slug);
+}
+
+// --- Opportunities (lean "Opportunity Intelligence" preview) ---
+// Illustrative sample data only. Do not treat these as real openings.
+
+export interface Opportunity {
+  id: string;
+  title: string;
+  employer: string;
+  specializationSlug: string;
+  track: Track;
+  workMode: WorkMode;
+  locationRestriction: string;
+  eligibilityRequirements: string[];
+  status: "open" | "closed";
+}
+
+export const opportunities: Opportunity[] = [];
+
+export function checkEligibility(
+  nurseLicenseActive: boolean,
+  opportunity: Opportunity
+): "likely-eligible" | "check-requirements" {
+  const requiresActiveLicense = opportunity.eligibilityRequirements.some((r) =>
+    r.toLowerCase().includes("active nmcn license")
+  );
+  if (requiresActiveLicense && !nurseLicenseActive) return "check-requirements";
+  return "likely-eligible";
+}
