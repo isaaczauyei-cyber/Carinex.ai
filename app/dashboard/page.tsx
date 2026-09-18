@@ -8,9 +8,9 @@ import ProfileSummary from "@/components/ProfileSummary";
 import DashboardHero from "@/components/DashboardHero";
 
 const statusStyles = {
-  not_started: { label: "Not Started", badgeClass: "bg-white/10 text-white/70" },
-  in_progress: { label: "In Progress", badgeClass: "bg-amber-400/20 text-amber-200" },
-  unlocked: { label: "Completed", badgeClass: "bg-carinex-emerald/25 text-emerald-200" },
+  not_started: { label: "Not Started", badgeClass: "bg-carinex-navy/5 text-carinex-navy/60", accent: "border-l-carinex-navy/20" },
+  in_progress: { label: "In Progress", badgeClass: "bg-amber-50 text-amber-700", accent: "border-l-amber-400" },
+  unlocked: { label: "Completed", badgeClass: "bg-carinex-emerald/10 text-carinex-emerald", accent: "border-l-carinex-emerald" },
 };
 
 export default async function DashboardPage() {
@@ -138,16 +138,19 @@ export default async function DashboardPage() {
                   const hasProgress = p.completedCourses > 0;
 
                   return (
-                    <div key={p.specializationId} className="rounded-2xl bg-carinex-navy p-6">
+                    <div
+                      key={p.specializationId}
+                      className={`rounded-2xl border-l-4 bg-white p-6 shadow-sm ${style.accent}`}
+                    >
                       <div className="flex items-start justify-between gap-3">
-                        <h3 className="text-base font-semibold text-white">{p.name}</h3>
+                        <h3 className="text-base font-semibold text-carinex-navy">{p.name}</h3>
                         <div className="flex shrink-0 flex-col items-end gap-2">
                           <span className={`rounded-full px-3 py-1 text-xs font-semibold ${style.badgeClass}`}>
                             {style.label}
                           </span>
                           <a
                             href={`/dashboard/roadmap/${p.slug}`}
-                            className="rounded-full border border-white/25 px-3 py-1 text-xs font-semibold text-white transition hover:bg-white/10"
+                            className="rounded-full border border-carinex-navy/20 px-3 py-1 text-xs font-semibold text-carinex-navy transition hover:bg-carinex-navy/5"
                           >
                             View roadmap
                           </a>
@@ -156,13 +159,13 @@ export default async function DashboardPage() {
 
                       {p.requiredCourses > 0 && (
                         <div className="mt-4">
-                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/15">
+                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-carinex-navy/10">
                             <div
                               className="h-full rounded-full bg-carinex-emerald transition-all"
                               style={{ width: `${progressPct}%` }}
                             />
                           </div>
-                          <p className="mt-2 text-sm text-white/60">
+                          <p className="mt-2 text-sm text-carinex-navy/60">
                             {p.completedCourses} of {p.requiredCourses} required courses complete
                             {p.minYearsExperience && !p.meetsExperienceGate && (
                               <> · requires {p.minYearsExperience}+ years experience</>
