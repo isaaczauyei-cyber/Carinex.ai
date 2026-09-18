@@ -86,105 +86,107 @@ export default async function LearningHubPage() {
 
   return (
     <main>
-      <Navbar />
+      <div className="min-h-screen bg-gradient-to-b from-carinex-navy via-carinex-navy to-carinex-emerald/20">
+        <Navbar />
 
-      <section className="mx-auto max-w-4xl px-6 py-16">
-        <span className="text-sm font-semibold uppercase tracking-wide text-carinex-emerald">
-          Learning Hub
-        </span>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-carinex-navy">
-          Your courses
-        </h1>
-        <p className="mt-2 text-carinex-navy/70">
-          Complete the required courses for each specialization to unlock its
-          matched opportunities.
-        </p>
+        <section className="mx-auto max-w-4xl px-6 py-16">
+          <span className="text-sm font-semibold uppercase tracking-wide text-carinex-emerald">
+            Learning Hub
+          </span>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-white">
+            Your courses
+          </h1>
+          <p className="mt-2 text-white/70">
+            Complete the required courses for each specialization to unlock its
+            matched opportunities.
+          </p>
 
-        {specializations.length === 0 ? (
-          <div className="mt-10 rounded-2xl border border-dashed border-carinex-navy/20 p-8 text-center">
-            <p className="text-carinex-navy/70">
-              You haven&apos;t selected a specialization yet.
-            </p>
-            <a
-              href="/pathways"
-              className="mt-3 inline-block text-sm font-semibold text-carinex-emerald hover:underline"
-            >
-              Explore pathways →
-            </a>
-          </div>
-        ) : (
-          <div className="mt-10 flex flex-col gap-8">
-            {specializations.map((spec) => {
-              const specCourses = dedupeCourses(
-                (allCourses || []).filter((c) => c.specialization_id === spec.id)
-              );
-              const completedCount = specCourses.filter(
-                (c) => completionByCourseId.get(c.id)?.status === "completed"
-              ).length;
-              const pct = specCourses.length > 0 ? Math.round((completedCount / specCourses.length) * 100) : 0;
+          {specializations.length === 0 ? (
+            <div className="mt-10 rounded-2xl border border-dashed border-white/25 p-8 text-center">
+              <p className="text-white/70">
+                You haven&apos;t selected a specialization yet.
+              </p>
+              <a
+                href="/pathways"
+                className="mt-3 inline-block text-sm font-semibold text-white hover:underline"
+              >
+                Explore pathways →
+              </a>
+            </div>
+          ) : (
+            <div className="mt-10 flex flex-col gap-8">
+              {specializations.map((spec) => {
+                const specCourses = dedupeCourses(
+                  (allCourses || []).filter((c) => c.specialization_id === spec.id)
+                );
+                const completedCount = specCourses.filter(
+                  (c) => completionByCourseId.get(c.id)?.status === "completed"
+                ).length;
+                const pct = specCourses.length > 0 ? Math.round((completedCount / specCourses.length) * 100) : 0;
 
-              return (
-                <div key={spec.id} className="rounded-2xl border border-carinex-navy/10 bg-white p-6 shadow-sm">
-                  <div className="flex items-center gap-3">
-                    {specCourses.length > 0 && <ProgressRing pct={pct} />}
-                    <div>
-                      <a
-                        href={`/pathways/${spec.slug}`}
-                        className="text-lg font-bold text-carinex-navy hover:text-carinex-emerald"
-                      >
-                        {spec.name}
-                      </a>
-                      {specCourses.length > 0 && (
-                        <p className="text-xs text-carinex-navy/50">
-                          {completedCount} of {specCourses.length} courses complete
-                        </p>
-                      )}
+                return (
+                  <div key={spec.id} className="rounded-2xl border border-carinex-navy/10 bg-white p-6 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      {specCourses.length > 0 && <ProgressRing pct={pct} />}
+                      <div>
+                        <a
+                          href={`/pathways/${spec.slug}`}
+                          className="text-lg font-bold text-carinex-navy hover:text-carinex-emerald"
+                        >
+                          {spec.name}
+                        </a>
+                        {specCourses.length > 0 && (
+                          <p className="text-xs text-carinex-navy/50">
+                            {completedCount} of {specCourses.length} courses complete
+                          </p>
+                        )}
+                      </div>
                     </div>
+
+                    {specCourses.length === 0 ? (
+                      <p className="mt-4 text-sm text-carinex-navy/50">
+                        No courses available for this specialization yet.
+                      </p>
+                    ) : (
+                      <div className="mt-6 flex flex-col">
+                        {specCourses.map((course, idx) => {
+                          const completion = completionByCourseId.get(course.id) || null;
+                          const stepDone = completion?.status === "completed";
+                          const stepActive = completion && !stepDone;
+
+                          return (
+                            <div key={course.id} className="relative flex items-start gap-4 pb-6 last:pb-0">
+                              {idx < specCourses.length - 1 && (
+                                <div className="absolute left-[15px] top-8 h-full w-0.5 bg-carinex-navy/10" />
+                              )}
+                              <div
+                                className={`z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                                  stepDone
+                                    ? "bg-carinex-emerald text-white"
+                                    : stepActive
+                                    ? "bg-amber-400 text-white"
+                                    : "bg-carinex-navy/10 text-carinex-navy/40"
+                                }`}
+                              >
+                                {stepDone ? "✓" : idx + 1}
+                              </div>
+                              <div className="flex-1">
+                                <CourseTracker nurseId={profile.id} course={course} completion={completion} />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-
-                  {specCourses.length === 0 ? (
-                    <p className="mt-4 text-sm text-carinex-navy/50">
-                      No courses available for this specialization yet.
-                    </p>
-                  ) : (
-                    <div className="mt-6 flex flex-col">
-                      {specCourses.map((course, idx) => {
-                        const completion = completionByCourseId.get(course.id) || null;
-                        const stepDone = completion?.status === "completed";
-                        const stepActive = completion && !stepDone;
-
-                        return (
-                          <div key={course.id} className="relative flex items-start gap-4 pb-6 last:pb-0">
-                            {idx < specCourses.length - 1 && (
-                              <div className="absolute left-[15px] top-8 h-full w-0.5 bg-carinex-navy/10" />
-                            )}
-                            <div
-                              className={`z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                                stepDone
-                                  ? "bg-carinex-emerald text-white"
-                                  : stepActive
-                                  ? "bg-amber-400 text-white"
-                                  : "bg-carinex-navy/10 text-carinex-navy/40"
-                              }`}
-                            >
-                              {stepDone ? "✓" : idx + 1}
-                            </div>
-                            <div className="flex-1">
-                              <CourseTracker nurseId={profile.id} course={course} completion={completion} />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      </div>
 
       <Footer />
     </main>
   );
-}
+                                          }
