@@ -3,21 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { getRecommendations, Recommendation } from "@/lib/assessment";
 
 const backgroundOptions = ["ICU", "Emergency", "Public Health", "Pediatrics", "General Ward", "Other"];
-
-const fitStyles: Record<string, string> = {
-  strong: "bg-carinex-emerald/10 text-carinex-emerald",
-  possible: "bg-amber-50 text-amber-700",
-  not_yet: "bg-carinex-navy/5 text-carinex-navy/50",
-};
-
-const fitLabels: Record<string, string> = {
-  strong: "Strong fit",
-  possible: "Possible fit",
-  not_yet: "Not yet",
-};
 
 export default function OnboardingForm({
   userId,
@@ -31,7 +18,6 @@ export default function OnboardingForm({
   initialLastName: string;
 }) {
   const router = useRouter();
-  const [step, setStep] = useState<"basics" | "results">("basics");
 
   const [firstName, setFirstName] = useState(initialFirstName);
   const [lastName, setLastName] = useState(initialLastName);
@@ -41,7 +27,6 @@ export default function OnboardingForm({
   const [yearsExperience, setYearsExperience] = useState(0);
   const [background, setBackground] = useState<string[]>([]);
 
-  const [results, setResults] = useState<Recommendation[] | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -94,20 +79,13 @@ export default function OnboardingForm({
     return true;
   }
 
-  async function handleSeeRecommendations(e: React.FormEvent) {
+  async function handleContinue(e: React.FormEvent) {
     e.preventDefault();
     const ok = await saveBasics();
-    if (!ok) return;
-
-    setResults(
-      getRecommendations({
-        yearsExperience,
-        clinicalBackground: background,
-        careerGoal,
-        licenseStatus,
-      })
-    );
-    setStep("results");
+    if (ok) {
+      router.push("/dashboard");
+      router.refresh();
+    }
   }
 
   async function handleSkip() {
@@ -118,63 +96,8 @@ export default function OnboardingForm({
     }
   }
 
-  async function addInterest(slug: string) {
-    const supabase = createClient();
-    const { data: spec } = await supabase.from("specializations").select("id").eq("slug", slug).maybeSingle();
-    if (spec) {
-      await supabase
-        .from("nurse_specializations")
-        .upsert({ nurse_id: nurseId, specialization_id: spec.id }, { onConflict: "nurse_id,specialization_id" });
-    }
-  }
-
-  if (step === "results" && results) {
-    return (
-      <div className="flex flex-col gap-4">
-        <p className="text-sm text-carinex-navy/60">
-          Based on what you shared — no scores, just what the actual requirements say.
-        </p>
-        {results.map((r) => (
-          <div key={r.slug} className="rounded-xl border border-carinex-navy/10 p-5">
-            <div className="flex items-center justify-between">
-              <p className="font-semibold text-carinex-navy">{r.title}</p>
-              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${fitStyles[r.fit]}`}>
-                {fitLabels[r.fit]}
-              </span>
-            </div>
-            <ul className="mt-2 flex flex-col gap-1">
-              {r.reasons.map((reason, i) => (
-                <li key={i} className="text-sm text-carinex-navy/70">
-                  · {reason}
-                </li>
-              ))}
-            </ul>
-            {r.fit !== "not_yet" && (
-              <button
-                onClick={() => addInterest(r.slug)}
-                className="mt-3 text-sm font-semibold text-carinex-emerald hover:underline"
-              >
-                Add to my pathways
-              </button>
-            )}
-          </div>
-        ))}
-
-        <button
-          onClick={() => {
-            router.push("/dashboard");
-            router.refresh();
-          }}
-          className="mt-2 rounded-full bg-carinex-emerald px-8 py-3 text-sm font-semibold text-carinex-white"
-        >
-          Continue to dashboard
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <form onSubmit={handleSeeRecommendations} className="flex flex-col gap-5">
+    <form onSubmit={handleContinue} className="flex flex-col gap-5">
       <div className="flex gap-3">
         <input
           type="text"
@@ -235,9 +158,7 @@ export default function OnboardingForm({
       </div>
 
       <div className="border-t border-carinex-navy/10 pt-5">
-        <p className="text-sm font-semibold text-carinex-navy">
-          A couple more, for instant pathway recommendations
-        </p>
+        <p className="text-sm font-semibold text-carinex-navy">A couple more — helps us personalize your dashboard</p>
 
         <label className="mt-3 block text-sm font-medium text-carinex-navy">Years of experience</label>
         <input
@@ -265,6 +186,11 @@ export default function OnboardingForm({
             </button>
           ))}
         </div>
+
+        <p className="mt-4 text-sm text-carinex-navy/60">
+          Once you&apos;re in, take the full career assessment from your dashboard to get
+          matched to your single best-fit specialization.
+        </p>
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
@@ -275,7 +201,7 @@ export default function OnboardingForm({
           disabled={saving}
           className="rounded-full bg-carinex-emerald px-8 py-3 text-sm font-semibold text-carinex-white disabled:opacity-60"
         >
-          {saving ? "Saving…" : "See my recommendations"}
+          {saving ? "Saving…" : "Continue to dashboard"}
         </button>
         <button
           type="button"
