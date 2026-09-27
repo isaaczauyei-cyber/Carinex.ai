@@ -1,7 +1,16 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
+// SERVER-ONLY. Never import this into a "use client" file. Uses the service
+// role key, which bypasses Row Level Security — needed here only to read
+// quiz correct-answers for grading, since no public policy ever exposes them.
+export function createAdminClient() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!);
+}
 export async function requireAdmin() {
   const supabase = await createClient();
   const {
