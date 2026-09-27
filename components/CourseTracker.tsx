@@ -8,9 +8,10 @@ type Course = {
   title: string;
   provider: string;
   price_display: string | null;
-  affiliate_link: string;
+  affiliate_link: string | null;
   summary: string | null;
   image_url?: string | null;
+  is_in_house?: boolean;
 };
 
 type Completion = {
@@ -18,12 +19,6 @@ type Completion = {
   status: "in_progress" | "completed" | "verification_pending";
   completed_at: string | null;
 } | null;
-
-const statusStyles: Record<string, { label: string; className: string }> = {
-  completed: { label: "Completed", className: "bg-carinex-emerald/10 text-carinex-emerald" },
-  verification_pending: { label: "Pending Review", className: "bg-sky-50 text-sky-700" },
-  in_progress: { label: "In Progress", className: "bg-amber-50 text-amber-700" },
-};
 
 export default function CourseTracker({
   nurseId,
@@ -38,9 +33,9 @@ export default function CourseTracker({
   const [saving, setSaving] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState("");
+  const [imageBroken, setImageBroken] = useState(false);
 
-  const linkPending = course.affiliate_link.startsWith("PENDING");
-  const status = current ? statusStyles[current.status] : null;
+  const linkPending = !course.is_in_house && (!course.affiliate_link || course.affiliate_link.startsWith("PENDING"));
 
   async function handleStart() {
     setSaving(true);
@@ -53,7 +48,9 @@ export default function CourseTracker({
     setSaving(false);
     if (data) setCurrent(data);
 
-    if (!linkPending) {
+    if (course.is_in_house) {
+      window.location.href = `/dashboard/learning/inhouse/${course.id}/start`;
+    } else if (!linkPending && course.affiliate_link) {
       window.open(course.affiliate_link, "_blank", "noopener,noreferrer");
     }
   }
@@ -96,92 +93,117 @@ export default function CourseTracker({
   }
 
   return (
-    <div className="rounded-xl border border-carinex-navy/10 p-5 transition hover:border-carinex-emerald/30">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="font-semibold text-carinex-navy">{course.title}</p>
-          <p className="mt-0.5 text-sm text-carinex-navy/50">
-            {course.provider}
-            {course.price_display ? ` · ${course.price_display}` : ""}
-          </p>
-        </div>
-        {status && (
-          <span className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold ${status.className}`}>
-            {status.label}
-          </span>
-        )}
-      </div>
-
-      {course.summary && (
-        <p className="mt-2 text-sm text-carinex-navy/60">{course.summary}</p>
+    <div className="overflow-hidden rounded-xl border border-carinex-navy/10">
+      {course.image_url && !imageBroken ? (
+        <img
+          src={course.image_url}
+          alt={course.title}
+          className="h-32 w-full object-cover"
+          onError={() => setImageBroken(true)}
+        />
+      ) : (
+        <div className="h-20 w-full bg-gradient-to-br from-carinex-navy to-carinex-emerald" />
       )}
 
-      <div className="mt-4 flex flex-wrap items-center gap-4">
-        {!current && (
-          <button
-            onClick={handleStart}
-            disabled={saving || linkPending}
-            className={`rounded-full px-5 py-2 text-sm font-semibold text-white disabled:opacity-60 ${
-              linkPending ? "bg-carinex-navy/30" : "bg-carinex-navy hover:bg-carinex-navy/90"
-            }`}
-          >
-            {saving ? "Starting…" : linkPending ? "Course link coming soon" : "Start course"}
-          </button>
-        )}
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <p className="font-semibold text-carinex-navy">{course.title}</p>
+              {course.is_in_house && (
+                <span className="rounded-full bg-carinex-navy/5 px-2 py-0.5 text-xs font-semibold text-carinex-navy/60">
+                  Carinex Original
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-carinex-navy/60">
+              {course.provider}
+              {course.price_display ? ` · ${course.price_display}` : ""}
+            </p>
+            {course.summary && (
+              <p className="mt-2 text-sm text-carinex-navy/70">{course.summary}</p>
+            )}
+          </div>
 
-        {current && current.status !== "completed" && (
-          linkPending ? (
-            <span className="rounded-full bg-carinex-navy/10 px-4 py-2 text-sm font-semibold text-carinex-navy/40">
-              Course link coming soon
+          {current?.status === "completed" && (
+            <span className="whitespace-nowrap rounded-full bg-carinex-emerald/10 px-3 py-1 text-xs font-semibold text-carinex-emerald">
+              Completed
             </span>
-          ) : (
+          )}
+          {current?.status === "verification_pending" && (
+            <span className="whitespace-nowrap rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
+              Pending Review
+            </span>
+          )}
+          {current?.status === "in_progress" && (
+            <span className="whitespace-nowrap rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+              In Progress
+            </span>
+          )}
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          {!current && (
+            <button
+              onClick={handleStart}
+              disabled={saving || linkPending}
+              className="rounded-full bg-carinex-navy px-5 py-2 text-sm font-semibold text-carinex-white disabled:opacity-60"
+            >
+              {saving ? "Starting…" : linkPending ? "Course link coming soon" : "Start course →"}
+            </button>
+          )}
+
+          {current && course.is_in_house && current.status !== "completed" && (
             <a
-              href={course.affiliate_link}
+              href={`/dashboard/learning/inhouse/${course.id}/start`}
+              className="text-sm font-semibold text-carinex-emerald hover:underline"
+            >
+              Continue course →
+            </a>
+          )}
+
+          {current && !course.is_in_house && !linkPending && (
+            <a
+              href={course.affiliate_link!}
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm font-semibold text-carinex-emerald hover:underline"
             >
               Continue course →
             </a>
-          )
-        )}
-      </div>
+          )}
+        </div>
 
-      {current?.status === "in_progress" && !linkPending && (
-        <div className="mt-4 rounded-lg bg-carinex-navy/[0.03] p-4">
-          <p className="text-sm font-semibold text-carinex-navy">
-            Finished? Upload your certificate to submit for review.
-          </p>
-          <div className="mt-2 flex flex-wrap items-center gap-3">
+        {/* Certificate upload only applies to external courses — in-house
+            completion is graded automatically via per-module quizzes. */}
+        {!course.is_in_house && current?.status === "in_progress" && (
+          <div className="mt-4 rounded-lg border border-dashed border-carinex-navy/20 p-4">
+            <p className="text-sm font-semibold text-carinex-navy">
+              Finished? Upload your certificate to submit for review.
+            </p>
             <input
               type="file"
               accept="image/*,.pdf"
               onChange={(e) => setFile(e.target.files?.[0] || null)}
-              className="text-sm text-carinex-navy/70"
+              className="mt-2 text-sm text-carinex-navy/70"
             />
+            {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
             <button
               onClick={handleSubmitProof}
               disabled={saving}
-              className="rounded-full bg-carinex-emerald px-5 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="mt-3 rounded-full bg-carinex-emerald px-5 py-2 text-sm font-semibold text-carinex-white disabled:opacity-60"
             >
               {saving ? "Submitting…" : "Submit for review"}
             </button>
           </div>
-          {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-        </div>
-      )}
+        )}
 
-      {current?.status === "in_progress" && linkPending && (
-        <p className="mt-3 text-sm text-carinex-navy/50">
-          You&apos;ll be able to submit your certificate once the course link is live.
-        </p>
-      )}
-
-      {current?.status === "verification_pending" && (
-        <p className="mt-3 text-sm text-carinex-navy/50">
-          Your certificate is submitted and awaiting review.
-        </p>
-      )}
+        {!course.is_in_house && current?.status === "verification_pending" && (
+          <p className="mt-3 text-sm text-carinex-navy/50">
+            Your certificate is submitted and awaiting review.
+          </p>
+        )}
+      </div>
     </div>
   );
-}
+          }
