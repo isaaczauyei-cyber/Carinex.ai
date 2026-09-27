@@ -126,9 +126,9 @@ export default async function LearningHubPage() {
 
                 return (
                   <div key={spec.id} className="rounded-2xl border border-carinex-navy/10 bg-white p-6 shadow-sm">
-                    <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
                       {specCourses.length > 0 && <ProgressRing pct={pct} />}
-                      <div>
+                      <div className="min-w-0">
                         <a
                           href={`/pathways/${spec.slug}`}
                           className="text-lg font-bold text-carinex-navy hover:text-carinex-emerald"
@@ -148,19 +148,16 @@ export default async function LearningHubPage() {
                         No courses available for this specialization yet.
                       </p>
                     ) : (
-                      <div className="mt-6 flex flex-col">
+                      <div className="mt-6 flex flex-col gap-4">
                         {specCourses.map((course, idx) => {
                           const completion = completionByCourseId.get(course.id) || null;
                           const stepDone = completion?.status === "completed";
                           const stepActive = completion && !stepDone;
 
                           return (
-                            <div key={course.id} className="relative flex items-start gap-4 pb-6 last:pb-0">
-                              {idx < specCourses.length - 1 && (
-                                <div className="absolute left-[15px] top-8 h-full w-0.5 bg-carinex-navy/10" />
-                              )}
+                            <div key={course.id} className="flex min-w-0 items-start gap-4">
                               <div
-                                className={`z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
                                   stepDone
                                     ? "bg-carinex-emerald text-white"
                                     : stepActive
@@ -170,7 +167,7 @@ export default async function LearningHubPage() {
                               >
                                 {stepDone ? "✓" : idx + 1}
                               </div>
-                              <div className="flex-1">
+                              <div className="min-w-0 flex-1">
                                 <CourseTracker nurseId={profile.id} course={course} completion={completion} />
                               </div>
                             </div>
@@ -189,4 +186,4 @@ export default async function LearningHubPage() {
       <Footer />
     </main>
   );
-                                          }
+}
