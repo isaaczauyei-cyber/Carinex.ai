@@ -40,7 +40,8 @@ export default async function PathwayDetailPage({ params }: { params: { slug: st
     data: { user },
   } = await supabase.auth.getUser();
 
-  // --- Pre-signup: teaser only ---
+  // --- Pre-signup: teaser only, keeps its own back link since logged-out
+  // visitors have no account menu to reach /pathways from ---
   if (!user) {
     return (
       <main>
@@ -140,11 +141,7 @@ export default async function PathwayDetailPage({ params }: { params: { slug: st
       <Navbar />
 
       <section className="mx-auto max-w-3xl px-6 py-20">
-        <a href="/pathways" className="text-sm font-semibold text-carinex-emerald hover:underline">
-          ← All pathways
-        </a>
-
-        <div className="mt-6 flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-full bg-carinex-navy/5 px-3 py-1 text-xs font-semibold text-carinex-navy/70">
             {spec.trackDescription}
           </span>
