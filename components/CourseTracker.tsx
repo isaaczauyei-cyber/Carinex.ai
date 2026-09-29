@@ -98,49 +98,49 @@ export default function CourseTracker({
         <img
           src={course.image_url}
           alt={course.title}
-          className="h-32 w-full object-cover"
+          className="h-28 w-full object-cover"
           onError={() => setImageBroken(true)}
         />
       ) : (
-        <div className="h-20 w-full bg-gradient-to-br from-carinex-navy to-carinex-emerald" />
+        <div className="h-16 w-full bg-gradient-to-br from-carinex-navy to-carinex-emerald" />
       )}
 
       <div className="p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <p className="font-semibold text-carinex-navy">{course.title}</p>
-              {course.is_in_house && (
-                <span className="rounded-full bg-carinex-navy/5 px-2 py-0.5 text-xs font-semibold text-carinex-navy/60">
-                  Carinex Original
-                </span>
-              )}
-            </div>
-            <p className="text-sm text-carinex-navy/60">
-              {course.provider}
-              {course.price_display ? ` · ${course.price_display}` : ""}
-            </p>
-            {course.summary && (
-              <p className="mt-2 text-sm text-carinex-navy/70">{course.summary}</p>
-            )}
-          </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="font-semibold text-carinex-navy">{course.title}</p>
+          {course.is_in_house && (
+            <span className="shrink-0 rounded-full bg-carinex-navy/5 px-2 py-0.5 text-xs font-semibold text-carinex-navy/60">
+              Carinex Original
+            </span>
+          )}
+        </div>
+
+        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+          <p className="text-sm text-carinex-navy/60">
+            {course.provider}
+            {course.price_display ? ` · ${course.price_display}` : ""}
+          </p>
 
           {current?.status === "completed" && (
-            <span className="whitespace-nowrap rounded-full bg-carinex-emerald/10 px-3 py-1 text-xs font-semibold text-carinex-emerald">
+            <span className="rounded-full bg-carinex-emerald/10 px-3 py-1 text-xs font-semibold text-carinex-emerald">
               Completed
             </span>
           )}
           {current?.status === "verification_pending" && (
-            <span className="whitespace-nowrap rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
+            <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
               Pending Review
             </span>
           )}
           {current?.status === "in_progress" && (
-            <span className="whitespace-nowrap rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+            <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
               In Progress
             </span>
           )}
         </div>
+
+        {course.summary && (
+          <p className="mt-2 text-sm text-carinex-navy/70">{course.summary}</p>
+        )}
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
           {!current && (
@@ -174,8 +174,6 @@ export default function CourseTracker({
           )}
         </div>
 
-        {/* Certificate upload only applies to external courses — in-house
-            completion is graded automatically via per-module quizzes. */}
         {!course.is_in_house && current?.status === "in_progress" && (
           <div className="mt-4 rounded-lg border border-dashed border-carinex-navy/20 p-4">
             <p className="text-sm font-semibold text-carinex-navy">
@@ -206,4 +204,4 @@ export default function CourseTracker({
       </div>
     </div>
   );
-          }
+}
