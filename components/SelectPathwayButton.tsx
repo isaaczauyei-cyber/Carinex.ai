@@ -42,7 +42,13 @@ export default function SelectPathwayButton({ slug }: { slug: string }) {
       .eq("slug", slug)
       .maybeSingle();
 
-    if (profile && spec) {
+    if (!spec) {
+      setLoading(false);
+      alert("This specialization isn't set up yet on our end — we've been notified.");
+      return;
+    }
+
+    if (profile) {
       await supabase
         .from("nurse_specializations")
         .upsert(
