@@ -2,6 +2,12 @@ import { createClient } from "@/lib/supabase/server";
 
 export type SpecializationStatus = "not_started" | "in_progress" | "unlocked";
 
+export type PrimaryCourseState = {
+  courseId: number;
+  status: "in_progress" | "verification_pending" | "completed";
+  isInHouse: boolean;
+} | null;
+
 export type SpecializationProgress = {
   specializationId: number;
   name: string;
@@ -11,6 +17,7 @@ export type SpecializationProgress = {
   requiredCourses: number;
   meetsExperienceGate: boolean;
   minYearsExperience: number | null;
+  primaryCourse: PrimaryCourseState;
 };
 
 export async function getSpecializationProgress(
@@ -45,18 +52,15 @@ export async function getSpecializationProgress(
     };
     if (!spec) continue;
 
-    // Fetch completed rows with course title so we can dedupe — some
-    // courses exist as duplicate rows (one per track) with the same
-    // title, and a nurse should only get credit once per real course.
-    const { data: completedRows } = await supabase
+    const { data: allRows } = await supabase
       .from("nurse_course_completions")
-      .select("courses!inner(specialization_id, title)")
+      .select("status, course_id, courses!inner(specialization_id, title, is_in_house)")
       .eq("nurse_id", nurseProfileId)
-      .eq("status", "completed")
       .eq("courses.specialization_id", spec.id);
 
     const completedCourseTitles = new Set(
-      (completedRows || [])
+      (allRows || [])
+        .filter((r) => r.status === "completed")
         .map((r) => (r.courses as unknown as { title: string })?.title)
         .filter(Boolean)
     );
@@ -76,6 +80,18 @@ export async function getSpecializationProgress(
       status = "in_progress";
     }
 
+    const startedRow = (allRows || []).find((r) => r.status === "in_progress")
+      || (allRows || []).find((r) => r.status === "verification_pending")
+      || (allRows || []).find((r) => r.status === "completed");
+
+    const primaryCourse: PrimaryCourseState = startedRow
+      ? {
+          courseId: startedRow.course_id,
+          status: startedRow.status as "in_progress" | "verification_pending" | "completed",
+          isInHouse: !!(startedRow.courses as unknown as { is_in_house: boolean })?.is_in_house,
+        }
+      : null;
+
     results.push({
       specializationId: spec.id,
       name: spec.name,
@@ -85,6 +101,7 @@ export async function getSpecializationProgress(
       requiredCourses,
       meetsExperienceGate,
       minYearsExperience: spec.min_years_experience,
+      primaryCourse,
     });
   }
 
