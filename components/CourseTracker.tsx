@@ -1,27 +1,34 @@
 "use client";
 
-import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-
 type Course = {
   id: number;
   title: string;
   provider: string;
   price_display: string | null;
-  affiliate_link: string | null;
+  duration_display?: string | null;
+  level?: string | null;
   summary: string | null;
   image_url?: string | null;
   is_in_house?: boolean;
 };
 
 type Completion = {
-  id: string;
   status: "in_progress" | "completed" | "verification_pending";
-  completed_at: string | null;
 } | null;
 
+const statusStyles: Record<string, string> = {
+  completed: "bg-carinex-emerald/10 text-carinex-emerald",
+  verification_pending: "bg-sky-50 text-sky-700",
+  in_progress: "bg-amber-50 text-amber-700",
+};
+
+const statusLabels: Record<string, string> = {
+  completed: "Completed",
+  verification_pending: "Pending Review",
+  in_progress: "In Progress",
+};
+
 export default function CourseTracker({
-  nurseId,
   course,
   completion,
 }: {
@@ -29,78 +36,13 @@ export default function CourseTracker({
   course: Course;
   completion: Completion;
 }) {
-  const [current, setCurrent] = useState(completion);
-  const [saving, setSaving] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
-  const [error, setError] = useState("");
-  const [imageBroken, setImageBroken] = useState(false);
-
-  const linkPending = !course.is_in_house && (!course.affiliate_link || course.affiliate_link.startsWith("PENDING"));
-
-  async function handleStart() {
-    setSaving(true);
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("nurse_course_completions")
-      .insert({ nurse_id: nurseId, course_id: course.id, status: "in_progress" })
-      .select()
-      .single();
-    setSaving(false);
-    if (data) setCurrent(data);
-
-    if (course.is_in_house) {
-      window.location.href = `/dashboard/learning/inhouse/${course.id}/start`;
-    } else if (!linkPending && course.affiliate_link) {
-      window.open(course.affiliate_link, "_blank", "noopener,noreferrer");
-    }
-  }
-
-  async function handleSubmitProof() {
-    if (!current || !file) {
-      setError("Choose a certificate or screenshot to upload first.");
-      return;
-    }
-    setError("");
-    setSaving(true);
-
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    const ext = file.name.split(".").pop();
-    const path = `${user!.id}/${course.id}-${Date.now()}.${ext}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("course-certificates")
-      .upload(path, file);
-
-    if (uploadError) {
-      setSaving(false);
-      setError("Upload failed — try again.");
-      return;
-    }
-
-    const { data } = await supabase
-      .from("nurse_course_completions")
-      .update({ status: "verification_pending", proof_doc_url: path })
-      .eq("id", current.id)
-      .select()
-      .single();
-
-    setSaving(false);
-    if (data) setCurrent(data);
-  }
-
   return (
-    <div className="overflow-hidden rounded-xl border border-carinex-navy/10">
-      {course.image_url && !imageBroken ? (
-        <img
-          src={course.image_url}
-          alt={course.title}
-          className="h-28 w-full object-cover"
-          onError={() => setImageBroken(true)}
-        />
+    <a
+      href={`/courses/${course.id}`}
+      className="block overflow-hidden rounded-xl border border-carinex-navy/10 transition hover:border-carinex-emerald/40 hover:shadow-sm"
+    >
+      {course.image_url ? (
+        <img src={course.image_url} alt={course.title} className="h-28 w-full object-cover" />
       ) : (
         <div className="h-16 w-full bg-gradient-to-br from-carinex-navy to-carinex-emerald" />
       )}
@@ -115,25 +57,25 @@ export default function CourseTracker({
           )}
         </div>
 
-        <div className="mt-1.5 flex flex-wrap items-center gap-2">
-          <p className="text-sm text-carinex-navy/60">
-            {course.provider}
-            {course.price_display ? ` · ${course.price_display}` : ""}
-          </p>
+        <p className="mt-1 text-sm text-carinex-navy/60">
+          {course.provider}
+          {course.price_display ? ` · ${course.price_display}` : ""}
+        </p>
 
-          {current?.status === "completed" && (
-            <span className="rounded-full bg-carinex-emerald/10 px-3 py-1 text-xs font-semibold text-carinex-emerald">
-              Completed
+        <div className="mt-2 flex flex-wrap gap-2">
+          {course.duration_display && (
+            <span className="rounded-full bg-carinex-navy/5 px-2.5 py-1 text-xs text-carinex-navy/70">
+              ⏱ {course.duration_display}
             </span>
           )}
-          {current?.status === "verification_pending" && (
-            <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700">
-              Pending Review
+          {course.level && (
+            <span className="rounded-full bg-carinex-navy/5 px-2.5 py-1 text-xs text-carinex-navy/70">
+              🎯 {course.level}
             </span>
           )}
-          {current?.status === "in_progress" && (
-            <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
-              In Progress
+          {completion?.status && (
+            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyles[completion.status]}`}>
+              {statusLabels[completion.status]}
             </span>
           )}
         </div>
@@ -142,66 +84,8 @@ export default function CourseTracker({
           <p className="mt-2 text-sm text-carinex-navy/70">{course.summary}</p>
         )}
 
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          {!current && (
-            <button
-              onClick={handleStart}
-              disabled={saving || linkPending}
-              className="rounded-full bg-carinex-navy px-5 py-2 text-sm font-semibold text-carinex-white disabled:opacity-60"
-            >
-              {saving ? "Starting…" : linkPending ? "Course link coming soon" : "Start course →"}
-            </button>
-          )}
-
-          {current && course.is_in_house && current.status !== "completed" && (
-            <a
-              href={`/dashboard/learning/inhouse/${course.id}/start`}
-              className="text-sm font-semibold text-carinex-emerald hover:underline"
-            >
-              Continue course →
-            </a>
-          )}
-
-          {current && !course.is_in_house && !linkPending && (
-            <a
-              href={course.affiliate_link!}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm font-semibold text-carinex-emerald hover:underline"
-            >
-              Continue course →
-            </a>
-          )}
-        </div>
-
-        {!course.is_in_house && current?.status === "in_progress" && (
-          <div className="mt-4 rounded-lg border border-dashed border-carinex-navy/20 p-4">
-            <p className="text-sm font-semibold text-carinex-navy">
-              Finished? Upload your certificate to submit for review.
-            </p>
-            <input
-              type="file"
-              accept="image/*,.pdf"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
-              className="mt-2 text-sm text-carinex-navy/70"
-            />
-            {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
-            <button
-              onClick={handleSubmitProof}
-              disabled={saving}
-              className="mt-3 rounded-full bg-carinex-emerald px-5 py-2 text-sm font-semibold text-carinex-white disabled:opacity-60"
-            >
-              {saving ? "Submitting…" : "Submit for review"}
-            </button>
-          </div>
-        )}
-
-        {!course.is_in_house && current?.status === "verification_pending" && (
-          <p className="mt-3 text-sm text-carinex-navy/50">
-            Your certificate is submitted and awaiting review.
-          </p>
-        )}
+        <p className="mt-3 text-sm font-semibold text-carinex-emerald">View details →</p>
       </div>
-    </div>
+    </a>
   );
 }
