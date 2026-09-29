@@ -3,9 +3,18 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import type { ModuleSummary } from "@/lib/course-content";
+
+const menuLinks = [
+  { href: "/dashboard/profile", label: "Profile" },
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/pathways", label: "All Pathways" },
+  { href: "/dashboard/learning", label: "Learning Hub" },
+  { href: "/dashboard/opportunities", label: "Opportunity Intelligence" },
+];
 
 export default function CoursePlayerHeader({
   courseTitle,
@@ -24,13 +33,28 @@ export default function CoursePlayerHeader({
   currentLessonId?: string;
   currentQuizModuleId?: string;
 }) {
+  const router = useRouter();
   const [tocOpen, setTocOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [fullName, setFullName] = useState<string | null>(null);
   const [openModules, setOpenModules] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    supabase.auth.getUser().then(async ({ data }) => {
+      setUser(data.user);
+      if (data.user) {
+        const { data: userRow } = await supabase
+          .from("users")
+          .select("user_type, full_name")
+          .eq("id", data.user.id)
+          .maybeSingle();
+        setIsAdmin(userRow?.user_type === "admin");
+        setFullName(userRow?.full_name || null);
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -48,7 +72,15 @@ export default function CoursePlayerHeader({
     });
   }
 
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/");
+    router.refresh();
+  }
+
   const initial = user?.email?.charAt(0).toUpperCase() || "?";
+  const links = isAdmin ? [...menuLinks, { href: "/admin/users", label: "Admin" }] : menuLinks;
 
   return (
     <>
@@ -67,15 +99,16 @@ export default function CoursePlayerHeader({
           <span className="text-sm font-bold text-carinex-navy">Carinex</span>
         </div>
 
-        <Link
-          href="/dashboard/profile"
+        <button
+          onClick={() => setMenuOpen(true)}
+          aria-label="Account menu"
           className="flex h-9 w-9 items-center justify-center rounded-full bg-carinex-navy text-sm font-bold text-carinex-white"
-          aria-label="Profile"
         >
           {initial}
-        </Link>
+        </button>
       </header>
 
+      {/* Table of contents — left */}
       {tocOpen && (
         <div className="fixed inset-0 z-50 flex">
           <div className="w-full max-w-sm overflow-y-auto bg-white shadow-xl">
@@ -147,13 +180,50 @@ export default function CoursePlayerHeader({
               })}
             </div>
           </div>
-          <button
-            className="flex-1 bg-black/30"
-            onClick={() => setTocOpen(false)}
-            aria-label="Close menu"
-          />
+          <button className="flex-1 bg-black/30" onClick={() => setTocOpen(false)} aria-label="Close menu" />
+        </div>
+      )}
+
+      {/* Account menu — right, mirrors the main site Navbar's drawer */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <button className="flex-1 bg-black/30" onClick={() => setMenuOpen(false)} aria-label="Close menu" />
+          <div className="w-72 overflow-y-auto bg-white shadow-xl">
+            <div className="flex items-center gap-3 border-b border-carinex-navy/10 p-5">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-carinex-navy text-base font-bold text-carinex-white">
+                {initial}
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-carinex-navy">
+                  {fullName || "Carinex Nurse"}
+                </p>
+                {isAdmin && <p className="text-xs font-semibold text-amber-600">Admin</p>}
+              </div>
+            </div>
+
+            <div className="flex flex-col p-3">
+              {links.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMenuOpen(false)}
+                  className={`rounded-lg px-4 py-3 text-sm font-medium transition hover:bg-carinex-emerald/10 ${
+                    link.label === "Admin" ? "text-amber-700" : "text-carinex-navy"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ))}
+              <button
+                onClick={handleLogout}
+                className="mt-2 rounded-lg px-4 py-3 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
+              >
+                Log out
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </>
   );
-                                }
+}
