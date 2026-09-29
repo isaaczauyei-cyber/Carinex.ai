@@ -10,6 +10,7 @@ import type { User } from "@supabase/supabase-js";
 const menuLinks = [
   { href: "/dashboard/profile", label: "Profile" },
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/pathways", label: "All Pathways" },
   { href: "/dashboard/learning", label: "Learning Hub" },
   { href: "/dashboard/opportunities", label: "Opportunity Intelligence" },
 ];
