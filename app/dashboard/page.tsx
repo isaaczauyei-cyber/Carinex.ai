@@ -135,7 +135,24 @@ export default async function DashboardPage() {
                     p.requiredCourses > 0
                       ? Math.min(100, Math.round((p.completedCourses / p.requiredCourses) * 100))
                       : 0;
-                  const hasProgress = p.completedCourses > 0;
+
+                  let buttonLabel = "Start course";
+                  let buttonHref = `/pathways/${p.slug}`;
+
+                  if (p.status === "unlocked") {
+                    buttonLabel = "Completed";
+                  } else if (p.primaryCourse) {
+                    if (p.primaryCourse.status === "completed") {
+                      buttonLabel = "Completed";
+                    } else if (p.primaryCourse.status === "verification_pending") {
+                      buttonLabel = "Pending review";
+                    } else if (p.primaryCourse.isInHouse) {
+                      buttonLabel = "Continue course";
+                      buttonHref = `/dashboard/learning/inhouse/${p.primaryCourse.courseId}/start`;
+                    } else {
+                      buttonLabel = "Submit completion";
+                    }
+                  }
 
                   return (
                     <div
@@ -176,10 +193,10 @@ export default async function DashboardPage() {
 
                       <div className="mt-5">
                         <a
-                          href={`/pathways/${p.slug}`}
+                          href={buttonHref}
                           className="inline-block rounded-full bg-carinex-emerald px-4 py-2 text-sm font-semibold text-white transition hover:bg-carinex-emerald/90"
                         >
-                          {hasProgress ? "Continue course" : "Start course"}
+                          {buttonLabel}
                         </a>
                       </div>
                     </div>
