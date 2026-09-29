@@ -27,9 +27,15 @@ export async function getSpecializationProgress(
 
   const { data: profile } = await supabase
     .from("nurse_profiles")
-    .select("license_status, years_experience")
+    .select("license_status, user_id")
     .eq("id", nurseProfileId)
     .single();
+
+  const { data: userRow } = profile
+    ? await supabase.from("users").select("years_experience").eq("id", profile.user_id).maybeSingle()
+    : { data: null };
+
+  const yearsExperience = userRow?.years_experience || 0;
 
   const { data: nurseSpecs } = await supabase
     .from("nurse_specializations")
@@ -70,7 +76,7 @@ export async function getSpecializationProgress(
     const licenseActive = profile?.license_status === "active";
     const coursesComplete = requiredCourses > 0 && completedCourses >= requiredCourses;
     const meetsExperienceGate = spec.min_years_experience
-      ? (profile?.years_experience || 0) >= spec.min_years_experience
+      ? yearsExperience >= spec.min_years_experience
       : true;
 
     let status: SpecializationStatus = "not_started";
