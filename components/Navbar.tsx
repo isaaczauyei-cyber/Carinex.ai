@@ -77,7 +77,7 @@ export default function Navbar() {
             )}
             <Link href="/" className="flex items-center gap-2">
               <Image
-                src="/carinex-logo.svg"
+                src="/carinex-logo.png"
                 alt="Carinex"
                 width={32}
                 height={32}
