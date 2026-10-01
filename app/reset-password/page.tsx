@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Navbar from "@/components/Navbar";
@@ -12,6 +12,28 @@ export default function ResetPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [sessionReady, setSessionReady] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") setSessionReady(true);
+    });
+
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) setSessionReady(true);
+    });
+
+    const timeout = setTimeout(() => {
+      setSessionReady((ready) => (ready === null ? false : ready));
+    }, 2500);
+
+    return () => {
+      listener.subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,6 +61,32 @@ export default function ResetPasswordPage() {
 
     router.push("/dashboard");
     router.refresh();
+  }
+
+  if (sessionReady === false) {
+    return (
+      <main>
+        <Navbar />
+        <section className="mx-auto max-w-md px-6 py-24 text-center">
+          <span className="text-sm font-semibold uppercase tracking-wide text-carinex-emerald">
+            Account recovery
+          </span>
+          <h1 className="mt-2 text-2xl font-bold tracking-tight text-carinex-navy">
+            This link is invalid or has expired
+          </h1>
+          <p className="mt-3 text-carinex-navy/70">
+            Password reset links only work once and expire after a short time.
+          </p>
+          <a
+            href="/forgot-password"
+            className="mt-6 inline-block rounded-full bg-carinex-emerald px-6 py-3 text-sm font-semibold text-white hover:bg-carinex-emerald/90"
+          >
+            Request a new link
+          </a>
+        </section>
+        <Footer />
+      </main>
+    );
   }
 
   return (
