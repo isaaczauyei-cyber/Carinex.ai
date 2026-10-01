@@ -41,7 +41,7 @@ export default async function OpportunitiesPage() {
       .select("id, title, track_type, work_mode, location_restriction, employer_profiles(company_name), specializations(name)")
       .eq("status", "open")
       .order("posted_at", { ascending: false });
-    jobs = (data as typeof jobs) || [];
+    jobs = (data as unknown as typeof jobs) || [];
   }
 
   return (
