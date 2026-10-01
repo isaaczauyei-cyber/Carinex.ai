@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const tabs = [
   { href: "/admin/users", label: "Users" },
   { href: "/admin/courses", label: "Course Reviews" },
+  { href: "/admin/jobs", label: "Jobs" },
   { href: "/admin/analytics", label: "Analytics" },
 ];
 
@@ -15,7 +16,7 @@ export default function AdminTabs() {
   return (
     <div className="mt-6 flex gap-2 border-b border-carinex-navy/10">
       {tabs.map((tab) => {
-        const active = pathname === tab.href;
+        const active = pathname === tab.href || pathname?.startsWith(tab.href + "/");
         return (
           <Link
             key={tab.href}
