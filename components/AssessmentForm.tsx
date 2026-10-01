@@ -18,12 +18,15 @@ const workStyleOptions = [
   { slug: "medical-scribing", label: "Real-time documentation during patient visits" },
 ];
 
+// For specializations where you want the headline to show a specific course
+// instead of the specialization name itself.
+const displayOverrides: Record<string, string> = {
+  "healthcare-data-ai": "AI for Health & Nursing",
+};
+
 const TOTAL_STEPS = 5;
 
 type AddState = "idle" | "adding" | "added";
-
-const AI_SLUG = "healthcare-data-ai";
-const AI_TITLE = "Healthcare Data & AI Automation";
 
 export default function AssessmentForm({
   nurseId,
@@ -46,9 +49,6 @@ export default function AssessmentForm({
   const [saving, setSaving] = useState(false);
   const [addState, setAddState] = useState<AddState>(
     result && result.matched && initialEnrolledSlugs.includes(result.slug) ? "added" : "idle"
-  );
-  const [aiAddState, setAiAddState] = useState<AddState>(
-    initialEnrolledSlugs.includes(AI_SLUG) ? "added" : "idle"
   );
 
   function toggleBackground(option: string) {
@@ -82,13 +82,13 @@ export default function AssessmentForm({
     if (rec.matched && initialEnrolledSlugs.includes(rec.slug)) setAddState("added");
   }
 
-  async function addInterest(slug: string, setter: (s: AddState) => void) {
-    setter("adding");
+  async function addInterest(slug: string) {
+    setAddState("adding");
     const supabase = createClient();
     const { data: spec } = await supabase.from("specializations").select("id").eq("slug", slug).maybeSingle();
 
     if (!spec) {
-      setter("idle");
+      setAddState("idle");
       return;
     }
 
@@ -96,22 +96,27 @@ export default function AssessmentForm({
       .from("nurse_specializations")
       .upsert({ nurse_id: nurseId, specialization_id: spec.id }, { onConflict: "nurse_id,specialization_id" });
 
-    setter(error ? "idle" : "added");
+    setAddState(error ? "idle" : "added");
   }
 
   if (result) {
-    const bestFitIsAI = result.matched && result.slug === AI_SLUG;
-
     return (
       <div className="flex flex-col gap-4">
         {result.matched ? (
           <>
             <div className="flex items-center gap-2 rounded-xl bg-carinex-emerald/10 px-4 py-3">
               <span className="text-lg">✨</span>
-              <p className="text-sm font-semibold text-carinex-navy">Your best-fit specialization</p>
+              <p className="text-sm font-semibold text-carinex-navy">Your best match</p>
             </div>
             <div className="rounded-xl border border-carinex-emerald/30 bg-carinex-emerald/5 p-6">
-              <p className="text-xl font-bold text-carinex-navy">{result.title}</p>
+              <p className="text-xl font-bold text-carinex-navy">
+                {displayOverrides[result.slug] || result.title}
+              </p>
+              {displayOverrides[result.slug] && (
+                <p className="mt-1 text-sm text-carinex-navy/50">
+                  Part of the {result.title} pathway
+                </p>
+              )}
               <ul className="mt-3 flex flex-col gap-1.5">
                 {result.reasons.map((reason, i) => (
                   <li key={i} className="text-sm text-carinex-navy/70">· {reason}</li>
@@ -125,7 +130,7 @@ export default function AssessmentForm({
                   View pathway
                 </a>
                 <button
-                  onClick={() => addInterest(result.slug, setAddState)}
+                  onClick={() => addInterest(result.slug)}
                   disabled={addState !== "idle"}
                   className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${
                     addState === "added"
@@ -146,42 +151,6 @@ export default function AssessmentForm({
                 <li key={i} className="text-sm text-amber-900/80">· {reason}</li>
               ))}
             </ul>
-          </div>
-        )}
-
-        {/* Always shown, regardless of best fit — a genuinely faster, lower-
-            certification path via Carinex's own in-house course, worth
-            surfacing even to nurses matched elsewhere. Skipped only when
-            the AI pathway IS the best fit, since it's already shown above. */}
-        {!bestFitIsAI && (
-          <div className="rounded-xl border border-sky-200 bg-sky-50 p-6">
-            <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">Worth knowing</p>
-            <p className="mt-1 text-lg font-bold text-carinex-navy">{AI_TITLE}</p>
-            <p className="mt-2 text-sm text-carinex-navy/70">
-              Regardless of your best fit above, this is one of the fastest routes
-              to becoming job-ready on Carinex — it uses our own in-house course
-              and quiz, not an external certification, so there&apos;s less to
-              arrange before you can start.
-            </p>
-            <div className="mt-4 flex items-center gap-3">
-              <a
-                href={`/pathways/${AI_SLUG}`}
-                className="rounded-full bg-carinex-navy px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-carinex-navy/90"
-              >
-                View pathway
-              </a>
-              <button
-                onClick={() => addInterest(AI_SLUG, setAiAddState)}
-                disabled={aiAddState !== "idle"}
-                className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${
-                  aiAddState === "added"
-                    ? "bg-carinex-emerald/10 text-carinex-emerald"
-                    : "border border-carinex-navy/20 text-carinex-navy hover:bg-carinex-navy/5"
-                } disabled:cursor-default`}
-              >
-                {aiAddState === "added" ? "Added ✓" : aiAddState === "adding" ? "Adding…" : "Add to my pathways"}
-              </button>
-            </div>
           </div>
         )}
       </div>
