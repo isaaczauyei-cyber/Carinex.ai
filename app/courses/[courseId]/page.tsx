@@ -48,17 +48,27 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
     }
   }
 
+  const descriptionParagraphs = (course.description_long || course.summary || "")
+    .split(/\n\s*\n/)
+    .map((p: string) => p.trim())
+    .filter(Boolean);
+
   return (
     <main>
       <Navbar />
-      <section className="mx-auto max-w-2xl px-6 py-16">
-        {course.image_url ? (
-          <img src={course.image_url} alt={course.title} className="h-40 w-full rounded-2xl object-cover" />
-        ) : (
-          <div className="h-24 w-full rounded-2xl bg-gradient-to-br from-carinex-navy to-carinex-emerald" />
-        )}
 
-        <div className="mt-6 flex flex-wrap items-center gap-2">
+      <div className="relative h-56 w-full overflow-hidden bg-gradient-to-br from-carinex-navy to-carinex-emerald">
+        {course.image_url && (
+          <img
+            src={course.image_url}
+            alt={course.title}
+            className="absolute inset-0 h-full w-full object-cover opacity-35"
+          />
+        )}
+      </div>
+
+      <section className="mx-auto max-w-2xl px-6 py-12">
+        <div className="flex flex-wrap items-center gap-2">
           {course.is_in_house && (
             <span className="rounded-full bg-carinex-navy/5 px-3 py-1 text-xs font-semibold text-carinex-navy/60">
               Carinex Original
@@ -76,27 +86,35 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
           )}
         </div>
 
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-carinex-navy">{course.title}</h1>
+        <h1 className="mt-4 text-3xl font-bold tracking-tight text-carinex-navy">{course.title}</h1>
         <p className="mt-1 text-carinex-navy/60">
           {course.provider}
           {course.price_display ? ` · ${course.price_display}` : ""}
         </p>
 
-        <p className="mt-6 text-carinex-navy/80">
-          {course.description_long || course.summary || "No description available yet."}
-        </p>
+        <div className="mt-8 flex flex-col gap-4">
+          {descriptionParagraphs.length > 0 ? (
+            descriptionParagraphs.map((para: string, i: number) => (
+              <p key={i} className="leading-relaxed text-carinex-navy/80">
+                {para}
+              </p>
+            ))
+          ) : (
+            <p className="text-carinex-navy/50">No description available yet.</p>
+          )}
+        </div>
 
         {syllabus && syllabus.length > 0 && (
           <div className="mt-10">
             <h2 className="text-lg font-bold text-carinex-navy">Syllabus</h2>
-            <div className="mt-3 flex flex-col gap-3">
+            <div className="mt-4 flex flex-col gap-3">
               {syllabus.map((item, i) => (
                 <div key={item.id} className="rounded-lg border border-carinex-navy/10 p-4">
                   <p className="font-semibold text-carinex-navy">
                     {i + 1}. {item.title}
                   </p>
                   {item.description && (
-                    <p className="mt-1 text-sm text-carinex-navy/70">{item.description}</p>
+                    <p className="mt-1 text-sm leading-relaxed text-carinex-navy/70">{item.description}</p>
                   )}
                 </div>
               ))}
@@ -114,6 +132,7 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
           />
         </div>
       </section>
+
       <Footer />
     </main>
   );
