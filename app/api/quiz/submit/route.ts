@@ -1,14 +1,26 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
   const { nurseId, courseId, moduleId, answers } = await request.json();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+  const { data: profile } = await supabase.from("nurse_profiles").select("id").eq("user_id", user.id).maybeSingle();
+  if (!profile || profile.id !== nurseId) return NextResponse.json({ error: "Invalid nurse profile" }, { status: 403 });
 
   if (!nurseId || !moduleId || !answers) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
   const admin = createAdminClient();
+  if (Number(courseId) === 23) {
+    const { data: access } = await admin.from("course_enrollments").select("id").eq("user_id", user.id).eq("course_id", 23).eq("status", "approved").limit(1).maybeSingle();
+    if (!access) return NextResponse.json({ error: "Course access has not been approved." }, { status: 403 });
+  }
+  const { data: moduleRow } = await admin.from("course_modules").select("id").eq("id", moduleId).eq("course_id", courseId).maybeSingle();
+  if (!moduleRow) return NextResponse.json({ error: "Invalid course module" }, { status: 400 });
 
   const { data: courseModule } = await admin
     .from("course_modules")
