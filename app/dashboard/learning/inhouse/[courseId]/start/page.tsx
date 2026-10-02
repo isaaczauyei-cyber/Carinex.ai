@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import { createClient } from "@/lib/supabase/server";
+import { requireCourseApproval } from "@/lib/course-access";
 import { getCourseStructure, getProgress, flattenSequence } from "@/lib/course-content";
 
 export default async function StartCoursePage({ params }: { params: { courseId: string } }) {
@@ -19,6 +20,7 @@ export default async function StartCoursePage({ params }: { params: { courseId: 
   if (!profile) redirect("/onboarding");
 
   const courseId = Number(params.courseId);
+  await requireCourseApproval(user.id, courseId);
   const structure = await getCourseStructure(courseId);
   const sequence = flattenSequence(structure);
 
