@@ -39,7 +39,7 @@ export default async function OpportunitiesPage() {
     const { data } = await supabase
       .from("jobs")
       .select("id, title, track_type, work_mode, location_restriction, employer_profiles(company_name), specializations(name)")
-      .eq("status", "open")
+      .eq("status", "live")
       .order("posted_at", { ascending: false });
     jobs = (data as unknown as typeof jobs) || [];
   }
