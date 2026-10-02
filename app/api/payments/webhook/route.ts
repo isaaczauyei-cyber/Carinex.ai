@@ -1,43 +1,55 @@
-// app/api/payments/webhook/route.ts
-// This is real backend code — it runs on the server, never in the browser,
-// and uses the Paystack SECRET key (never NEXT_PUBLIC_...). This is the kind
-// of logic that needs a Next.js API route instead of a direct Supabase call.
-
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
-  const rawBody = await req.text();
-
-  // Verify the request actually came from Paystack, not a spoofed call
+  const secret = process.env.PAYSTACK_SECRET_KEY;
   const signature = req.headers.get("x-paystack-signature");
-  const expectedSignature = crypto
-    .createHmac("sha512", process.env.PAYSTACK_SECRET_KEY!) // server-only secret
-    .update(rawBody)
-    .digest("hex");
+  if (!secret || !signature) return NextResponse.json({ error: "Webhook is not configured" }, { status: 500 });
 
-  if (signature !== expectedSignature) {
+  const rawBody = await req.text();
+  const expected = crypto.createHmac("sha512", secret).update(rawBody).digest();
+  let supplied: Buffer;
+  try { supplied = Buffer.from(signature, "hex"); } catch { return NextResponse.json({ error: "Invalid signature" }, { status: 401 }); }
+  if (supplied.length !== expected.length || !crypto.timingSafeEqual(supplied, expected)) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
-  const event = JSON.parse(rawBody);
+  let event: any;
+  try { event = JSON.parse(rawBody); } catch { return NextResponse.json({ error: "Invalid JSON" }, { status: 400 }); }
+  if (event.event !== "charge.success") return NextResponse.json({ received: true });
 
-  if (event.event === "charge.success") {
-    const { reference, amount, currency } = event.data;
+  const reference = event?.data?.reference;
+  if (typeof reference !== "string" || !reference) return NextResponse.json({ error: "Missing reference" }, { status: 400 });
 
-    const supabase = await createClient();
-    const { error } = await supabase
-      .from("payments")
-      .update({ status: "success" })
-      .eq("paystack_ref", reference);
-
-    if (error) {
-      console.error("Failed to update payment record:", error);
-      return NextResponse.json({ error: "Update failed" }, { status: 500 });
+  try {
+    const verifyResponse = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
+      headers: { Authorization: `Bearer ${secret}` }, cache: "no-store",
+    });
+    const verification = await verifyResponse.json();
+    const tx = verification?.data;
+    if (!verifyResponse.ok || !verification.status || tx?.status !== "success" || tx?.reference !== reference) {
+      return NextResponse.json({ error: "Transaction verification failed" }, { status: 400 });
     }
-  }
+    if (!Number.isSafeInteger(tx.amount) || tx.currency !== "NGN") {
+      return NextResponse.json({ error: "Invalid verified transaction details" }, { status: 400 });
+    }
 
-  // Always return 200 quickly — Paystack retries if it doesn't get one
-  return NextResponse.json({ received: true });
+    const admin = createAdminClient();
+    const { error } = await admin.rpc("finalize_course_payment", {
+      p_reference: reference,
+      p_verified_amount_kobo: tx.amount,
+      p_verified_currency: tx.currency,
+    });
+    if (error) {
+      console.error("Payment finalization failed", error.message);
+      return NextResponse.json({ error: "Could not finalize payment" }, { status: 500 });
+    }
+    return NextResponse.json({ received: true });
+  } catch (error) {
+    console.error("Paystack webhook error", error);
+    return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 });
+  }
 }
