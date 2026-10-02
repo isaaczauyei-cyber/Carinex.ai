@@ -18,26 +18,30 @@ const workStyleOptions = [
   { slug: "medical-scribing", label: "Real-time documentation during patient visits" },
 ];
 
-// For specializations where you want the headline to show a specific course
-// instead of the specialization name itself.
-const displayOverrides: Record<string, string> = {
-  "healthcare-data-ai": "AI for Health & Nursing",
-};
-
 const TOTAL_STEPS = 5;
 
 type AddState = "idle" | "adding" | "added";
+type AiCourse = {
+  id: number;
+  title: string;
+  summary: string | null;
+  duration_display: string | null;
+  level: string | null;
+  specialization_id: number | null;
+} | null;
 
 export default function AssessmentForm({
   nurseId,
   initialLicenseStatus,
   initialCareerGoal,
   initialEnrolledSlugs = [],
+  aiCourse,
 }: {
   nurseId: string;
   initialLicenseStatus: string;
   initialCareerGoal: string;
   initialEnrolledSlugs?: string[];
+  aiCourse: AiCourse;
 }) {
   const [step, setStep] = useState(0);
   const [yearsExperience, setYearsExperience] = useState(0);
@@ -47,9 +51,8 @@ export default function AssessmentForm({
   const [workStyle, setWorkStyle] = useState("");
   const [result, setResult] = useState<AssessmentResult | null>(null);
   const [saving, setSaving] = useState(false);
-  const [addState, setAddState] = useState<AddState>(
-    result && result.matched && initialEnrolledSlugs.includes(result.slug) ? "added" : "idle"
-  );
+  const [addState, setAddState] = useState<AddState>("idle");
+  const [aiEnrollState, setAiEnrollState] = useState<AddState>("idle");
 
   function toggleBackground(option: string) {
     setBackground((prev) => (prev.includes(option) ? prev.filter((b) => b !== option) : [...prev, option]));
@@ -99,6 +102,27 @@ export default function AssessmentForm({
     setAddState(error ? "idle" : "added");
   }
 
+  async function handleAiEnroll() {
+    if (!aiCourse) return;
+    setAiEnrollState("adding");
+    const supabase = createClient();
+
+    await supabase
+      .from("nurse_course_completions")
+      .insert({ nurse_id: nurseId, course_id: aiCourse.id, status: "in_progress" });
+
+    if (aiCourse.specialization_id) {
+      await supabase
+        .from("nurse_specializations")
+        .upsert(
+          { nurse_id: nurseId, specialization_id: aiCourse.specialization_id },
+          { onConflict: "nurse_id,specialization_id" }
+        );
+    }
+
+    window.location.href = `/dashboard/learning/inhouse/${aiCourse.id}/start`;
+  }
+
   if (result) {
     return (
       <div className="flex flex-col gap-4">
@@ -106,17 +130,10 @@ export default function AssessmentForm({
           <>
             <div className="flex items-center gap-2 rounded-xl bg-carinex-emerald/10 px-4 py-3">
               <span className="text-lg">✨</span>
-              <p className="text-sm font-semibold text-carinex-navy">Your best match</p>
+              <p className="text-sm font-semibold text-carinex-navy">Your best-fit specialization</p>
             </div>
             <div className="rounded-xl border border-carinex-emerald/30 bg-carinex-emerald/5 p-6">
-              <p className="text-xl font-bold text-carinex-navy">
-                {displayOverrides[result.slug] || result.title}
-              </p>
-              {displayOverrides[result.slug] && (
-                <p className="mt-1 text-sm text-carinex-navy/50">
-                  Part of the {result.title} pathway
-                </p>
-              )}
+              <p className="text-xl font-bold text-carinex-navy">{result.title}</p>
               <ul className="mt-3 flex flex-col gap-1.5">
                 {result.reasons.map((reason, i) => (
                   <li key={i} className="text-sm text-carinex-navy/70">· {reason}</li>
@@ -153,6 +170,38 @@ export default function AssessmentForm({
             </ul>
           </div>
         )}
+
+        {/* Always-shown pitch — separate from the real result above */}
+        {aiCourse && (
+          <div className="mt-2 rounded-xl border-2 border-dashed border-carinex-navy/20 bg-carinex-navy/[0.02] p-6">
+            <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-amber-800">
+              Sponsored by Carinex
+            </span>
+            <p className="mt-3 text-lg font-bold text-carinex-navy">{aiCourse.title}</p>
+            <p className="mt-1 text-sm text-carinex-navy/70">
+              {aiCourse.summary || "Job-ready skills, built by Carinex — no heavy external certification required to get started."}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {aiCourse.duration_display && (
+                <span className="rounded-full bg-white px-2.5 py-1 text-xs text-carinex-navy/70">
+                  ⏱ {aiCourse.duration_display}
+                </span>
+              )}
+              {aiCourse.level && (
+                <span className="rounded-full bg-white px-2.5 py-1 text-xs text-carinex-navy/70">
+                  🎯 {aiCourse.level}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={handleAiEnroll}
+              disabled={aiEnrollState !== "idle"}
+              className="mt-4 rounded-full bg-carinex-navy px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-carinex-navy/90 disabled:opacity-60"
+            >
+              {aiEnrollState === "adding" ? "Starting…" : "Start this course →"}
+            </button>
+          </div>
+        )}
       </div>
     );
   }
@@ -168,7 +217,7 @@ export default function AssessmentForm({
       </div>
       <p className="mt-2 text-xs font-semibold text-carinex-navy/40">Step {step + 1} of {TOTAL_STEPS}</p>
 
-      <div key={step} className="mt-6 animate-[fadeIn_0.25s_ease-out]">
+      <div key={step} className="mt-6">
         {step === 0 && (
           <div>
             <label className="text-lg font-bold text-carinex-navy">How many years of clinical experience do you have?</label>
