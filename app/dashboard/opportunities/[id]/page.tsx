@@ -1,11 +1,25 @@
-import { redirect } from "next/navigation";
-import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/server";
-import { getSpecializationProgress } from "@/lib/specialization-status";
 
-export default async function OpportunitiesPage() {
+function splitList(value: string | null): string[] {
+  if (!value) return [];
+  return value
+    .split(/\s*·\s*|\n/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function splitParagraphs(value: string | null): string[] {
+  if (!value) return [];
+  return value
+    .split(/\n\s*\n/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+export default async function JobDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -13,129 +27,126 @@ export default async function OpportunitiesPage() {
 
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("nurse_profiles")
-    .select("id, career_goal")
-    .eq("user_id", user.id)
+  const { data: job } = await supabase
+    .from("jobs")
+    .select("*, employer_profiles(company_name, company_website), specializations(name)")
+    .eq("id", params.id)
     .maybeSingle();
 
-  if (!profile) redirect("/onboarding");
+  if (!job || job.status !== "live") notFound();
 
-  const progress = await getSpecializationProgress(profile.id);
-  const hasCompletedAnyPathway = progress.some((p) => p.status === "unlocked");
-  const assessmentDone = !!profile.career_goal;
-
-  let jobs: {
-    id: string;
-    title: string;
-    track_type: string | null;
-    work_mode: string | null;
-    location_restriction: string | null;
-    employer_profiles: { company_name: string } | null;
-    specializations: { name: string } | null;
-  }[] = [];
-
-  if (hasCompletedAnyPathway) {
-    const { data } = await supabase
-      .from("jobs")
-      .select("id, title, track_type, work_mode, location_restriction, employer_profiles(company_name), specializations(name)")
-      .eq("status", "open")
-      .order("posted_at", { ascending: false });
-    jobs = (data as unknown as typeof jobs) || [];
-  }
+  const employer = job.employer_profiles as unknown as { company_name: string; company_website: string | null } | null;
+  const spec = job.specializations as unknown as { name: string } | null;
+  const descriptionParagraphs = splitParagraphs(job.description);
+  const requirements = splitList(job.eligibility_requirements);
 
   return (
     <main>
       <Navbar />
-      <section className="mx-auto max-w-3xl px-6 py-16">
-        <span className="text-sm font-semibold uppercase tracking-wide text-carinex-emerald">
-          Opportunity Intelligence
-        </span>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight text-carinex-navy">
-          Opportunities
-        </h1>
+      <section className="mx-auto max-w-2xl px-6 py-16">
+        <a
+          href="/dashboard/opportunities"
+          className="text-sm font-semibold text-carinex-emerald hover:underline"
+        >
+          ← All opportunities
+        </a>
 
-        {hasCompletedAnyPathway ? (
-          jobs.length > 0 ? (
-            <div className="mt-8 flex flex-col gap-3">
-              {jobs.map((job) => {
-                const employer = job.employer_profiles;
-                const spec = job.specializations;
-                return (
-                  <Link
-                    key={job.id}
-                    href={`/dashboard/opportunities/${job.id}`}
-                    className="flex items-center justify-between rounded-xl border border-carinex-navy/10 bg-white p-5 transition hover:border-carinex-emerald/40 hover:shadow-sm"
-                  >
-                    <div className="min-w-0">
-                      <p className="font-semibold text-carinex-navy">{job.title}</p>
-                      <p className="mt-0.5 text-sm text-carinex-navy/50">
-                        {employer?.company_name || "Employer"}
-                        {spec?.name ? ` · ${spec.name}` : ""}
-                      </p>
-                    </div>
-                    <div className="ml-4 flex shrink-0 flex-col items-end gap-1.5">
-                      {job.track_type && (
-                        <span className="rounded-full bg-carinex-navy/5 px-2.5 py-1 text-xs font-semibold text-carinex-navy/70">
-                          {job.track_type === "national" ? "National" : "Global"}
-                        </span>
-                      )}
-                      {job.work_mode && (
-                        <span className="text-xs text-carinex-navy/40">{job.work_mode}</span>
-                      )}
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="mt-10 rounded-2xl border border-dashed border-carinex-navy/20 p-10 text-center">
-              <p className="text-lg font-semibold text-carinex-navy">
-                No remote listings live yet — check back soon.
-              </p>
-              <p className="mt-2 text-sm text-carinex-navy/50">
-                You&apos;ve completed a pathway, so you&apos;ll see matched opportunities
-                here the moment listings go live.
-              </p>
-            </div>
-          )
-        ) : (
-          <div className="mt-10 h-64 rounded-2xl border border-dashed border-carinex-navy/10 bg-carinex-navy/[0.02]" />
-        )}
-      </section>
-      <Footer />
+        <div className="mt-6 flex flex-wrap items-center gap-2">
+          {job.track_type && (
+            <span className="rounded-full bg-carinex-navy/5 px-3 py-1 text-xs font-semibold text-carinex-navy/70">
+              {job.track_type === "national" ? "National" : "Global"}
+            </span>
+          )}
+          {job.work_mode && (
+            <span className="rounded-full bg-carinex-navy/5 px-3 py-1 text-xs font-semibold text-carinex-navy/70">
+              {job.work_mode === "sync" ? "Real-time" : job.work_mode === "async" ? "Flexible" : "Onsite"}
+            </span>
+          )}
+          {spec?.name && (
+            <span className="rounded-full bg-carinex-emerald/10 px-3 py-1 text-xs font-semibold text-carinex-emerald">
+              {spec.name}
+            </span>
+          )}
+        </div>
 
-      {!hasCompletedAnyPathway && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-6 backdrop-blur-sm">
-          <div className="max-w-sm rounded-2xl bg-white p-7 text-center shadow-2xl">
-            <span className="text-3xl">🔒</span>
-            <h2 className="mt-3 text-lg font-bold text-carinex-navy">
-              Not quite there yet
+        <h1 className="mt-4 text-3xl font-bold tracking-tight text-carinex-navy">{job.title}</h1>
+        <p className="mt-1 text-carinex-navy/60">
+          {employer?.company_name || "Employer"}
+          {job.currency ? ` · Paid in ${job.currency}` : ""}
+        </p>
+
+        {job.requires_foreign_license && (
+          <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+            <h2 className="text-sm font-bold text-amber-900">
+              Requires a foreign nursing license
             </h2>
-            <p className="mt-2 text-sm text-carinex-navy/60">
-              {!assessmentDone
-                ? "Take an assessment, then complete a specialization pathway to access this page."
-                : "Complete a specialization pathway to access this page."}
+            <p className="mt-1 text-sm leading-relaxed text-amber-900/80">
+              This role requires an active nursing license in{" "}
+              {job.foreign_license_country || "the employer's country"}, not just an
+              NMCN license. Confirm your eligibility before applying.
             </p>
-            <div className="mt-5 flex flex-col gap-2">
-              {!assessmentDone && (
-                <a
-                  href="/assessment"
-                  className="rounded-full bg-carinex-emerald px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-carinex-emerald/90"
-                >
-                  Take the assessment
-                </a>
+          </div>
+        )}
+
+        <div className="mt-10 flex flex-col gap-8">
+          <div>
+            <h2 className="text-lg font-bold text-carinex-navy">About this role</h2>
+            <div className="mt-3 flex flex-col gap-3">
+              {descriptionParagraphs.length > 0 ? (
+                descriptionParagraphs.map((para, i) => (
+                  <p key={i} className="leading-relaxed text-carinex-navy/80">
+                    {para}
+                  </p>
+                ))
+              ) : (
+                <p className="text-carinex-navy/50">No description provided.</p>
               )}
-              <a
-                href="/dashboard"
-                className="rounded-full border border-carinex-navy/20 px-5 py-2.5 text-sm font-semibold text-carinex-navy transition hover:bg-carinex-navy/5"
-              >
-                Back to Dashboard
-              </a>
             </div>
           </div>
+
+          {requirements.length > 0 && (
+            <div className="rounded-2xl border border-carinex-navy/10 bg-carinex-navy/5 p-6">
+              <h2 className="text-lg font-bold text-carinex-navy">Eligibility requirements</h2>
+              <ul className="mt-3 flex flex-col gap-1.5">
+                {requirements.map((req, i) => (
+                  <li key={i} className="text-sm text-carinex-navy/70">· {req}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {job.location_restriction && (
+            <div>
+              <h2 className="text-lg font-bold text-carinex-navy">Location</h2>
+              <p className="mt-2 text-carinex-navy/70">{job.location_restriction}</p>
+            </div>
+          )}
+
+          {employer?.company_website && (
+            <div>
+              <h2 className="text-lg font-bold text-carinex-navy">About the employer</h2>
+              <a
+                href={employer.company_website}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-block text-sm font-semibold text-carinex-emerald hover:underline"
+              >
+                {employer.company_website}
+              </a>
+            </div>
+          )}
         </div>
-      )}
+
+        <a
+          href={job.external_apply_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-10 inline-block rounded-full bg-carinex-emerald px-8 py-3 text-sm font-semibold text-white transition hover:bg-carinex-emerald/90"
+        >
+          Apply for this role
+        </a>
+      </section>
+      <Footer />
     </main>
   );
 }
