@@ -28,6 +28,7 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
 
   let nurseId: string | null = null;
   let completion: { id: string; status: string } | null = null;
+  let enrollmentStatus: string | null = null;
 
   if (user) {
     const { data: profile } = await supabase
@@ -45,6 +46,10 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
         .eq("course_id", courseId)
         .maybeSingle();
       completion = existing;
+      if (courseId === 23) {
+        const { data: enrollment } = await supabase.from("course_enrollments").select("status").eq("user_id", user.id).eq("course_id", courseId).order("created_at", { ascending: false }).limit(1).maybeSingle();
+        enrollmentStatus = enrollment?.status || null;
+      }
     }
   }
 
@@ -89,7 +94,7 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
         <h1 className="mt-4 text-3xl font-bold tracking-tight text-carinex-navy">{course.title}</h1>
         <p className="mt-1 text-carinex-navy/60">
           {course.provider}
-          {course.price_display ? ` · ${course.price_display}` : ""}
+          {courseId === 23 ? " · ₦20,000 course / ₦25,000 with interview guide" : course.price_display ? ` · ${course.price_display}` : ""}
         </p>
 
         <div className="mt-8 flex flex-col gap-4">
@@ -129,6 +134,7 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
             affiliateLink={course.affiliate_link}
             nurseId={nurseId}
             completionStatus={completion?.status || null}
+            enrollmentStatus={enrollmentStatus}
           />
         </div>
       </section>
