@@ -1,5 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { requireCourseApproval } from "@/lib/course-access";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCourseStructure, getProgress } from "@/lib/course-content";
 import CoursePlayerHeader from "@/components/CoursePlayerHeader";
@@ -24,6 +25,7 @@ export default async function ModuleQuizPage({
   if (!profile) redirect("/onboarding");
 
   const courseId = Number(params.courseId);
+  await requireCourseApproval(user.id, courseId);
   const admin = createAdminClient();
 
   const { data: course } = await admin.from("courses").select("title").eq("id", courseId).maybeSingle();
