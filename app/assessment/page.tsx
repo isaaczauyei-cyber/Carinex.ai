@@ -28,6 +28,13 @@ export default async function AssessmentPage() {
     .map((r) => (r.specializations as unknown as { slug: string })?.slug)
     .filter(Boolean) as string[];
 
+  const { data: aiCourse } = await supabase
+    .from("courses")
+    .select("id, title, summary, duration_display, level, specialization_id")
+    .eq("title", "AI in Nursing")
+    .eq("is_in_house", true)
+    .maybeSingle();
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-carinex-navy via-carinex-navy to-carinex-emerald/20">
       <Navbar />
@@ -67,6 +74,7 @@ export default async function AssessmentPage() {
             initialLicenseStatus={profile.license_status || ""}
             initialCareerGoal={profile.career_goal || ""}
             initialEnrolledSlugs={initialEnrolledSlugs}
+            aiCourse={aiCourse}
           />
         </div>
       </section>
