@@ -25,7 +25,7 @@ export async function POST(request: Request) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Carinex <onboarding@resend.dev>",
+        from: process.env.EMAIL_FROM!,
         to: process.env.ADMIN_NOTIFY_EMAIL,
         subject: `New contact message from ${name}`,
         text: `From: ${name} (${email})\n\n${message}`,
