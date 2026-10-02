@@ -223,7 +223,7 @@ export default function AdminJobForm({
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div>
+       <div>
           <label className="text-sm font-medium text-carinex-navy">Work mode</label>
           <select
             value={workMode}
@@ -232,7 +232,7 @@ export default function AdminJobForm({
           >
             <option value="sync">Sync (real-time)</option>
             <option value="async">Async (flexible)</option>
-            <option value="mixed">Mixed</option>
+            <option value="onsite">Onsite</option>
           </select>
         </div>
         <div>
@@ -315,7 +315,8 @@ export default function AdminJobForm({
           className="mt-2 w-full rounded-lg border border-carinex-navy/20 px-4 py-2.5 focus:border-carinex-emerald focus:outline-none"
         >
           <option value="pending_review">Pending review</option>
-          <option value="open">Open</option>
+          <option value="live">Live</option>
+          <option value="rejected">Rejected</option>
           <option value="closed">Closed</option>
         </select>
       </div>
