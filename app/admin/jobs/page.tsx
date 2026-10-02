@@ -42,9 +42,9 @@ export default async function AdminJobsPage() {
                     {spec?.name ? ` · ${spec.name}` : ""}
                   </p>
                 </div>
-                <span
+                                <span
                   className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                    j.status === "open"
+                    j.status === "live"
                       ? "bg-carinex-emerald/10 text-carinex-emerald"
                       : j.status === "pending_review"
                       ? "bg-amber-50 text-amber-700"
