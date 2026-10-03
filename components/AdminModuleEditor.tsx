@@ -17,7 +17,8 @@ useEffect(() => {
   module.quiz_passing_score,
   initialSections,
   initialQuestions,
-]);
+   ]
+);
 
 type Section = {
   id: string;
@@ -122,18 +123,16 @@ export default function AdminModuleEditor({
     setSections((prev) => prev.filter((s) => s.id !== id));
   }
 
-  async function uploadFile(file: File, folder: string): Promise<string | null> {
-    const ext = file.name.split(".").pop();
-    const path = `${folder}/${Date.now()}-${file.name.replace(/\s+/g, "-")}`;
-    const { error } = await supabase.storage.from("course-content").upload(path, file);
-    if (error) {
-      alert("Upload failed: " + error.message);
-      return null;
-    }
-    const { data } = supabase.storage.from("course-content").getPublicUrl(path);
-    return data.publicUrl;
+async function uploadFile(file: File, folder: string): Promise<string | null> {
+  const ext = file.name.split(".").pop();
+  const path = `${folder}/${Date.now()}-${file.name.replace(/\s+/g, "-")}`;
+  const { error } = await supabase.storage.from("course-content").upload(path, file);
+  if (error) {
+    alert("Upload failed: " + error.message);
+    return null;
   }
-
+  return path; // store the storage path, not a public URL — the bucket is private
+}
   async function addQuestion() {
     const nextOrder = questions.length > 0 ? Math.max(...questions.map((q) => q.order_index)) + 1 : 1;
     const { data } = await supabase
