@@ -1,46 +1,56 @@
-import Link from "next/link";
 import { requireAdmin } from "@/lib/admin";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AdminTabs from "@/components/AdminTabs";
+import AdminCourseReviewRow from "@/components/AdminCourseReviewRow";
 
-export default async function AdminInHouseCoursesPage() {
+export const dynamic = "force-dynamic";
+
+export default async function AdminCourseReviewsPage() {
   const supabase = await requireAdmin();
 
-  const { data: courses } = await supabase
-    .from("courses")
-    .select("id, title, specialization_id, specializations(name)")
-    .eq("is_in_house", true)
-    .order("title");
+  const { data: pending } = await supabase
+    .from("nurse_course_completions")
+    .select("id, proof_doc_url, courses(title), nurse_profiles(nurse_code, users(full_name))")
+    .eq("status", "verification_pending")
+    .order("id");
 
   return (
     <main>
       <Navbar />
       <section className="mx-auto max-w-3xl px-6 py-12">
         <span className="text-sm font-semibold uppercase tracking-wide text-carinex-emerald">Admin</span>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-carinex-navy">In-House Courses</h1>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-carinex-navy">Course Reviews</h1>
+        <p className="mt-1 text-sm text-carinex-navy/50">
+          External course certificates submitted by nurses, awaiting your review.
+        </p>
 
         <AdminTabs />
 
-        <div className="mt-8 flex flex-col divide-y divide-carinex-navy/10 rounded-xl border border-carinex-navy/10">
-          {(courses || []).map((c) => {
-            const spec = c.specializations as unknown as { name: string } | null;
+        <div className="mt-8 flex flex-col gap-4">
+          {(pending || []).map((c) => {
+            const course = c.courses as unknown as { title: string } | null;
+            const nurse = c.nurse_profiles as unknown as {
+              nurse_code: string;
+              users: { full_name: string } | null;
+            } | null;
             return (
-              <Link
-                key={c.id}
-                href={`/admin/courses/${c.id}`}
-                className="flex items-center justify-between px-5 py-4 hover:bg-carinex-navy/5"
-              >
-                <div>
-                  <p className="font-semibold text-carinex-navy">{c.title}</p>
-                  {spec?.name && <p className="text-sm text-carinex-navy/50">{spec.name}</p>}
-                </div>
-                <span className="text-carinex-emerald">Edit →</span>
-              </Link>
+              <div key={c.id}>
+                <p className="mb-2 text-xs font-semibold text-carinex-navy/50">
+                  {nurse?.nurse_code} · {nurse?.users?.full_name || "Unnamed"}
+                </p>
+                <AdminCourseReviewRow
+                  completionId={c.id}
+                  courseTitle={course?.title || "Course"}
+                  proofDocUrl={c.proof_doc_url}
+                />
+              </div>
             );
           })}
-          {(!courses || courses.length === 0) && (
-            <p className="px-5 py-8 text-center text-sm text-carinex-navy/50">No in-house courses yet.</p>
+          {(!pending || pending.length === 0) && (
+            <p className="rounded-xl border border-dashed border-carinex-navy/20 p-8 text-center text-sm text-carinex-navy/50">
+              Nothing pending review right now.
+            </p>
           )}
         </div>
       </section>
