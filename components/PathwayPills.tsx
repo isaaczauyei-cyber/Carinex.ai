@@ -8,7 +8,7 @@ export default function PathwayPills() {
         Pathway Explorer
       </span>
       <h2 className="mt-2 max-w-xl text-3xl font-bold tracking-tight text-carinex-navy">
-        Eight ways to grow your nursing career
+        Nine ways to grow your nursing career
       </h2>
 
       <div className="mt-8 flex flex-wrap gap-3">
