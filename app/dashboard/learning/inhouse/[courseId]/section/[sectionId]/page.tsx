@@ -11,6 +11,7 @@ import {
 import CoursePlayerHeader from "@/components/CoursePlayerHeader";
 import SectionActions from "@/components/SectionActions";
 import PdfViewer from "@/components/PdfViewer";
+import RichText from "@/components/RichText";
 
 export default async function SectionPage({
   params,
@@ -153,6 +154,9 @@ export default async function SectionPage({
           <p className="mt-3 leading-relaxed text-carinex-navy/70">
             {section.instructions}
           </p>
+           <div className="mt-4">
+            <RichText text={section.instructions} />
+          </div>
         )}
 
         {(section.section_type === "course_material" ||
@@ -214,6 +218,8 @@ export default async function SectionPage({
 
         {section.section_type === "key_takeaways" && (
           <div className="mt-6 flex flex-col gap-3">
+            <RichText text={config.body as string} />
+          </div>
             {((config.body as string) || "")
               .split(/\n\s*\n/)
               .map((paragraph) => paragraph.trim())
