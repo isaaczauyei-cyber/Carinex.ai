@@ -34,8 +34,8 @@ export default function PdfViewer({ fileUrl }: PdfViewerProps) {
   }, []);
 
   return (
-    <div className="w-full overflow-hidden rounded-xl border bg-gray-100">
-      <div className="flex items-center justify-between gap-3 border-b bg-white px-4 py-3">
+    <div className="w-full overflow-hidden rounded-xl border border-[#E5DED2] bg-[#F3EFE7]">
+      <div className="flex items-center justify-between gap-3 border-b border-[#E5DED2] bg-[#F8F5EF] px-4 py-3">
         <span className="text-sm font-medium">Course material</span>
 
         <div className="flex items-center gap-2">
@@ -54,7 +54,7 @@ export default function PdfViewer({ fileUrl }: PdfViewerProps) {
         </div>
       </div>
 
-      <div ref={containerRef} className="h-[70vh] overflow-auto p-4">
+     <div ref={containerRef} className="h-[70vh] overflow-auto bg-[#EAE4D9] p-4">
         {error ? (
           <p className="text-center text-red-600">{error}</p>
         ) : (
@@ -69,7 +69,10 @@ export default function PdfViewer({ fileUrl }: PdfViewerProps) {
           >
             <div className="flex flex-col items-center gap-4">
               {Array.from({ length: numPages }, (_, index) => (
-                <div key={index} className="bg-white shadow-md">
+                <div
+                  key={index}
+                  className="overflow-hidden rounded-sm bg-[#FFFEFA] shadow-[0_2px_12px_rgba(45,38,28,0.12)]"
+                 >
                   <Page
                     pageNumber={index + 1}
                     width={Math.max(280, containerWidth - 32) * zoom}
@@ -84,7 +87,7 @@ export default function PdfViewer({ fileUrl }: PdfViewerProps) {
       </div>
 
       {numPages > 0 && (
-        <div className="border-t bg-white px-4 py-2 text-center text-xs text-gray-500">
+        <div className="border-t border-[#E5DED2] bg-[#F8F5EF] px-4 py-2 text-center text-xs text-gray-500">
           {numPages} pages · Scroll inside the viewer to read
         </div>
       )}
