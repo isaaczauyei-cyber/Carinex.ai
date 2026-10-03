@@ -13,7 +13,7 @@ function Bar({ pct, className = "bg-carinex-emerald" }: { pct: number; className
 
 export const dynamic = "force-dynamic"; 
 
-export default async function AdminUsersPage() {
+export default async function AdminAnalyticsPage() {
   const { supabase, adminClient } = await requireAdminWithService();
 
   // --- Signup funnel ---
