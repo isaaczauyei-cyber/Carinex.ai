@@ -31,7 +31,7 @@ export default async function StartCoursePage({ params }: { params: { courseId: 
         <section className="mx-auto max-w-md px-6 py-24 text-center">
           <h1 className="text-2xl font-bold text-carinex-navy">Course content is on its way</h1>
           <p className="mt-3 text-carinex-navy/70">
-            The lessons for this course are still being prepared. Check back soon.
+            The content for this course is still being prepared. Check back soon.
           </p>
           <Link
             href="/dashboard/learning"
@@ -44,16 +44,16 @@ export default async function StartCoursePage({ params }: { params: { courseId: 
     );
   }
 
-  const { completedLessonIds, passedModuleIds } = await getProgress(profile.id, courseId);
+  const { completedSectionIds, passedModuleIds } = await getProgress(profile.id, courseId);
 
   const firstUnfinished = sequence.find((s) =>
-    s.type === "lesson" ? !completedLessonIds.has(s.id) : !passedModuleIds.has(s.id)
+    s.type === "section" ? !completedSectionIds.has(s.id) : !passedModuleIds.has(s.id)
   );
   const target = firstUnfinished || sequence[0];
 
   redirect(
-    target.type === "lesson"
-      ? `/dashboard/learning/inhouse/${courseId}/lesson/${target.id}`
+    target.type === "section"
+      ? `/dashboard/learning/inhouse/${courseId}/section/${target.id}`
       : `/dashboard/learning/inhouse/${courseId}/quiz/${target.moduleId}`
   );
 }
