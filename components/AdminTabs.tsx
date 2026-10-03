@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const tabs = [
   { href: "/admin/users", label: "Users" },
   { href: "/admin/courses", label: "Course Reviews" },
+  { href: "/admin/courses", label: "In-House Courses" },
   { href: "/admin/enrollments", label: "Paid Enrolments" },
   { href: "/admin/jobs", label: "Jobs" },
   { href: "/admin/analytics", label: "Analytics" },
