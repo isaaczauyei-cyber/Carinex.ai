@@ -10,6 +10,7 @@ import {
 } from "@/lib/course-content";
 import CoursePlayerHeader from "@/components/CoursePlayerHeader";
 import SectionActions from "@/components/SectionActions";
+import PdfViewer from "@/components/PdfViewer";
 
 export default async function SectionPage({
   params,
@@ -180,11 +181,7 @@ export default async function SectionPage({
 
             {signedFileUrl && !isAudio && isPdf && (
               <div className="overflow-hidden rounded-xl border border-gray-200">
-                <iframe
-                  src={`${signedFileUrl}#toolbar=1&navpanes=0&view=FitH`}
-                  title={section.title}
-                  className="h-[75vh] min-h-[500px] w-full bg-gray-100"
-                />
+                <PdfViewer fileUrl={signedFileUrl} />
 
                 <div className="border-t bg-gray-50 p-3">
                   <a
@@ -201,11 +198,7 @@ export default async function SectionPage({
 
             {signedFileUrl && !isAudio && !isPdf && (
               <div className="overflow-hidden rounded-xl border border-gray-200">
-                <iframe
-                  src={signedFileUrl}
-                  title={section.title}
-                  className="h-[75vh] min-h-[500px] w-full"
-                />
+                <PdfViewer fileUrl={signedFileUrl} />
                 <div className="border-t bg-gray-50 p-3">
                   <a
                     href={signedFileUrl}
