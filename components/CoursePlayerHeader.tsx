@@ -104,7 +104,7 @@ export default function CoursePlayerHeader({
             <span className="block h-0.5 w-5 bg-carinex-navy" />
             <span className="block h-0.5 w-5 bg-carinex-navy" />
           </button>
-          <Image src="/carinex-logo.svg" alt="Carinex" width={26} height={26} className="rounded-md" />
+          <Image src="/carinex-logo.png" alt="Carinex" width={26} height={26} className="rounded-md" />
           <span className="text-sm font-bold text-carinex-navy">Carinex</span>
         </div>
 
