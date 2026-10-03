@@ -71,6 +71,7 @@ export default async function AdminModuleEditPage({
 
         <div className="mt-8">
           <AdminModuleEditor
+            key={module.id}
             module={module}
             initialSections={sections || []}
             initialQuestions={questions || []}
