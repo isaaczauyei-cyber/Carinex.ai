@@ -1,24 +1,8 @@
+
 "use client";
 
-import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState } from "react";
-
-useEffect(() => {
-  setTitle(module.title || "");
-  setSummary(module.summary || "");
-  setPassingScore(module.quiz_passing_score ?? 70);
-  setSections(initialSections || []);
-  setQuestions(initialQuestions || []);
-}, [
-  module.id,
-  module.title,
-  module.summary,
-  module.quiz_passing_score,
-  initialSections,
-  initialQuestions,
-   ]
-);
+import { createClient } from "@/lib/supabase/client";
 
 type Section = {
   id: string;
@@ -72,70 +56,152 @@ export default function AdminModuleEditor({
 }) {
   const supabase = createClient();
 
-  const [title, setTitle] = useState(module?.title || "");
-  const [summary, setSummary] = useState(module?.summary || "");
-  const [passingScore, setPassingScore] = useState(module?.quiz_passing_score?.toString() || "70");
+  const [title, setTitle] = useState(module.title || "");
+  const [summary, setSummary] = useState(module.summary || "");
+  const [passingScore, setPassingScore] = useState(
+    String(module.quiz_passing_score ?? 70)
+  );
   const [savingMeta, setSavingMeta] = useState(false);
 
-  const [sections, setSections] = useState<Section[]>(initialSections);
-  const [questions, setQuestions] = useState<Question[]>(initialQuestions);
+  const [sections, setSections] = useState<Section[]>(initialSections || []);
+  const [questions, setQuestions] = useState<Question[]>(initialQuestions || []);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
+
+  useEffect(() => {
+    setTitle(module.title || "");
+    setSummary(module.summary || "");
+    setPassingScore(String(module.quiz_passing_score ?? 70));
+    setSections(initialSections || []);
+    setQuestions(initialQuestions || []);
+    setExpandedSection(null);
+  }, [
+    module.id,
+    module.title,
+    module.summary,
+    module.quiz_passing_score,
+    initialSections,
+    initialQuestions,
+  ]);
 
   async function saveModuleMeta() {
     setSavingMeta(true);
-    await supabase
+
+    const { error } = await supabase
       .from("course_modules")
-      .update({ title, summary, quiz_passing_score: Number(passingScore) || 70 })
+      .update({
+        title,
+        summary: summary || null,
+        quiz_passing_score: Number(passingScore) || 70,
+      })
       .eq("id", module.id);
+
     setSavingMeta(false);
+
+    if (error) {
+      alert("Could not save module details: " + error.message);
+      return;
+    }
+
+    alert("Module details saved.");
   }
 
   async function addSection(type: string) {
-    const nextOrder = sections.length > 0 ? Math.max(...sections.map((s) => s.order_index)) + 1 : 1;
-    const { data } = await supabase
+    const nextOrder =
+      sections.length > 0
+        ? Math.max(...sections.map((s) => s.order_index)) + 1
+        : 1;
+
+    const { data, error } = await supabase
       .from("module_sections")
       .insert({
         module_id: module.id,
         order_index: nextOrder,
         section_type: type,
-        title: sectionTypeLabels[type],
+        title: sectionTypeLabels[type] || "New Section",
         instructions: "",
         config: {},
         is_required: true,
-        is_graded: type === "practical_assignment" || type === "training_activity",
+        is_graded:
+          type === "practical_assignment" || type === "training_activity",
       })
       .select()
       .single();
+
+    if (error) {
+      alert("Could not add section: " + error.message);
+      return;
+    }
+
     if (data) {
-      setSections((prev) => [...prev, data]);
+      setSections((prev) => [...prev, data as Section]);
       setExpandedSection(data.id);
     }
   }
 
   async function updateSection(id: string, patch: Partial<Section>) {
-    setSections((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
-    await supabase.from("module_sections").update(patch).eq("id", id);
+    const { error } = await supabase
+      .from("module_sections")
+      .update(patch)
+      .eq("id", id);
+
+    if (error) {
+      alert("Could not save section: " + error.message);
+      return;
+    }
+
+    setSections((prev) =>
+      prev.map((section) =>
+        section.id === id ? { ...section, ...patch } : section
+      )
+    );
   }
 
   async function deleteSection(id: string) {
-    if (!confirm("Delete this section?")) return;
-    await supabase.from("module_sections").delete().eq("id", id);
-    setSections((prev) => prev.filter((s) => s.id !== id));
+    if (!confirm("Delete this section? This cannot be undone.")) return;
+
+    const { error } = await supabase
+      .from("module_sections")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      alert("Could not delete section: " + error.message);
+      return;
+    }
+
+    setSections((prev) => prev.filter((section) => section.id !== id));
+
+    if (expandedSection === id) {
+      setExpandedSection(null);
+    }
   }
 
-async function uploadFile(file: File, folder: string): Promise<string | null> {
-  const ext = file.name.split(".").pop();
-  const path = `${folder}/${Date.now()}-${file.name.replace(/\s+/g, "-")}`;
-  const { error } = await supabase.storage.from("course-content").upload(path, file);
-  if (error) {
-    alert("Upload failed: " + error.message);
-    return null;
+  async function uploadFile(
+    file: File,
+    folder: string
+  ): Promise<string | null> {
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+    const path = `${folder}/${module.id}/${Date.now()}-${safeName}`;
+
+    const { error } = await supabase.storage
+      .from("course-content")
+      .upload(path, file, { upsert: false });
+
+    if (error) {
+      alert("Upload failed: " + error.message);
+      return null;
+    }
+
+    return path;
   }
-  return path; // store the storage path, not a public URL — the bucket is private
-}
+
   async function addQuestion() {
-    const nextOrder = questions.length > 0 ? Math.max(...questions.map((q) => q.order_index)) + 1 : 1;
-    const { data } = await supabase
+    const nextOrder =
+      questions.length > 0
+        ? Math.max(...questions.map((q) => q.order_index)) + 1
+        : 1;
+
+    const { data, error } = await supabase
       .from("assessment_questions")
       .insert({
         module_id: module.id,
@@ -151,27 +217,66 @@ async function uploadFile(file: File, folder: string): Promise<string | null> {
       })
       .select()
       .single();
-    if (data) setQuestions((prev) => [...prev, data]);
+
+    if (error) {
+      alert("Could not add question: " + error.message);
+      return;
+    }
+
+    if (data) {
+      setQuestions((prev) => [...prev, data as Question]);
+    }
   }
 
   async function updateQuestion(id: string, patch: Partial<Question>) {
-    setQuestions((prev) => prev.map((q) => (q.id === id ? { ...q, ...patch } : q)));
-    await supabase.from("assessment_questions").update(patch).eq("id", id);
+    const { error } = await supabase
+      .from("assessment_questions")
+      .update(patch)
+      .eq("id", id);
+
+    if (error) {
+      alert("Could not save question: " + error.message);
+      return;
+    }
+
+    setQuestions((prev) =>
+      prev.map((question) =>
+        question.id === id ? { ...question, ...patch } : question
+      )
+    );
   }
 
   async function deleteQuestion(id: string) {
-    if (!confirm("Delete this question?")) return;
-    await supabase.from("assessment_questions").delete().eq("id", id);
-    setQuestions((prev) => prev.filter((q) => q.id !== id));
+    if (!confirm("Delete this question? This cannot be undone.")) return;
+
+    const { error } = await supabase
+      .from("assessment_questions")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      alert("Could not delete question: " + error.message);
+      return;
+    }
+
+    setQuestions((prev) => prev.filter((question) => question.id !== id));
   }
 
-  const sortedSections = [...sections].sort((a, b) => a.order_index - b.order_index);
+  const sortedSections = [...sections].sort(
+    (a, b) => a.order_index - b.order_index
+  );
+
+  const sortedQuestions = [...questions].sort(
+    (a, b) => a.order_index - b.order_index
+  );
 
   return (
     <div className="flex flex-col gap-10">
-      {/* Module meta */}
       <div className="rounded-xl border border-carinex-navy/10 p-5">
-        <p className="text-sm font-bold text-carinex-navy">Module details</p>
+        <p className="text-sm font-bold text-carinex-navy">
+          Module details
+        </p>
+
         <input
           type="text"
           value={title}
@@ -179,6 +284,7 @@ async function uploadFile(file: File, folder: string): Promise<string | null> {
           placeholder="Module title"
           className="mt-3 w-full rounded-lg border border-carinex-navy/20 px-4 py-2.5 focus:border-carinex-emerald focus:outline-none"
         />
+
         <textarea
           value={summary}
           onChange={(e) => setSummary(e.target.value)}
@@ -186,8 +292,11 @@ async function uploadFile(file: File, folder: string): Promise<string | null> {
           rows={2}
           className="mt-3 w-full rounded-lg border border-carinex-navy/20 px-4 py-2.5 focus:border-carinex-emerald focus:outline-none"
         />
+
         <div className="mt-3 flex items-center gap-3">
-          <label className="text-sm text-carinex-navy">Quiz pass mark (%)</label>
+          <label className="text-sm text-carinex-navy">
+            Quiz pass mark (%)
+          </label>
           <input
             type="number"
             min={0}
@@ -197,6 +306,7 @@ async function uploadFile(file: File, folder: string): Promise<string | null> {
             className="w-24 rounded-lg border border-carinex-navy/20 px-3 py-2 focus:border-carinex-emerald focus:outline-none"
           />
         </div>
+
         <button
           onClick={saveModuleMeta}
           disabled={savingMeta}
@@ -206,16 +316,14 @@ async function uploadFile(file: File, folder: string): Promise<string | null> {
         </button>
       </div>
 
-      {/* Sections */}
       <div>
-        <div className="flex items-center justify-between">
-          <p className="text-lg font-bold text-carinex-navy">Sections</p>
-        </div>
+        <p className="text-lg font-bold text-carinex-navy">Sections</p>
 
         <div className="mt-3 flex flex-wrap gap-2">
           {Object.entries(sectionTypeLabels).map(([type, label]) => (
             <button
               key={type}
+              type="button"
               onClick={() => addSection(type)}
               className="rounded-full border border-dashed border-carinex-navy/30 px-3 py-1.5 text-xs font-semibold text-carinex-navy/70 hover:border-carinex-emerald hover:text-carinex-emerald"
             >
@@ -230,23 +338,33 @@ async function uploadFile(file: File, folder: string): Promise<string | null> {
               key={section.id}
               section={section}
               expanded={expandedSection === section.id}
-              onToggle={() => setExpandedSection(expandedSection === section.id ? null : section.id)}
+              onToggle={() =>
+                setExpandedSection(
+                  expandedSection === section.id ? null : section.id
+                )
+              }
               onUpdate={(patch) => updateSection(section.id, patch)}
               onDelete={() => deleteSection(section.id)}
               onUploadFile={uploadFile}
             />
           ))}
+
           {sortedSections.length === 0 && (
-            <p className="text-sm text-carinex-navy/50">No sections yet — add one above.</p>
+            <p className="text-sm text-carinex-navy/50">
+              No sections yet — add one above.
+            </p>
           )}
         </div>
       </div>
 
-      {/* Quiz */}
       <div>
         <div className="flex items-center justify-between">
-          <p className="text-lg font-bold text-carinex-navy">Assessment / Quiz</p>
+          <p className="text-lg font-bold text-carinex-navy">
+            Assessment / Quiz
+          </p>
+
           <button
+            type="button"
             onClick={addQuestion}
             className="rounded-full bg-carinex-navy px-4 py-2 text-sm font-semibold text-white"
           >
@@ -255,18 +373,19 @@ async function uploadFile(file: File, folder: string): Promise<string | null> {
         </div>
 
         <div className="mt-4 flex flex-col gap-4">
-          {questions
-            .sort((a, b) => a.order_index - b.order_index)
-            .map((q) => (
-              <QuestionEditor
-                key={q.id}
-                question={q}
-                onUpdate={(patch) => updateQuestion(q.id, patch)}
-                onDelete={() => deleteQuestion(q.id)}
-              />
-            ))}
-          {questions.length === 0 && (
-            <p className="text-sm text-carinex-navy/50">No questions yet.</p>
+          {sortedQuestions.map((question) => (
+            <QuestionEditor
+              key={question.id}
+              question={question}
+              onUpdate={(patch) => updateQuestion(question.id, patch)}
+              onDelete={() => deleteQuestion(question.id)}
+            />
+          ))}
+
+          {sortedQuestions.length === 0 && (
+            <p className="text-sm text-carinex-navy/50">
+              No questions yet.
+            </p>
           )}
         </div>
       </div>
@@ -285,30 +404,49 @@ function SectionEditor({
   section: Section;
   expanded: boolean;
   onToggle: () => void;
-  onUpdate: (patch: Partial<Section>) => void;
+  onUpdate: (patch: Partial<Section>) => Promise<void>;
   onDelete: () => void;
   onUploadFile: (file: File, folder: string) => Promise<string | null>;
 }) {
   const [title, setTitle] = useState(section.title);
   const [instructions, setInstructions] = useState(section.instructions || "");
-  const [config, setConfig] = useState<Record<string, unknown>>(section.config || {});
+  const [config, setConfig] = useState<Record<string, unknown>>(
+    section.config || {}
+  );
   const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    setTitle(section.title);
+    setInstructions(section.instructions || "");
+    setConfig(section.config || {});
+  }, [section.id, section.title, section.instructions, section.config]);
 
   function patchConfig(next: Record<string, unknown>) {
     const merged = { ...config, ...next };
     setConfig(merged);
-    onUpdate({ config: merged });
+    void onUpdate({ config: merged });
   }
 
-  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>, mediaType?: string) {
+  async function handleFileUpload(
+    e: React.ChangeEvent<HTMLInputElement>,
+    mediaType?: string
+  ) {
     const file = e.target.files?.[0];
     if (!file) return;
+
     setUploading(true);
-    const url = await onUploadFile(file, section.section_type);
+    const path = await onUploadFile(file, section.section_type);
     setUploading(false);
-    if (url) {
-      patchConfig(mediaType ? { file_url: url, media_type: mediaType } : { file_url: url });
+
+    if (path) {
+      patchConfig(
+        mediaType
+          ? { file_url: path, media_type: mediaType }
+          : { file_url: path }
+      );
     }
+
+    e.target.value = "";
   }
 
   return (
@@ -316,22 +454,32 @@ function SectionEditor({
       <div className="flex items-center justify-between p-4">
         <button onClick={onToggle} className="flex-1 text-left">
           <span className="rounded-full bg-carinex-navy/5 px-2.5 py-1 text-xs font-semibold text-carinex-navy/60">
-            {sectionTypeLabels[section.section_type]}
+            {sectionTypeLabels[section.section_type] || section.section_type}
           </span>
-          <p className="mt-1 font-semibold text-carinex-navy">{section.title}</p>
+          <p className="mt-1 font-semibold text-carinex-navy">
+            {section.title}
+          </p>
         </button>
+
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-1 text-xs text-carinex-navy/60">
             <input
               type="checkbox"
               checked={section.is_required}
-              onChange={(e) => onUpdate({ is_required: e.target.checked })}
+              onChange={(e) =>
+                void onUpdate({ is_required: e.target.checked })
+              }
             />
             Required to advance
           </label>
-          <button onClick={onDelete} className="text-xs font-semibold text-red-600 hover:underline">
+
+          <button
+            onClick={onDelete}
+            className="text-xs font-semibold text-red-600 hover:underline"
+          >
             Delete
           </button>
+
           <button onClick={onToggle} className="text-carinex-navy/40">
             {expanded ? "▲" : "▼"}
           </button>
@@ -344,49 +492,56 @@ function SectionEditor({
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            onBlur={() => onUpdate({ title })}
+            onBlur={() => void onUpdate({ title })}
             placeholder="Section title"
             className="rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm focus:border-carinex-emerald focus:outline-none"
           />
+
           <textarea
             value={instructions}
             onChange={(e) => setInstructions(e.target.value)}
-            onBlur={() => onUpdate({ instructions })}
+            onBlur={() => void onUpdate({ instructions })}
             placeholder="Instructions (manually written)"
             rows={3}
             className="rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm focus:border-carinex-emerald focus:outline-none"
           />
 
-          {/* Course material: PDF or audio upload */}
           {section.section_type === "course_material" && (
             <div className="flex flex-col gap-2">
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => (document.getElementById(`file-${section.id}`) as HTMLInputElement)?.click()}
-                  className="rounded-full border border-carinex-navy/20 px-4 py-2 text-sm font-semibold text-carinex-navy"
-                >
-                  {uploading ? "Uploading…" : "Upload PDF or audio"}
-                </button>
-                <input
-                  id={`file-${section.id}`}
-                  type="file"
-                  accept=".pdf,audio/*"
-                  className="hidden"
-                  onChange={(e) =>
-                    handleFileUpload(e, e.target.files?.[0]?.type.startsWith("audio") ? "audio" : "pdf")
-                  }
-                />
-              </div>
+              <button
+                type="button"
+                disabled={uploading}
+                onClick={() =>
+                  document.getElementById(`file-${section.id}`)?.click()
+                }
+                className="w-fit rounded-full border border-carinex-navy/20 px-4 py-2 text-sm font-semibold text-carinex-navy disabled:opacity-60"
+              >
+                {uploading ? "Uploading…" : "Upload PDF or audio"}
+              </button>
+
+              <input
+                id={`file-${section.id}`}
+                type="file"
+                accept=".pdf,audio/*"
+                className="hidden"
+                onChange={(e) =>
+                  void handleFileUpload(
+                    e,
+                    e.target.files?.[0]?.type.startsWith("audio")
+                      ? "audio"
+                      : "pdf"
+                  )
+                }
+              />
+
               {!!config.file_url && (
                 <p className="text-xs text-carinex-navy/50">
-                  Uploaded: {config.media_type === "audio" ? "🎧 audio file" : "📄 PDF"} ✓
+                  File saved: {config.media_type === "audio" ? "Audio" : "PDF"} ✓
                 </p>
               )}
             </div>
           )}
 
-          {/* Exercise: mode toggle + items/prompt */}
           {section.section_type === "exercise" && (
             <div className="flex flex-col gap-2">
               <div className="flex gap-2">
@@ -394,25 +549,35 @@ function SectionEditor({
                   type="button"
                   onClick={() => patchConfig({ mode: "checklist" })}
                   className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                    config.mode === "checklist" ? "bg-carinex-navy text-white" : "border border-carinex-navy/20"
+                    config.mode === "checklist"
+                      ? "bg-carinex-navy text-white"
+                      : "border border-carinex-navy/20"
                   }`}
                 >
                   Checklist
                 </button>
+
                 <button
                   type="button"
                   onClick={() => patchConfig({ mode: "text" })}
                   className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                    config.mode === "text" ? "bg-carinex-navy text-white" : "border border-carinex-navy/20"
+                    config.mode === "text"
+                      ? "bg-carinex-navy text-white"
+                      : "border border-carinex-navy/20"
                   }`}
                 >
                   Fill-in text
                 </button>
               </div>
+
               {config.mode === "checklist" && (
                 <textarea
-                  defaultValue={((config.items as string[]) || []).join("\n")}
-                  onBlur={(e) => patchConfig({ items: e.target.value.split("\n").filter(Boolean) })}
+                  value={((config.items as string[]) || []).join("\n")}
+                  onChange={(e) =>
+                    patchConfig({
+                      items: e.target.value.split("\n"),
+                    })
+                  }
                   placeholder="One checklist item per line"
                   rows={4}
                   className="rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm focus:border-carinex-emerald focus:outline-none"
@@ -421,23 +586,27 @@ function SectionEditor({
             </div>
           )}
 
-          {/* Practical assignment: submission type */}
           {section.section_type === "practical_assignment" && (
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => patchConfig({ submission_type: "file" })}
                 className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                  config.submission_type === "file" ? "bg-carinex-navy text-white" : "border border-carinex-navy/20"
+                  config.submission_type === "file"
+                    ? "bg-carinex-navy text-white"
+                    : "border border-carinex-navy/20"
                 }`}
               >
                 File submission
               </button>
+
               <button
                 type="button"
                 onClick={() => patchConfig({ submission_type: "text" })}
                 className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                  config.submission_type === "text" ? "bg-carinex-navy text-white" : "border border-carinex-navy/20"
+                  config.submission_type === "text"
+                    ? "bg-carinex-navy text-white"
+                    : "border border-carinex-navy/20"
                 }`}
               >
                 Text submission
@@ -445,39 +614,45 @@ function SectionEditor({
             </div>
           )}
 
-          {/* Key takeaways: static body text */}
           {section.section_type === "key_takeaways" && (
             <textarea
-              defaultValue={(config.body as string) || ""}
-              onBlur={(e) => patchConfig({ body: e.target.value })}
+              value={(config.body as string) || ""}
+              onChange={(e) => patchConfig({ body: e.target.value })}
               placeholder="Write the key takeaways here"
               rows={5}
               className="rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm focus:border-carinex-emerald focus:outline-none"
             />
           )}
 
-          {/* Career application: PDF upload */}
           {section.section_type === "career_application" && (
             <div className="flex flex-col gap-2">
               <button
                 type="button"
-                onClick={() => (document.getElementById(`file-${section.id}`) as HTMLInputElement)?.click()}
-                className="w-fit rounded-full border border-carinex-navy/20 px-4 py-2 text-sm font-semibold text-carinex-navy"
+                disabled={uploading}
+                onClick={() =>
+                  document.getElementById(`file-${section.id}`)?.click()
+                }
+                className="w-fit rounded-full border border-carinex-navy/20 px-4 py-2 text-sm font-semibold text-carinex-navy disabled:opacity-60"
               >
                 {uploading ? "Uploading…" : "Upload PDF"}
               </button>
+
               <input
                 id={`file-${section.id}`}
                 type="file"
                 accept=".pdf"
                 className="hidden"
-                onChange={(e) => handleFileUpload(e)}
+                onChange={(e) => void handleFileUpload(e)}
               />
-              {!!config.file_url && <p className="text-xs text-carinex-navy/50">Uploaded ✓</p>}
+
+              {!!config.file_url && (
+                <p className="text-xs text-carinex-navy/50">
+                  PDF saved ✓
+                </p>
+              )}
             </div>
           )}
 
-          {/* Training activity: tabular or freeform + why it matters */}
           {section.section_type === "training_activity" && (
             <div className="flex flex-col gap-3">
               <div className="flex gap-2">
@@ -485,36 +660,49 @@ function SectionEditor({
                   type="button"
                   onClick={() => patchConfig({ activity_format: "table" })}
                   className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                    config.activity_format === "table" ? "bg-carinex-navy text-white" : "border border-carinex-navy/20"
+                    config.activity_format === "table"
+                      ? "bg-carinex-navy text-white"
+                      : "border border-carinex-navy/20"
                   }`}
                 >
                   Tabular
                 </button>
+
                 <button
                   type="button"
                   onClick={() => patchConfig({ activity_format: "freeform" })}
                   className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                    config.activity_format === "freeform" ? "bg-carinex-navy text-white" : "border border-carinex-navy/20"
+                    config.activity_format === "freeform"
+                      ? "bg-carinex-navy text-white"
+                      : "border border-carinex-navy/20"
                   }`}
                 >
                   Freeform
                 </button>
               </div>
+
               {config.activity_format === "table" && (
                 <input
                   type="text"
-                  defaultValue={((config.columns as string[]) || []).join(", ")}
-                  onBlur={(e) =>
-                    patchConfig({ columns: e.target.value.split(",").map((c) => c.trim()).filter(Boolean) })
+                  value={((config.columns as string[]) || []).join(", ")}
+                  onChange={(e) =>
+                    patchConfig({
+                      columns: e.target.value
+                        .split(",")
+                        .map((column) => column.trim()),
+                    })
                   }
-                  placeholder="Column headers, comma-separated (e.g. Data Point, AI Suggestion, Nurse Judgment)"
+                  placeholder="Column headers, comma-separated"
                   className="rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm focus:border-carinex-emerald focus:outline-none"
                 />
               )}
+
               <textarea
-                defaultValue={(config.why_it_matters as string) || ""}
-                onBlur={(e) => patchConfig({ why_it_matters: e.target.value })}
-                placeholder="Why this matters for healthcare AI teams (shown in a highlighted box after the activity)"
+                value={(config.why_it_matters as string) || ""}
+                onChange={(e) =>
+                  patchConfig({ why_it_matters: e.target.value })
+                }
+                placeholder="Why this matters for healthcare AI teams"
                 rows={3}
                 className="rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm focus:border-carinex-emerald focus:outline-none"
               />
@@ -532,16 +720,25 @@ function QuestionEditor({
   onDelete,
 }: {
   question: Question;
-  onUpdate: (patch: Partial<Question>) => void;
+  onUpdate: (patch: Partial<Question>) => Promise<void>;
   onDelete: () => void;
 }) {
   const [prompt, setPrompt] = useState(question.prompt);
-  const [options, setOptions] = useState(question.options);
+  const [options, setOptions] = useState(question.options || []);
   const [correctId, setCorrectId] = useState(question.correct_option_id);
 
+  useEffect(() => {
+    setPrompt(question.prompt);
+    setOptions(question.options || []);
+    setCorrectId(question.correct_option_id);
+  }, [question.id]);
+
   function updateOption(id: string, text: string) {
-    const next = options.map((o) => (o.id === id ? { ...o, text } : o));
-    setOptions(next);
+    setOptions((prev) =>
+      prev.map((option) =>
+        option.id === id ? { ...option, text } : option
+      )
+    );
   }
 
   function addOption() {
@@ -549,8 +746,12 @@ function QuestionEditor({
     setOptions((prev) => [...prev, { id: nextId, text: "" }]);
   }
 
-  function save() {
-    onUpdate({ prompt, options, correct_option_id: correctId });
+  async function save() {
+    await onUpdate({
+      prompt,
+      options,
+      correct_option_id: correctId,
+    });
   }
 
   return (
@@ -559,42 +760,57 @@ function QuestionEditor({
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          onBlur={save}
+          onBlur={() => void save()}
           placeholder="Question prompt"
           rows={2}
           className="flex-1 rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm focus:border-carinex-emerald focus:outline-none"
         />
-        <button onClick={onDelete} className="shrink-0 text-xs font-semibold text-red-600 hover:underline">
+
+        <button
+          onClick={onDelete}
+          className="shrink-0 text-xs font-semibold text-red-600 hover:underline"
+        >
           Delete
         </button>
       </div>
 
       <div className="mt-3 flex flex-col gap-2">
-        {options.map((opt) => (
-          <div key={opt.id} className="flex items-center gap-2">
+        {options.map((option) => (
+          <div key={option.id} className="flex items-center gap-2">
             <input
               type="radio"
-              checked={correctId === opt.id}
+              name={`correct-${question.id}`}
+              checked={correctId === option.id}
               onChange={() => {
-                setCorrectId(opt.id);
-                onUpdate({ correct_option_id: opt.id });
+                setCorrectId(option.id);
+                void onUpdate({ correct_option_id: option.id });
               }}
             />
+
             <input
               type="text"
-              value={opt.text}
-              onChange={(e) => updateOption(opt.id, e.target.value)}
-              onBlur={save}
-              placeholder={`Option ${opt.id.toUpperCase()}`}
+              value={option.text}
+              onChange={(e) => updateOption(option.id, e.target.value)}
+              onBlur={() => void save()}
+              placeholder={`Option ${option.id.toUpperCase()}`}
               className="flex-1 rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm focus:border-carinex-emerald focus:outline-none"
             />
           </div>
         ))}
-        <button onClick={addOption} className="w-fit text-xs font-semibold text-carinex-emerald hover:underline">
+
+        <button
+          type="button"
+          onClick={addOption}
+          className="w-fit text-xs font-semibold text-carinex-emerald hover:underline"
+        >
           + Add option
         </button>
       </div>
-      <p className="mt-2 text-xs text-carinex-navy/40">Select the radio button next to the correct answer.</p>
+
+      <p className="mt-2 text-xs text-carinex-navy/40">
+        Select the radio button next to the correct answer. Changes to the
+        question and options save when you leave the field.
+      </p>
     </div>
   );
 }
