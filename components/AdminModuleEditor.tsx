@@ -2,6 +2,22 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useEffect, useState } from "react";
+
+useEffect(() => {
+  setTitle(module.title || "");
+  setSummary(module.summary || "");
+  setPassingScore(module.quiz_passing_score ?? 70);
+  setSections(initialSections || []);
+  setQuestions(initialQuestions || []);
+}, [
+  module.id,
+  module.title,
+  module.summary,
+  module.quiz_passing_score,
+  initialSections,
+  initialQuestions,
+]);
 
 type Section = {
   id: string;
