@@ -37,21 +37,19 @@ export default async function ModuleQuizPage({
   if (!course || !courseModule) notFound();
 
   const { data: questions } = await admin
-    .from("course_quiz_questions")
-    .select("id, question, order_index, course_quiz_options(id, option_text, order_index)")
+    .from("assessment_questions")
+    .select("id, prompt, options")
     .eq("module_id", params.moduleId)
     .order("order_index");
 
   const safeQuestions = (questions || []).map((q) => ({
     id: q.id,
-    question: q.question,
-    options: (q.course_quiz_options || [])
-      .sort((a: { order_index: number }, b: { order_index: number }) => a.order_index - b.order_index)
-      .map((o: { id: string; option_text: string }) => ({ id: o.id, option_text: o.option_text })),
+    prompt: q.prompt,
+    options: (q.options || []) as { id: string; text: string }[],
   }));
 
   const structure = await getCourseStructure(courseId);
-  const { completedLessonIds, passedModuleIds } = await getProgress(profile.id, courseId);
+  const { completedSectionIds, passedModuleIds } = await getProgress(profile.id, courseId);
 
   return (
     <main className="min-h-screen bg-white">
@@ -59,7 +57,7 @@ export default async function ModuleQuizPage({
         courseTitle={course.title}
         courseId={courseId}
         structure={structure}
-        completedLessonIds={completedLessonIds}
+        completedSectionIds={completedSectionIds}
         passedModuleIds={passedModuleIds}
         currentQuizModuleId={courseModule.id}
       />
