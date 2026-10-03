@@ -4,7 +4,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AdminTabs from "@/components/AdminTabs";
 
-export default async function AdminUsersPage() {
+export const dynamic = "force-dynamic"; {
   const { supabase, adminClient } = await requireAdminWithService();
 
   const { data: nurses } = await supabase
