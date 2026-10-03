@@ -190,7 +190,6 @@ export default async function SectionPage({
                     rel="noopener noreferrer"
                     className="font-medium text-carinex-navy underline"
                   >
-                    Open PDF in new tab
                   </a>
                 </div>
               </div>
@@ -206,7 +205,6 @@ export default async function SectionPage({
                     rel="noopener noreferrer"
                     className="font-medium text-carinex-navy underline"
                   >
-                    Open file in new tab
                   </a>
                 </div>
               </div>
