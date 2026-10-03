@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-type Option = { id: string; option_text: string };
-type Question = { id: string; question: string; options: Option[] };
+type Option = { id: string; text: string };
+type Question = { id: string; prompt: string; options: Option[] };
 
 export default function QuizForm({
   nurseId,
@@ -71,7 +71,7 @@ export default function QuizForm({
           </>
         ) : (
           <>
-            <p className="mt-2 text-amber-700">Not quite — review the lessons and try again.</p>
+            <p className="mt-2 text-amber-700">Not quite — review the material and try again.</p>
             <button
               onClick={() => window.location.reload()}
               className="mt-4 rounded-full bg-carinex-navy px-6 py-2.5 text-sm font-semibold text-carinex-white"
@@ -89,7 +89,7 @@ export default function QuizForm({
       {questions.map((q, i) => (
         <div key={q.id}>
           <p className="font-semibold text-carinex-navy">
-            {i + 1}. {q.question}
+            {i + 1}. {q.prompt}
           </p>
           <div className="mt-3 flex flex-col gap-2">
             {q.options.map((opt) => (
@@ -107,7 +107,7 @@ export default function QuizForm({
                   checked={answers[q.id] === opt.id}
                   onChange={() => selectOption(q.id, opt.id)}
                 />
-                {opt.option_text}
+                {opt.text}
               </label>
             ))}
           </div>
