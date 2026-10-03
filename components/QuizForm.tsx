@@ -20,7 +20,7 @@ export default function QuizForm({
   const router = useRouter();
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<{ score: number; passed: boolean } | null>(null);
+  const [result, setResult] = useState<{ score: number; passed: boolean; courseCompleted: boolean } | null>(null);
   const [error, setError] = useState("");
 
   function selectOption(questionId: string, optionId: string) {
@@ -60,15 +60,35 @@ export default function QuizForm({
       <div className="rounded-xl border border-carinex-navy/10 p-6 text-center">
         <p className="text-3xl font-bold text-carinex-navy">{result.score}%</p>
         {result.passed ? (
-          <>
-            <p className="mt-2 font-semibold text-carinex-emerald">You passed! 🎉</p>
-            <button
-              onClick={() => router.push("/dashboard/learning")}
-              className="mt-4 rounded-full bg-carinex-emerald px-6 py-2.5 text-sm font-semibold text-carinex-white"
-            >
-              Back to Learning Hub
-            </button>
-          </>
+          result.courseCompleted ? (
+            <>
+              <p className="mt-2 text-lg font-bold text-carinex-emerald">
+                🎉 You've completed the full course!
+              </p>
+              <p className="mt-1 text-sm text-carinex-navy/60">
+                Every module is passed — this course now shows as completed.
+              </p>
+              <button
+                onClick={() => router.push("/dashboard/learning")}
+                className="mt-4 rounded-full bg-carinex-emerald px-6 py-2.5 text-sm font-semibold text-carinex-white"
+              >
+                Back to Learning Hub
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="mt-2 font-semibold text-carinex-emerald">Module passed! 🎉</p>
+              <p className="mt-1 text-sm text-carinex-navy/60">
+                Other modules still need their quizzes passed before the course is marked complete.
+              </p>
+              <button
+                onClick={() => router.push("/dashboard/learning")}
+                className="mt-4 rounded-full bg-carinex-emerald px-6 py-2.5 text-sm font-semibold text-carinex-white"
+              >
+                Back to Learning Hub
+              </button>
+            </>
+          )
         ) : (
           <>
             <p className="mt-2 text-amber-700">Not quite — review the material and try again.</p>
