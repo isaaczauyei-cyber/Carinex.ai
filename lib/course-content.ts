@@ -112,3 +112,25 @@ export function flattenSequence(structure: ModuleSummary[]) {
   }
   return sequence;
 }
+
+// Add this function to the existing file, alongside the others.
+export async function hasPassedEveryModule(nurseId: string, courseId: number) {
+  const admin = createAdminClient();
+
+  const { data: modules } = await admin
+    .from("course_modules")
+    .select("id")
+    .eq("course_id", courseId);
+
+  if (!modules || modules.length === 0) return false;
+
+  const { data: passedAttempts } = await admin
+    .from("nurse_quiz_attempts")
+    .select("module_id")
+    .eq("nurse_id", nurseId)
+    .eq("course_id", courseId)
+    .eq("passed", true);
+
+  const passedModuleIds = new Set((passedAttempts || []).map((a) => a.module_id));
+  return modules.every((m) => passedModuleIds.has(m.id));
+}
