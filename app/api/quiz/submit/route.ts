@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { hasPassedEveryModule } from "@/lib/course-content";
 
 export async function POST(request: Request) {
   const { nurseId, courseId, moduleId, answers } = await request.json();
@@ -43,5 +44,23 @@ export async function POST(request: Request) {
     attempted_at: new Date().toISOString(),
   });
 
-  return NextResponse.json({ score, passed });
+  let courseCompleted = false;
+
+  if (passed) {
+    courseCompleted = await hasPassedEveryModule(nurseId, courseId);
+
+    if (courseCompleted) {
+      await admin.from("nurse_course_completions").upsert(
+        {
+          nurse_id: nurseId,
+          course_id: courseId,
+          status: "completed",
+          completed_at: new Date().toISOString(),
+        },
+        { onConflict: "nurse_id,course_id" }
+      );
+    }
+  }
+
+  return NextResponse.json({ score, passed, courseCompleted });
 }
