@@ -16,21 +16,30 @@ const menuLinks = [
   { href: "/dashboard/opportunities", label: "Opportunity Intelligence" },
 ];
 
+const sectionIcons: Record<string, string> = {
+  course_material: "📄",
+  exercise: "✏️",
+  practical_assignment: "📝",
+  key_takeaways: "💡",
+  career_application: "💼",
+  training_activity: "🧪",
+};
+
 export default function CoursePlayerHeader({
   courseTitle,
   courseId,
   structure,
-  completedLessonIds,
+  completedSectionIds,
   passedModuleIds,
-  currentLessonId,
+  currentSectionId,
   currentQuizModuleId,
 }: {
   courseTitle: string;
   courseId: number;
   structure: ModuleSummary[];
-  completedLessonIds: Set<string>;
+  completedSectionIds: Set<string>;
   passedModuleIds: Set<string>;
-  currentLessonId?: string;
+  currentSectionId?: string;
   currentQuizModuleId?: string;
 }) {
   const router = useRouter();
@@ -59,10 +68,10 @@ export default function CoursePlayerHeader({
 
   useEffect(() => {
     const active = structure.find((m) =>
-      m.lessons.some((l) => l.id === currentLessonId) || m.id === currentQuizModuleId
+      m.sections.some((s) => s.id === currentSectionId) || m.id === currentQuizModuleId
     );
     if (active) setOpenModules(new Set([active.id]));
-  }, [structure, currentLessonId, currentQuizModuleId]);
+  }, [structure, currentSectionId, currentQuizModuleId]);
 
   function toggleModule(id: string) {
     setOpenModules((prev) => {
@@ -108,7 +117,6 @@ export default function CoursePlayerHeader({
         </button>
       </header>
 
-      {/* Table of contents — left */}
       {tocOpen && (
         <div className="fixed inset-0 z-50 flex">
           <div className="w-full max-w-sm overflow-y-auto bg-white shadow-xl">
@@ -137,23 +145,24 @@ export default function CoursePlayerHeader({
 
                     {isOpen && (
                       <div className="flex flex-col gap-1 px-2 pb-3">
-                        {mod.lessons.map((lesson) => {
-                          const done = completedLessonIds.has(lesson.id);
-                          const active = lesson.id === currentLessonId;
+                        {mod.sections.map((section) => {
+                          const done = completedSectionIds.has(section.id);
+                          const active = section.id === currentSectionId;
                           return (
                             <Link
-                              key={lesson.id}
-                              href={`/dashboard/learning/inhouse/${courseId}/lesson/${lesson.id}`}
+                              key={section.id}
+                              href={`/dashboard/learning/inhouse/${courseId}/section/${section.id}`}
                               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm ${
                                 active ? "bg-carinex-emerald/10 text-carinex-emerald" : "text-carinex-navy"
                               }`}
                             >
-                              <span className={`flex h-5 w-5 items-center justify-center rounded-full text-xs ${
+                              <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs ${
                                 done ? "bg-carinex-emerald text-white" : "border border-carinex-navy/20"
                               }`}>
                                 {done ? "✓" : ""}
                               </span>
-                              {lesson.title}
+                              <span className="shrink-0">{sectionIcons[section.section_type] || ""}</span>
+                              {section.title}
                             </Link>
                           );
                         })}
@@ -170,7 +179,7 @@ export default function CoursePlayerHeader({
                             }`}>
                               {passedModuleIds.has(mod.id) ? "✓" : ""}
                             </span>
-                            Quiz
+                            🧠 Quiz
                           </Link>
                         )}
                       </div>
@@ -184,7 +193,6 @@ export default function CoursePlayerHeader({
         </div>
       )}
 
-      {/* Account menu — right, mirrors the main site Navbar's drawer */}
       {menuOpen && (
         <div className="fixed inset-0 z-50 flex justify-end">
           <button className="flex-1 bg-black/30" onClick={() => setMenuOpen(false)} aria-label="Close menu" />
