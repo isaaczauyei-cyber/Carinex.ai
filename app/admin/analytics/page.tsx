@@ -226,4 +226,4 @@ export default async function AdminAnalyticsPage() {
       <Footer />
     </main>
   );
-    }
+}
