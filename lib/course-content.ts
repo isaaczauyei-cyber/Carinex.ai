@@ -1,12 +1,20 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export type LessonSummary = { id: string; title: string; order_index: number };
+export type SectionSummary = {
+  id: string;
+  title: string;
+  order_index: number;
+  section_type: string;
+  is_required: boolean;
+  is_graded: boolean;
+};
+
 export type ModuleSummary = {
   id: string;
   title: string;
   order_index: number;
   quiz_passing_score: number;
-  lessons: LessonSummary[];
+  sections: SectionSummary[];
   hasQuiz: boolean;
 };
 
@@ -19,16 +27,19 @@ export async function getCourseStructure(courseId: number) {
     .eq("course_id", courseId)
     .order("order_index");
 
-  const { data: lessons } = await admin
-    .from("course_lessons")
-    .select("id, title, order_index, module_id")
-    .eq("course_id", courseId)
-    .order("order_index");
+  const moduleIds = (modules || []).map((m) => m.id);
 
-  const { data: quizModuleIds } = await admin
-    .from("course_quiz_questions")
-    .select("module_id")
-    .in("module_id", (modules || []).map((m) => m.id));
+  const { data: sections } = moduleIds.length
+    ? await admin
+        .from("module_sections")
+        .select("id, title, order_index, module_id, section_type, is_required, is_graded")
+        .in("module_id", moduleIds)
+        .order("order_index")
+    : { data: [] };
+
+  const { data: quizModuleIds } = moduleIds.length
+    ? await admin.from("assessment_questions").select("module_id").in("module_id", moduleIds)
+    : { data: [] };
 
   const modulesWithQuiz = new Set((quizModuleIds || []).map((q) => q.module_id));
 
@@ -37,9 +48,16 @@ export async function getCourseStructure(courseId: number) {
     title: m.title,
     order_index: m.order_index,
     quiz_passing_score: m.quiz_passing_score,
-    lessons: (lessons || [])
-      .filter((l) => l.module_id === m.id)
-      .map((l) => ({ id: l.id, title: l.title, order_index: l.order_index })),
+    sections: (sections || [])
+      .filter((s) => s.module_id === m.id)
+      .map((s) => ({
+        id: s.id,
+        title: s.title,
+        order_index: s.order_index,
+        section_type: s.section_type,
+        is_required: s.is_required,
+        is_graded: s.is_graded,
+      })),
     hasQuiz: modulesWithQuiz.has(m.id),
   }));
 
@@ -49,19 +67,19 @@ export async function getCourseStructure(courseId: number) {
 export async function getProgress(nurseId: string, courseId: number) {
   const admin = createAdminClient();
 
-  const { data: lessonRows } = await admin
-    .from("course_lessons")
+  const { data: sectionRows } = await admin
+    .from("module_sections")
     .select("id, course_modules!inner(course_id)")
     .eq("course_modules.course_id", courseId);
 
-  const lessonIds = (lessonRows || []).map((l) => l.id);
+  const sectionIds = (sectionRows || []).map((s) => s.id);
 
-  const { data: completions } = lessonIds.length
+  const { data: progressRows } = sectionIds.length
     ? await admin
-        .from("nurse_lesson_completions")
-        .select("lesson_id")
+        .from("nurse_section_progress")
+        .select("section_id, status")
         .eq("nurse_id", nurseId)
-        .in("lesson_id", lessonIds)
+        .in("section_id", sectionIds)
     : { data: [] };
 
   const { data: quizAttempts } = await admin
@@ -71,20 +89,22 @@ export async function getProgress(nurseId: string, courseId: number) {
     .eq("course_id", courseId);
 
   return {
-    completedLessonIds: new Set((completions || []).map((c) => c.lesson_id)),
+    completedSectionIds: new Set(
+      (progressRows || []).filter((p) => p.status === "completed").map((p) => p.section_id)
+    ),
     passedModuleIds: new Set(
       (quizAttempts || []).filter((a) => a.passed).map((a) => a.module_id)
     ),
   };
 }
 
-// Builds a single ordered sequence across all modules — lesson, lesson,
-// quiz, lesson, lesson, quiz — so "next" always has one clear meaning.
+// Builds a single ordered sequence across all modules — section, section,
+// quiz, section, section, quiz — so "next" always has one clear meaning.
 export function flattenSequence(structure: ModuleSummary[]) {
-  const sequence: { type: "lesson" | "quiz"; id: string; moduleId: string }[] = [];
+  const sequence: { type: "section" | "quiz"; id: string; moduleId: string }[] = [];
   for (const mod of structure) {
-    for (const lesson of mod.lessons) {
-      sequence.push({ type: "lesson", id: lesson.id, moduleId: mod.id });
+    for (const section of mod.sections) {
+      sequence.push({ type: "section", id: section.id, moduleId: mod.id });
     }
     if (mod.hasQuiz) {
       sequence.push({ type: "quiz", id: mod.id, moduleId: mod.id });
