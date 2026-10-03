@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -7,34 +8,72 @@ import { createClient } from "@/lib/supabase/client";
 type Employer = { id: string; company_name: string };
 type Specialization = { id: number; name: string };
 
-export default function AdminJobForm({
-  employers,
-  specializations,
-}: {
+type JobValues = {
+  id?: string | number;
+  employer_id?: string | null;
+  title?: string | null;
+  description?: string | null;
+  track_type?: string | null;
+  specialization_id?: number | null;
+  work_mode?: string | null;
+  currency?: string | null;
+  eligibility_requirements?: string | null;
+  location_restriction?: string | null;
+  external_apply_url?: string | null;
+  status?: string | null;
+  requires_foreign_license?: boolean | null;
+  foreign_license_country?: string | null;
+};
+
+type AdminJobFormProps = {
+  jobId?: string | number;
+  initialValues?: JobValues | null;
   employers: Employer[];
   specializations: Specialization[];
-}) {
+};
+
+export default function AdminJobForm({
+  jobId,
+  initialValues,
+  employers,
+  specializations,
+}: AdminJobFormProps) {
   const router = useRouter();
+  const isEditing = jobId !== undefined && jobId !== null;
 
   const [employerMode, setEmployerMode] = useState<"existing" | "new">(
-    employers.length > 0 ? "existing" : "new"
+    initialValues?.employer_id ? "existing" : employers.length > 0 ? "existing" : "new"
   );
-  const [employerId, setEmployerId] = useState(employers[0]?.id || "");
+  const [employerId, setEmployerId] = useState(
+    initialValues?.employer_id || employers[0]?.id || ""
+  );
   const [newEmployerName, setNewEmployerName] = useState("");
   const [newEmployerWebsite, setNewEmployerWebsite] = useState("");
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [trackType, setTrackType] = useState("national");
-  const [specializationId, setSpecializationId] = useState(specializations[0]?.id?.toString() || "");
-  const [workMode, setWorkMode] = useState("async");
-  const [currency, setCurrency] = useState("NGN");
-  const [eligibilityRequirements, setEligibilityRequirements] = useState("");
-  const [locationRestriction, setLocationRestriction] = useState("");
-  const [externalApplyUrl, setExternalApplyUrl] = useState("");
-  const [status, setStatus] = useState("pending_review");
-  const [requiresForeignLicense, setRequiresForeignLicense] = useState(false);
-  const [foreignLicenseCountry, setForeignLicenseCountry] = useState("");
+  const [title, setTitle] = useState(initialValues?.title || "");
+  const [description, setDescription] = useState(initialValues?.description || "");
+  const [trackType, setTrackType] = useState(initialValues?.track_type || "national");
+  const [specializationId, setSpecializationId] = useState(
+    initialValues?.specialization_id?.toString() || specializations[0]?.id?.toString() || ""
+  );
+  const [workMode, setWorkMode] = useState(initialValues?.work_mode || "async");
+  const [currency, setCurrency] = useState(initialValues?.currency || "NGN");
+  const [eligibilityRequirements, setEligibilityRequirements] = useState(
+    initialValues?.eligibility_requirements || ""
+  );
+  const [locationRestriction, setLocationRestriction] = useState(
+    initialValues?.location_restriction || ""
+  );
+  const [externalApplyUrl, setExternalApplyUrl] = useState(
+    initialValues?.external_apply_url || ""
+  );
+  const [status, setStatus] = useState(initialValues?.status || "pending_review");
+  const [requiresForeignLicense, setRequiresForeignLicense] = useState(
+    initialValues?.requires_foreign_license || false
+  );
+  const [foreignLicenseCountry, setForeignLicenseCountry] = useState(
+    initialValues?.foreign_license_country || ""
+  );
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -47,10 +86,12 @@ export default function AdminJobForm({
       setError("Title, description, and application link are required.");
       return;
     }
+
     if (employerMode === "existing" && !employerId) {
       setError("Select an employer, or switch to creating a new one.");
       return;
     }
+
     if (employerMode === "new" && !newEmployerName.trim()) {
       setError("Enter the new employer's name.");
       return;
@@ -59,51 +100,59 @@ export default function AdminJobForm({
     setSaving(true);
     const supabase = createClient();
 
-    let finalEmployerId = employerId;
+    try {
+      let finalEmployerId = employerId;
 
-    if (employerMode === "new") {
-      const { data: newEmployer, error: employerError } = await supabase
-        .from("employer_profiles")
-        .insert({
-          company_name: newEmployerName.trim(),
-          company_website: newEmployerWebsite.trim() || null,
-        })
-        .select("id")
-        .single();
+      if (employerMode === "new") {
+        const { data: newEmployer, error: employerError } = await supabase
+          .from("employer_profiles")
+          .insert({
+            company_name: newEmployerName.trim(),
+            company_website: newEmployerWebsite.trim() || null,
+          })
+          .select("id")
+          .single();
 
-      if (employerError || !newEmployer) {
-        setSaving(false);
-        setError(employerError?.message || "Could not create employer.");
-        return;
+        if (employerError || !newEmployer) {
+          throw new Error(employerError?.message || "Could not create employer.");
+        }
+
+        finalEmployerId = newEmployer.id;
       }
-      finalEmployerId = newEmployer.id;
+
+      const jobData = {
+        employer_id: finalEmployerId,
+        title: title.trim(),
+        description: description.trim(),
+        track_type: trackType,
+        specialization_id: specializationId ? Number(specializationId) : null,
+        work_mode: workMode,
+        currency,
+        eligibility_requirements: eligibilityRequirements.trim() || null,
+        location_restriction: locationRestriction.trim() || null,
+        external_apply_url: externalApplyUrl.trim(),
+        status,
+        requires_foreign_license: requiresForeignLicense,
+        foreign_license_country: requiresForeignLicense
+          ? foreignLicenseCountry.trim() || null
+          : null,
+      };
+
+      const { error: jobError } = isEditing
+        ? await supabase.from("jobs").update(jobData).eq("id", jobId)
+        : await supabase.from("jobs").insert(jobData);
+
+      if (jobError) {
+        throw new Error(jobError.message);
+      }
+
+      router.push("/admin/jobs");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setSaving(false);
     }
-
-    const { error: jobError } = await supabase.from("jobs").insert({
-      employer_id: finalEmployerId,
-      title: title.trim(),
-      description: description.trim(),
-      track_type: trackType,
-      specialization_id: specializationId ? Number(specializationId) : null,
-      work_mode: workMode,
-      currency,
-      eligibility_requirements: eligibilityRequirements.trim() || null,
-      location_restriction: locationRestriction.trim() || null,
-      external_apply_url: externalApplyUrl.trim(),
-      status,
-      requires_foreign_license: requiresForeignLicense,
-      foreign_license_country: requiresForeignLicense ? foreignLicenseCountry.trim() || null : null,
-    });
-
-    setSaving(false);
-
-    if (jobError) {
-      setError(jobError.message);
-      return;
-    }
-
-    router.push("/admin/jobs");
-    router.refresh();
   }
 
   return (
@@ -151,7 +200,7 @@ export default function AdminJobForm({
             </select>
           ) : (
             <p className="mt-3 text-sm text-carinex-navy/50">
-              No employers yet — switch to &quot;Create new&quot;.
+              No employers yet — switch to "Create new".
             </p>
           )
         ) : (
@@ -223,7 +272,7 @@ export default function AdminJobForm({
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-       <div>
+        <div>
           <label className="text-sm font-medium text-carinex-navy">Work mode</label>
           <select
             value={workMode}
@@ -296,7 +345,7 @@ export default function AdminJobForm({
 
       {requiresForeignLicense && (
         <div>
-          <label className="text-sm font-medium text-carinex-navy">Which country&apos;s license?</label>
+          <label className="text-sm font-medium text-carinex-navy">Which country's license?</label>
           <input
             type="text"
             value={foreignLicenseCountry}
@@ -328,7 +377,7 @@ export default function AdminJobForm({
         disabled={saving}
         className="rounded-full bg-carinex-emerald px-8 py-3 text-sm font-semibold text-white disabled:opacity-60"
       >
-        {saving ? "Saving…" : "Create job"}
+        {saving ? "Saving…" : isEditing ? "Update job" : "Create job"}
       </button>
     </form>
   );
