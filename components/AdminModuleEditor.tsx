@@ -623,8 +623,7 @@ function SectionEditor({
                 onSave={(next) => patchConfig({ body: next })}
                 placeholder="Write the key takeaways here"
                 rows={6}
-              className="rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm focus:border-carinex-emerald focus:outline-none"
-            />
+              />
           </div>
           )}
 
