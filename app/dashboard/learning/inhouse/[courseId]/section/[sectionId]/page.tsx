@@ -169,16 +169,6 @@ export default async function SectionPage({
             {signedFileUrl && !isAudio && (
               <div className="overflow-hidden rounded-xl border border-gray-200">
                 <PdfViewer fileUrl={signedFileUrl} />
-                <div className="border-t bg-gray-50 p-3">
-                  <a
-                    href={signedFileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-medium text-carinex-navy underline"
-                  >
-                    Open in new tab ↗
-                  </a>
-                </div>
               </div>
             )}
           </div>
