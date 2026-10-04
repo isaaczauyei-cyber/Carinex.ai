@@ -1,4 +1,3 @@
-
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireCourseApproval } from "@/lib/course-access";
@@ -77,10 +76,10 @@ export default async function SectionPage({
 
   const structure = await getCourseStructure(courseId);
 
-  const {
-    completedSectionIds,
-    passedModuleIds,
-  } = await getProgress(profile.id, courseId);
+  const { completedSectionIds, passedModuleIds } = await getProgress(
+    profile.id,
+    courseId
+  );
 
   const sequence = flattenSequence(structure);
 
@@ -88,21 +87,14 @@ export default async function SectionPage({
     (item) => item.type === "section" && item.id === section.id
   );
 
-  const next = currentIndex >= 0
-    ? sequence[currentIndex + 1]
-    : null;
+  const next = currentIndex >= 0 ? sequence[currentIndex + 1] : null;
 
   const config = (section.config || {}) as Record<string, unknown>;
 
-  const filePath =
-    typeof config.file_url === "string"
-      ? config.file_url
-      : null;
+  const filePath = typeof config.file_url === "string" ? config.file_url : null;
 
   const mediaType =
-    typeof config.media_type === "string"
-      ? config.media_type.toLowerCase()
-      : "";
+    typeof config.media_type === "string" ? config.media_type.toLowerCase() : "";
 
   let signedFileUrl: string | null = null;
   let fileError: string | null = null;
@@ -130,9 +122,7 @@ export default async function SectionPage({
 
   const isAudio = mediaType === "audio";
   const isPdf =
-    mediaType === "pdf" ||
-    filePath?.toLowerCase().endsWith(".pdf") ||
-    false;
+    mediaType === "pdf" || filePath?.toLowerCase().endsWith(".pdf") || false;
 
   return (
     <main className="min-h-screen bg-white">
@@ -146,15 +136,10 @@ export default async function SectionPage({
       />
 
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-        <h1 className="text-2xl font-bold text-carinex-navy">
-          {section.title}
-        </h1>
+        <h1 className="text-2xl font-bold text-carinex-navy">{section.title}</h1>
 
         {section.instructions && (
-          <p className="mt-3 leading-relaxed text-carinex-navy/70">
-            {section.instructions}
-          </p>
-           <div className="mt-4">
+          <div className="mt-4">
             <RichText text={section.instructions} />
           </div>
         )}
@@ -163,9 +148,7 @@ export default async function SectionPage({
           section.section_type === "career_application") && (
           <div className="mt-6">
             {fileError && (
-              <p className="rounded-lg bg-red-50 p-4 text-red-700">
-                {fileError}
-              </p>
+              <p className="rounded-lg bg-red-50 p-4 text-red-700">{fileError}</p>
             )}
 
             {!filePath && (
@@ -183,23 +166,7 @@ export default async function SectionPage({
               />
             )}
 
-            {signedFileUrl && !isAudio && isPdf && (
-              <div className="overflow-hidden rounded-xl border border-gray-200">
-                <PdfViewer fileUrl={signedFileUrl} />
-
-                <div className="border-t bg-gray-50 p-3">
-                  <a
-                    href={signedFileUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-medium text-carinex-navy underline"
-                  >
-                  </a>
-                </div>
-              </div>
-            )}
-
-            {signedFileUrl && !isAudio && !isPdf && (
+            {signedFileUrl && !isAudio && (
               <div className="overflow-hidden rounded-xl border border-gray-200">
                 <PdfViewer fileUrl={signedFileUrl} />
                 <div className="border-t bg-gray-50 p-3">
@@ -209,6 +176,7 @@ export default async function SectionPage({
                     rel="noopener noreferrer"
                     className="font-medium text-carinex-navy underline"
                   >
+                    Open in new tab ↗
                   </a>
                 </div>
               </div>
@@ -219,19 +187,6 @@ export default async function SectionPage({
         {section.section_type === "key_takeaways" && (
           <div className="mt-6 flex flex-col gap-3">
             <RichText text={config.body as string} />
-          </div>
-            {((config.body as string) || "")
-              .split(/\n\s*\n/)
-              .map((paragraph) => paragraph.trim())
-              .filter(Boolean)
-              .map((paragraph, index) => (
-                <p
-                  key={index}
-                  className="leading-relaxed text-carinex-navy/80"
-                >
-                  {paragraph}
-                </p>
-              ))}
           </div>
         )}
       </div>
