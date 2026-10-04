@@ -50,11 +50,20 @@ export default function SectionActions({
   const [file, setFile] = useState<File | null>(null);
 
   const columns = (section.config.columns as string[]) || [];
+  const rowLabels = (section.config.row_labels as string[]) || [];
+  const hasRowLabels = rowLabels.length > 0;
+  const editableColumns = hasRowLabels ? columns.slice(1) : columns;
+
   const [rows, setRows] = useState<string[][]>(() => {
     try {
-      if (initialProgress?.submission_text) return JSON.parse(initialProgress.submission_text);
+      if (initialProgress?.submission_text) {
+        const parsed = JSON.parse(initialProgress.submission_text);
+        if (Array.isArray(parsed)) return parsed;
+      }
     } catch {}
-    return Array.from({ length: 4 }, () => columns.map(() => ""));
+    const rowCount = hasRowLabels ? rowLabels.length : 4;
+    const width = hasRowLabels ? editableColumns.length : columns.length;
+    return Array.from({ length: rowCount }, () => Array.from({ length: width }, () => ""));
   });
 
   function updateCell(rowIdx: number, colIdx: number, value: string) {
@@ -238,38 +247,58 @@ export default function SectionActions({
                         {col}
                       </th>
                     ))}
-                    <th className="border-b border-carinex-navy/10 p-2" />
+                    {!hasRowLabels && <th className="border-b border-carinex-navy/10 p-2" />}
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((row, rIdx) => (
-                    <tr key={rIdx}>
-                      {row.map((cell, cIdx) => (
-                        <td key={cIdx} className="border-b border-carinex-navy/5 p-2">
-                          <input
-                            type="text"
-                            value={cell}
-                            onChange={(e) => updateCell(rIdx, cIdx, e.target.value)}
-                            className="w-full rounded border border-carinex-navy/15 px-2 py-1.5 text-sm focus:border-carinex-emerald focus:outline-none"
-                          />
-                        </td>
+                  {hasRowLabels
+                    ? rowLabels.map((label, rIdx) => (
+                        <tr key={rIdx}>
+                          <td className="border-b border-carinex-navy/5 p-2 align-top text-sm text-carinex-navy">
+                            {label}
+                          </td>
+                          {editableColumns.map((_, cIdx) => (
+                            <td key={cIdx} className="border-b border-carinex-navy/5 p-2">
+                              <input
+                                type="text"
+                                value={rows[rIdx]?.[cIdx] || ""}
+                                onChange={(e) => updateCell(rIdx, cIdx, e.target.value)}
+                                className="w-full rounded border border-carinex-navy/15 px-2 py-1.5 text-sm focus:border-carinex-emerald focus:outline-none"
+                              />
+                            </td>
+                          ))}
+                        </tr>
+                      ))
+                    : rows.map((row, rIdx) => (
+                        <tr key={rIdx}>
+                          {row.map((cell, cIdx) => (
+                            <td key={cIdx} className="border-b border-carinex-navy/5 p-2">
+                              <input
+                                type="text"
+                                value={cell}
+                                onChange={(e) => updateCell(rIdx, cIdx, e.target.value)}
+                                className="w-full rounded border border-carinex-navy/15 px-2 py-1.5 text-sm focus:border-carinex-emerald focus:outline-none"
+                              />
+                            </td>
+                          ))}
+                          <td className="border-b border-carinex-navy/5 p-2">
+                            <button
+                              type="button"
+                              onClick={() => removeRow(rIdx)}
+                              className="text-xs text-red-500 hover:underline"
+                            >
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
                       ))}
-                      <td className="border-b border-carinex-navy/5 p-2">
-                        <button
-                          type="button"
-                          onClick={() => removeRow(rIdx)}
-                          className="text-xs text-red-500 hover:underline"
-                        >
-                          Remove
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
                 </tbody>
               </table>
-              <button onClick={addRow} type="button" className="mt-2 text-xs font-semibold text-carinex-emerald hover:underline">
-                + Add row
-              </button>
+              {!hasRowLabels && (
+                <button onClick={addRow} type="button" className="mt-2 text-xs font-semibold text-carinex-emerald hover:underline">
+                  + Add row
+                </button>
+              )}
             </div>
           ) : (
             <textarea
