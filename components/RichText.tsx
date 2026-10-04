@@ -11,48 +11,58 @@ function parseBold(text: string): (string | JSX.Element)[] {
   );
 }
 
+const orderedPattern = /^\d+\.\s+/;
+const bulletPattern = /^[-•]\s+/;
+
 export default function RichText({ text }: { text: string | null | undefined }) {
   if (!text) return null;
 
-  // Auto-detect a numbered "1 — ... 2 — ..." step pattern and render as a
-  // real ordered list, even if no manual line breaks were typed.
-  const stepMatches = text.match(/\d{1,2}\s*[—–-]\s*/g) || [];
-  if (stepMatches.length >= 3) {
-    const chunks = text
-      .split(/(?=\d{1,2}\s*[—–-]\s*)/g)
-      .map((c) => c.trim())
-      .filter(Boolean);
-    return (
-      <ol className="flex flex-col gap-3">
-        {chunks.map((chunk, i) => {
-          const match = chunk.match(/^(\d{1,2}\s*[—–-]\s*)([\s\S]*)$/);
-          const prefix = match ? match[1] : "";
-          const rest = match ? match[2] : chunk;
-          return (
-            <li key={i} className="leading-relaxed text-carinex-navy/80">
-              {prefix && <strong className="text-carinex-navy">{prefix}</strong>}
-              {parseBold(rest)}
-            </li>
-          );
-        })}
-      </ol>
-    );
-  }
-
-  // Otherwise: respect real paragraph breaks and **bold** markers.
-  const paragraphs = text
-    .split(/\n\s*\n/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-  const blocks = paragraphs.length > 0 ? paragraphs : [text];
+  const blocks = text.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
 
   return (
-    <div className="flex flex-col gap-3">
-      {blocks.map((block, i) => (
-        <p key={i} className="whitespace-pre-wrap leading-relaxed text-carinex-navy/80">
-          {parseBold(block)}
-        </p>
-      ))}
+    <div className="flex flex-col gap-4">
+      {blocks.map((block, blockIdx) => {
+        const lines = block.split("\n").filter((l) => l.trim());
+
+        if (lines.length > 0 && lines.every((l) => orderedPattern.test(l))) {
+          return (
+            <ol key={blockIdx} className="flex flex-col gap-2 pl-1">
+              {lines.map((line, i) => (
+                <li key={i} className="flex gap-2 leading-relaxed text-carinex-navy/80">
+                  <span className="shrink-0 font-semibold text-carinex-navy">
+                    {line.match(orderedPattern)?.[0].trim()}
+                  </span>
+                  <span>{parseBold(line.replace(orderedPattern, ""))}</span>
+                </li>
+              ))}
+            </ol>
+          );
+        }
+
+        if (lines.length > 0 && lines.every((l) => bulletPattern.test(l))) {
+          return (
+            <ul key={blockIdx} className="flex flex-col gap-2 pl-1">
+              {lines.map((line, i) => (
+                <li key={i} className="flex gap-2 leading-relaxed text-carinex-navy/80">
+                  <span className="shrink-0 text-carinex-emerald">•</span>
+                  <span>{parseBold(line.replace(bulletPattern, ""))}</span>
+                </li>
+              ))}
+            </ul>
+          );
+        }
+
+        return (
+          <p key={blockIdx} className="leading-relaxed text-carinex-navy/80">
+            {lines.map((line, i) => (
+              <span key={i}>
+                {parseBold(line)}
+                {i < lines.length - 1 && <br />}
+              </span>
+            ))}
+          </p>
+        );
+      })}
     </div>
   );
 }
