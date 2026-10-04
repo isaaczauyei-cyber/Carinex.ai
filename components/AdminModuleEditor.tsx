@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import RichTextEditor from "@/components/RichTextEditor";
 
 type Section = {
   id: string;
@@ -615,13 +616,16 @@ function SectionEditor({
           )}
 
           {section.section_type === "key_takeaways" && (
-            <textarea
-              value={(config.body as string) || ""}
-              onChange={(e) => patchConfig({ body: e.target.value })}
-              placeholder="Write the key takeaways here"
-              rows={5}
+             <div>
+              <p className="mb-1 text-xs font-semibold text-carinex-navy/50">Key takeaways</p>
+              <RichTextEditor
+                value={(config.body as string) || ""}
+                onSave={(next) => patchConfig({ body: next })}
+                placeholder="Write the key takeaways here"
+                rows={6}
               className="rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm focus:border-carinex-emerald focus:outline-none"
             />
+          </div>
           )}
 
           {section.section_type === "career_application" && (
@@ -682,30 +686,47 @@ function SectionEditor({
               </div>
 
               {config.activity_format === "table" && (
-                <input
-                  type="text"
-                  value={((config.columns as string[]) || []).join(", ")}
-                  onChange={(e) =>
-                    patchConfig({
-                      columns: e.target.value
-                        .split(",")
-                        .map((column) => column.trim()),
-                    })
-                  }
-                  placeholder="Column headers, comma-separated"
-                  className="rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm focus:border-carinex-emerald focus:outline-none"
-                />
+                <>
+                  <div>
+                    <p className="mb-1 text-xs font-semibold text-carinex-navy/50">
+                      Column headers (comma-separated)
+                    </p>
+                    <input
+                      type="text"
+                      defaultValue={((config.columns as string[]) || []).join(", ")}
+                      onBlur={(e) =>
+                        patchConfig({ columns: e.target.value.split(",").map((c) => c.trim()).filter(Boolean) })
+                      }
+                      placeholder="e.g. Questions, Alerts per shift, % meaningful"
+                      className="w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm focus:border-carinex-emerald focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <p className="mb-1 text-xs font-semibold text-carinex-navy/50">
+                      Row labels — first column's content, one row per line. Leave blank to let the nurse add her own rows instead.
+                    </p>
+                    <textarea
+                      defaultValue={((config.row_labels as string[]) || []).join("\n")}
+                      onBlur={(e) =>
+                        patchConfig({ row_labels: e.target.value.split("\n").filter((l) => l.trim()) })
+                      }
+                      placeholder={"e.g.\nHow many alerts does this system generate per shift?\nHow many were clinically actionable?"}
+                      rows={4}
+                      className="w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm focus:border-carinex-emerald focus:outline-none"
+                     />
+                  </div>
+                </>
               )}
 
-              <textarea
-                value={(config.why_it_matters as string) || ""}
-                onChange={(e) =>
-                  patchConfig({ why_it_matters: e.target.value })
-                }
-                placeholder="Why this matters for healthcare AI teams"
-                rows={3}
-                className="rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm focus:border-carinex-emerald focus:outline-none"
-              />
+              <div>
+                <p className="mb-1 text-xs font-semibold text-carinex-navy/50">Why this matters</p>
+                <RichTextEditor
+                  value={(config.why_it_matters as string) || ""}
+                  onSave={(next) => patchConfig({ why_it_matters: next })}
+                  placeholder="Why this matters for healthcare AI teams"
+                  rows={4}
+                />
+              </div>
             </div>
           )}
         </div>
