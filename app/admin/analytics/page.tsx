@@ -22,7 +22,7 @@ export default async function AdminAnalyticsPage() {
 
   const { data: nurseProfiles } = await supabase
     .from("nurse_profiles")
-    .select("id, license_status, onboarding_completed, created_at");
+    .select("id, nurse_code, license_status, onboarding_completed, created_at, users(full_name)");
 
   const onboardedNurses = (nurseProfiles || []).filter((p) => p.onboarding_completed);
   const onboardingCompletedCount = onboardedNurses.length;
@@ -50,10 +50,10 @@ export default async function AdminAnalyticsPage() {
     licenseCounts[key] = (licenseCounts[key] || 0) + 1;
   }
 
-  // --- Specialization enrollment ---
+  // --- Specialization enrollment (aggregate) ---
   const { data: specRows } = await supabase
     .from("nurse_specializations")
-    .select("specializations(name)");
+    .select("nurse_id, specializations(name)");
   const specCounts: Record<string, number> = {};
   for (const row of specRows || []) {
     const name = (row.specializations as unknown as { name: string })?.name;
@@ -61,6 +61,15 @@ export default async function AdminAnalyticsPage() {
   }
   const sortedSpecs = Object.entries(specCounts).sort((a, b) => b[1] - a[1]);
   const maxSpecCount = Math.max(1, ...sortedSpecs.map(([, c]) => c));
+
+  // Per-nurse specialization list, for the breakdown table
+  const specsByNurse: Record<string, string[]> = {};
+  for (const row of specRows || []) {
+    const name = (row.specializations as unknown as { name: string })?.name;
+    if (!name) continue;
+    if (!specsByNurse[row.nurse_id]) specsByNurse[row.nurse_id] = [];
+    specsByNurse[row.nurse_id].push(name);
+  }
 
   // --- Course completion status, deduped per nurse+title ---
   const { data: completions } = await supabase
@@ -78,7 +87,7 @@ export default async function AdminAnalyticsPage() {
   }
   const pendingReviewCount = statusCounts.verification_pending;
 
-  // --- Active nurses, last 7 / 30 days ---
+  // --- Active nurses, last 7 / 30 days, and per-nurse last active ---
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   const thirtyDaysAgo = new Date();
@@ -89,28 +98,60 @@ export default async function AdminAnalyticsPage() {
     .select("nurse_id, activity_date");
 
   const activeLast7 = new Set(
-    (activity || [])
-      .filter((a) => new Date(a.activity_date) >= sevenDaysAgo)
-      .map((a) => a.nurse_id)
+    (activity || []).filter((a) => new Date(a.activity_date) >= sevenDaysAgo).map((a) => a.nurse_id)
   ).size;
   const activeLast30 = new Set(
-    (activity || [])
-      .filter((a) => new Date(a.activity_date) >= thirtyDaysAgo)
-      .map((a) => a.nurse_id)
+    (activity || []).filter((a) => new Date(a.activity_date) >= thirtyDaysAgo).map((a) => a.nurse_id)
   ).size;
 
-  // --- Most visited pages, last 30 days ---
+  const lastActiveByNurse: Record<string, string> = {};
+  for (const a of activity || []) {
+    if (!lastActiveByNurse[a.nurse_id] || a.activity_date > lastActiveByNurse[a.nurse_id]) {
+      lastActiveByNurse[a.nurse_id] = a.activity_date;
+    }
+  }
+
+  // --- Page views: aggregate top pages, plus per-nurse top page ---
   const { data: pageViews } = await supabase
     .from("nurse_page_views")
-    .select("path")
+    .select("nurse_id, path")
     .gte("visited_at", thirtyDaysAgo.toISOString());
 
   const pageCounts: Record<string, number> = {};
+  const pageCountsByNurse: Record<string, Record<string, number>> = {};
   for (const v of pageViews || []) {
     pageCounts[v.path] = (pageCounts[v.path] || 0) + 1;
+    if (!pageCountsByNurse[v.nurse_id]) pageCountsByNurse[v.nurse_id] = {};
+    pageCountsByNurse[v.nurse_id][v.path] = (pageCountsByNurse[v.nurse_id][v.path] || 0) + 1;
   }
   const topPages = Object.entries(pageCounts).sort((a, b) => b[1] - a[1]).slice(0, 8);
   const maxPageCount = Math.max(1, ...topPages.map(([, c]) => c));
+
+  function topPathFor(nurseId: string): string | null {
+    const paths = pageCountsByNurse[nurseId];
+    if (!paths) return null;
+    return Object.entries(paths).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+  }
+
+  // Build the per-nurse breakdown, sorted by most recently active
+  const nurseRows = (nurseProfiles || [])
+    .map((p) => {
+      const userInfo = p.users as unknown as { full_name: string } | null;
+      return {
+        id: p.id,
+        nurseCode: p.nurse_code,
+        name: userInfo?.full_name || "Unnamed",
+        lastActive: lastActiveByNurse[p.id] || null,
+        topPath: topPathFor(p.id),
+        specializations: specsByNurse[p.id] || [],
+      };
+    })
+    .sort((a, b) => {
+      if (!a.lastActive && !b.lastActive) return 0;
+      if (!a.lastActive) return 1;
+      if (!b.lastActive) return -1;
+      return b.lastActive.localeCompare(a.lastActive);
+    });
 
   return (
     <main>
@@ -166,6 +207,48 @@ export default async function AdminAnalyticsPage() {
           </div>
         )}
 
+        {/* Per-nurse breakdown */}
+        <div className="mt-10">
+          <h2 className="text-lg font-bold text-carinex-navy">Per-nurse activity</h2>
+          <p className="mt-1 text-xs text-carinex-navy/50">
+            Each nurse's most-visited page (last 30 days) and enrolled specializations, sorted by most recently active.
+          </p>
+          <div className="mt-3 flex flex-col divide-y divide-carinex-navy/10 rounded-xl border border-carinex-navy/10">
+            {nurseRows.map((n) => (
+              <a
+                key={n.id}
+                href={`/admin/users/${n.id}`}
+                className="flex flex-col gap-2 px-4 py-3 hover:bg-carinex-navy/5 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-carinex-navy">{n.name}</p>
+                  <p className="text-xs text-carinex-navy/50">{n.nurseCode}</p>
+                  {n.specializations.length > 0 ? (
+                    <div className="mt-1 flex flex-wrap gap-1">
+                      {n.specializations.map((s) => (
+                        <span key={s} className="rounded-full bg-carinex-emerald/10 px-2 py-0.5 text-[10px] font-semibold text-carinex-emerald">
+                          {s}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-1 text-xs text-carinex-navy/30">No specializations enrolled</p>
+                  )}
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="font-mono text-xs text-carinex-navy/70">{n.topPath || "No visits recorded"}</p>
+                  <p className="mt-0.5 text-xs text-carinex-navy/40">
+                    {n.lastActive ? `Last active ${new Date(n.lastActive).toLocaleDateString()}` : "Never active"}
+                  </p>
+                </div>
+              </a>
+            ))}
+            {nurseRows.length === 0 && (
+              <p className="px-4 py-8 text-center text-sm text-carinex-navy/50">No nurses yet.</p>
+            )}
+          </div>
+        </div>
+
         {/* Signup trend */}
         <div className="mt-10">
           <h2 className="text-lg font-bold text-carinex-navy">Signups, last 14 days</h2>
@@ -187,10 +270,10 @@ export default async function AdminAnalyticsPage() {
           </div>
         </div>
 
-        {/* Most visited pages */}
+        {/* Most visited pages (site-wide) */}
         <div className="mt-10">
           <h2 className="text-lg font-bold text-carinex-navy">Most visited pages, last 30 days</h2>
-          <p className="mt-1 text-xs text-carinex-navy/50">Where nurses actually spend time on the site.</p>
+          <p className="mt-1 text-xs text-carinex-navy/50">Where nurses actually spend time on the site, across everyone.</p>
           {topPages.length === 0 ? (
             <p className="mt-2 text-sm text-carinex-navy/50">No page views recorded yet.</p>
           ) : (
@@ -210,7 +293,7 @@ export default async function AdminAnalyticsPage() {
           )}
         </div>
 
-        {/* Specialization enrollment */}
+        {/* Specialization enrollment (aggregate) */}
         <div className="mt-10">
           <h2 className="text-lg font-bold text-carinex-navy">Specialization enrollment</h2>
           <p className="mt-1 text-xs text-carinex-navy/50">How many nurses have selected each specialization, total.</p>
