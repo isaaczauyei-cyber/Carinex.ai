@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import RichText from "@/components/RichText";
+import RichTextEditor from "@/components/RichTextEditor";
 
 type Section = {
   id: string;
@@ -189,7 +190,7 @@ export default function SectionActions({
                 className="flex items-center gap-3 rounded-lg border border-carinex-navy/20 px-4 py-3 text-sm text-carinex-navy"
               >
                 <input type="checkbox" checked={checked.has(item)} onChange={() => toggleCheck(item)} />
-                {item}
+                <span className="min-w-0 flex-1"><RichText text={item} /></span>
               </label>
             ))}
           </div>
@@ -198,12 +199,11 @@ export default function SectionActions({
 
       {section.section_type === "exercise" && section.config.mode === "text" && (
         <div className="mx-auto max-w-2xl px-6 pb-6">
-          <textarea
+          <RichTextEditor
             value={textValue}
-            onChange={(e) => setTextValue(e.target.value)}
+            onSave={setTextValue}
             rows={6}
             placeholder="Write your response here"
-            className="w-full rounded-lg border border-carinex-navy/20 px-4 py-3 focus:border-carinex-emerald focus:outline-none"
           />
         </div>
       )}
@@ -224,12 +224,11 @@ export default function SectionActions({
               )}
             </div>
           ) : (
-            <textarea
+            <RichTextEditor
               value={textValue}
-              onChange={(e) => setTextValue(e.target.value)}
+              onSave={setTextValue}
               rows={6}
               placeholder="Write your submission here"
-              className="w-full rounded-lg border border-carinex-navy/20 px-4 py-3 focus:border-carinex-emerald focus:outline-none"
             />
           )}
         </div>
@@ -244,7 +243,7 @@ export default function SectionActions({
                   <tr>
                     {columns.map((col) => (
                       <th key={col} className="border-b border-carinex-navy/10 p-2 text-left font-semibold text-carinex-navy">
-                        {col}
+                        <RichText text={col} />
                       </th>
                     ))}
                     {!hasRowLabels && <th className="border-b border-carinex-navy/10 p-2" />}
@@ -255,15 +254,15 @@ export default function SectionActions({
                     ? rowLabels.map((label, rIdx) => (
                         <tr key={rIdx}>
                           <td className="border-b border-carinex-navy/5 p-2 align-top text-sm text-carinex-navy">
-                            {label}
+                            <RichText text={label} />
                           </td>
                           {editableColumns.map((_, cIdx) => (
                             <td key={cIdx} className="border-b border-carinex-navy/5 p-2">
-                              <input
-                                type="text"
+                              <RichTextEditor
                                 value={rows[rIdx]?.[cIdx] || ""}
-                                onChange={(e) => updateCell(rIdx, cIdx, e.target.value)}
-                                className="w-full rounded border border-carinex-navy/15 px-2 py-1.5 text-sm focus:border-carinex-emerald focus:outline-none"
+                                onSave={(value) => updateCell(rIdx, cIdx, value)}
+                                placeholder="Enter your response"
+                                rows={2}
                               />
                             </td>
                           ))}
@@ -273,11 +272,11 @@ export default function SectionActions({
                         <tr key={rIdx}>
                           {row.map((cell, cIdx) => (
                             <td key={cIdx} className="border-b border-carinex-navy/5 p-2">
-                              <input
-                                type="text"
+                              <RichTextEditor
                                 value={cell}
-                                onChange={(e) => updateCell(rIdx, cIdx, e.target.value)}
-                                className="w-full rounded border border-carinex-navy/15 px-2 py-1.5 text-sm focus:border-carinex-emerald focus:outline-none"
+                                onSave={(value) => updateCell(rIdx, cIdx, value)}
+                                placeholder="Enter your response"
+                                rows={2}
                               />
                             </td>
                           ))}
@@ -301,12 +300,11 @@ export default function SectionActions({
               )}
             </div>
           ) : (
-            <textarea
+            <RichTextEditor
               value={textValue}
-              onChange={(e) => setTextValue(e.target.value)}
+              onSave={setTextValue}
               rows={6}
               placeholder="Complete the activity here"
-              className="w-full rounded-lg border border-carinex-navy/20 px-4 py-3 focus:border-carinex-emerald focus:outline-none"
             />
           )}
 

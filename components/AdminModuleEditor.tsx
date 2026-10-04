@@ -286,13 +286,15 @@ export default function AdminModuleEditor({
           className="mt-3 w-full rounded-lg border border-carinex-navy/20 px-4 py-2.5 focus:border-carinex-emerald focus:outline-none"
         />
 
-        <textarea
-          value={summary}
-          onChange={(e) => setSummary(e.target.value)}
-          placeholder="Short summary (optional)"
-          rows={2}
-          className="mt-3 w-full rounded-lg border border-carinex-navy/20 px-4 py-2.5 focus:border-carinex-emerald focus:outline-none"
-        />
+        <div className="mt-3">
+          <p className="mb-1 text-xs font-semibold text-carinex-navy/50">Module summary</p>
+          <RichTextEditor
+            value={summary}
+            onSave={setSummary}
+            placeholder="Short summary (optional)"
+            rows={3}
+          />
+        </div>
 
         <div className="mt-3 flex items-center gap-3">
           <label className="text-sm text-carinex-navy">
@@ -498,14 +500,18 @@ function SectionEditor({
             className="rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm focus:border-carinex-emerald focus:outline-none"
           />
 
-          <textarea
-            value={instructions}
-            onChange={(e) => setInstructions(e.target.value)}
-            onBlur={() => void onUpdate({ instructions })}
-            placeholder="Instructions (manually written)"
-            rows={3}
-            className="rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm focus:border-carinex-emerald focus:outline-none"
-          />
+          <div>
+            <p className="mb-1 text-xs font-semibold text-carinex-navy/50">Section instructions</p>
+            <RichTextEditor
+              value={instructions}
+              onSave={(next) => {
+                setInstructions(next);
+                void onUpdate({ instructions: next });
+              }}
+              placeholder="Write the instructions for this section"
+              rows={5}
+            />
+          </div>
 
           {section.section_type === "course_material" && (
             <div className="flex flex-col gap-2">
@@ -572,17 +578,18 @@ function SectionEditor({
               </div>
 
               {config.mode === "checklist" && (
-                <textarea
-                  value={((config.items as string[]) || []).join("\n")}
-                  onChange={(e) =>
-                    patchConfig({
-                      items: e.target.value.split("\n"),
-                    })
-                  }
-                  placeholder="One checklist item per line"
-                  rows={4}
-                  className="rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm focus:border-carinex-emerald focus:outline-none"
-                />
+                <div className="flex flex-col gap-3">
+                  {(((config.items as string[]) || []).map((item, index) => (
+                    <div key={index} className="rounded-lg border border-carinex-navy/10 p-3">
+                      <div className="mb-1 flex items-center justify-between">
+                        <p className="text-xs font-semibold text-carinex-navy/60">Checklist item {index + 1}</p>
+                        <button type="button" onClick={() => patchConfig({ items: ((config.items as string[]) || []).filter((_, i) => i !== index) })} className="text-xs text-red-600 hover:underline">Remove</button>
+                      </div>
+                      <RichTextEditor value={item} onSave={(next) => { const items = [...(((config.items as string[]) || []))]; items[index] = next; patchConfig({ items }); }} placeholder="Write this checklist item" rows={2} />
+                    </div>
+                  )))}
+                  <button type="button" onClick={() => patchConfig({ items: [...(((config.items as string[]) || [])), ""] })} className="w-fit text-xs font-semibold text-carinex-emerald hover:underline">+ Add checklist item</button>
+                </div>
               )}
             </div>
           )}
@@ -687,32 +694,28 @@ function SectionEditor({
               {config.activity_format === "table" && (
                 <>
                   <div>
-                    <p className="mb-1 text-xs font-semibold text-carinex-navy/50">
-                      Column headers (comma-separated)
-                    </p>
-                    <input
-                      type="text"
-                      defaultValue={((config.columns as string[]) || []).join(", ")}
-                      onBlur={(e) =>
-                        patchConfig({ columns: e.target.value.split(",").map((c) => c.trim()).filter(Boolean) })
-                      }
-                      placeholder="e.g. Questions, Alerts per shift, % meaningful"
-                      className="w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm focus:border-carinex-emerald focus:outline-none"
-                    />
+                    <p className="mb-2 text-xs font-semibold text-carinex-navy/50">Column headers — one rich-text field per column</p>
+                    <div className="flex flex-col gap-2">
+                      {(((config.columns as string[]) || []).map((col, index) => (
+                        <div key={index} className="flex items-start gap-2">
+                          <div className="min-w-0 flex-1"><RichTextEditor value={col} onSave={(next) => { const columns = [...(((config.columns as string[]) || []))]; columns[index] = next; patchConfig({ columns }); }} placeholder={`Column ${index + 1}`} rows={2} /></div>
+                          <button type="button" onClick={() => patchConfig({ columns: ((config.columns as string[]) || []).filter((_, i) => i !== index) })} className="pt-2 text-xs text-red-600 hover:underline">Remove</button>
+                        </div>
+                      )))}
+                      <button type="button" onClick={() => patchConfig({ columns: [...(((config.columns as string[]) || [])), ""] })} className="w-fit text-xs font-semibold text-carinex-emerald hover:underline">+ Add column</button>
+                    </div>
                   </div>
                   <div>
-                    <p className="mb-1 text-xs font-semibold text-carinex-navy/50">
-                      Row labels — first column's content, one row per line. Leave blank to let the nurse add her own rows instead.
-                    </p>
-                    <textarea
-                      defaultValue={((config.row_labels as string[]) || []).join("\n")}
-                      onBlur={(e) =>
-                        patchConfig({ row_labels: e.target.value.split("\n").filter((l) => l.trim()) })
-                      }
-                      placeholder={"e.g.\nHow many alerts does this system generate per shift?\nHow many were clinically actionable?"}
-                      rows={4}
-                      className="w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm focus:border-carinex-emerald focus:outline-none"
-                     />
+                    <p className="mb-2 text-xs font-semibold text-carinex-navy/50">Row labels — first column's content. Leave empty to let the nurse add her own rows.</p>
+                    <div className="flex flex-col gap-2">
+                      {(((config.row_labels as string[]) || []).map((label, index) => (
+                        <div key={index} className="flex items-start gap-2">
+                          <div className="min-w-0 flex-1"><RichTextEditor value={label} onSave={(next) => { const row_labels = [...(((config.row_labels as string[]) || []))]; row_labels[index] = next; patchConfig({ row_labels }); }} placeholder={`Row label ${index + 1}`} rows={2} /></div>
+                          <button type="button" onClick={() => patchConfig({ row_labels: ((config.row_labels as string[]) || []).filter((_, i) => i !== index) })} className="pt-2 text-xs text-red-600 hover:underline">Remove</button>
+                        </div>
+                      )))}
+                      <button type="button" onClick={() => patchConfig({ row_labels: [...(((config.row_labels as string[]) || [])), ""] })} className="w-fit text-xs font-semibold text-carinex-emerald hover:underline">+ Add row label</button>
+                    </div>
                   </div>
                 </>
               )}
@@ -743,94 +746,69 @@ function QuestionEditor({
   onUpdate: (patch: Partial<Question>) => Promise<void>;
   onDelete: () => void;
 }) {
-  const [prompt, setPrompt] = useState(question.prompt);
-  const [options, setOptions] = useState(question.options || []);
   const [correctId, setCorrectId] = useState(question.correct_option_id);
+  const [options, setOptions] = useState(question.options || []);
 
   useEffect(() => {
-    setPrompt(question.prompt);
     setOptions(question.options || []);
     setCorrectId(question.correct_option_id);
-  }, [question.id]);
+  }, [question.id, question.options, question.correct_option_id]);
 
-  function updateOption(id: string, text: string) {
-    setOptions((prev) =>
-      prev.map((option) =>
-        option.id === id ? { ...option, text } : option
-      )
-    );
+  async function saveOption(id: string, text: string) {
+    const nextOptions = options.map((option) => option.id === id ? { ...option, text } : option);
+    setOptions(nextOptions);
+    await onUpdate({ options: nextOptions });
   }
 
-  function addOption() {
-    const nextId = String.fromCharCode(97 + options.length);
-    setOptions((prev) => [...prev, { id: nextId, text: "" }]);
-  }
-
-  async function save() {
-    await onUpdate({
-      prompt,
-      options,
-      correct_option_id: correctId,
-    });
+  async function addOption() {
+    const used = new Set(options.map((option) => option.id));
+    let code = 97;
+    while (used.has(String.fromCharCode(code)) && code < 123) code++;
+    const nextOptions = [...options, { id: String.fromCharCode(code), text: "" }];
+    setOptions(nextOptions);
+    await onUpdate({ options: nextOptions });
   }
 
   return (
     <div className="rounded-xl border border-carinex-navy/10 p-4">
       <div className="flex items-start justify-between gap-3">
-        <textarea
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          onBlur={() => void save()}
-          placeholder="Question prompt"
-          rows={2}
-          className="flex-1 rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm focus:border-carinex-emerald focus:outline-none"
-        />
-
-        <button
-          onClick={onDelete}
-          className="shrink-0 text-xs font-semibold text-red-600 hover:underline"
-        >
-          Delete
-        </button>
+        <div className="min-w-0 flex-1">
+          <p className="mb-1 text-xs font-semibold text-carinex-navy/50">Question prompt</p>
+          <RichTextEditor
+            value={question.prompt}
+            onSave={(next) => void onUpdate({ prompt: next })}
+            placeholder="Write the question prompt"
+            rows={4}
+          />
+        </div>
+        <button type="button" onClick={onDelete} className="shrink-0 text-xs font-semibold text-red-600 hover:underline">Delete</button>
       </div>
 
-      <div className="mt-3 flex flex-col gap-2">
+      <div className="mt-3 flex flex-col gap-3">
         {options.map((option) => (
-          <div key={option.id} className="flex items-center gap-2">
+          <div key={option.id} className="flex items-start gap-2">
             <input
               type="radio"
+              className="mt-3"
               name={`correct-${question.id}`}
               checked={correctId === option.id}
-              onChange={() => {
-                setCorrectId(option.id);
-                void onUpdate({ correct_option_id: option.id });
-              }}
+              onChange={() => { setCorrectId(option.id); void onUpdate({ correct_option_id: option.id }); }}
+              aria-label={`Mark option ${option.id} as correct`}
             />
-
-            <input
-              type="text"
-              value={option.text}
-              onChange={(e) => updateOption(option.id, e.target.value)}
-              onBlur={() => void save()}
-              placeholder={`Option ${option.id.toUpperCase()}`}
-              className="flex-1 rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm focus:border-carinex-emerald focus:outline-none"
-            />
+            <div className="min-w-0 flex-1">
+              <p className="mb-1 text-xs font-semibold text-carinex-navy/50">Option {option.id.toUpperCase()}</p>
+              <RichTextEditor
+                value={option.text}
+                onSave={(next) => void saveOption(option.id, next)}
+                placeholder={`Write option ${option.id.toUpperCase()}`}
+                rows={2}
+              />
+            </div>
           </div>
         ))}
-
-        <button
-          type="button"
-          onClick={addOption}
-          className="w-fit text-xs font-semibold text-carinex-emerald hover:underline"
-        >
-          + Add option
-        </button>
+        <button type="button" onClick={() => void addOption()} className="w-fit text-xs font-semibold text-carinex-emerald hover:underline">+ Add option</button>
       </div>
-
-      <p className="mt-2 text-xs text-carinex-navy/40">
-        Select the radio button next to the correct answer. Changes to the
-        question and options save when you leave the field.
-      </p>
+      <p className="mt-2 text-xs text-carinex-navy/40">Select the radio button next to the correct answer. Rich-text changes save when you leave an editor.</p>
     </div>
   );
 }
