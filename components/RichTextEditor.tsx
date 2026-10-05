@@ -2,107 +2,59 @@
 
 import { useEffect, useRef, useState } from "react";
 
-type Props = {
-  value: string;
-  onSave: (next: string) => void;
-  placeholder?: string;
-  rows?: number;
-};
+type Props = { value: string; onSave: (next: string) => void; placeholder?: string; rows?: number };
 
-const editorClass =
-  "w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm text-carinex-navy focus:border-carinex-emerald focus:outline-none";
-
-export default function RichTextEditor({
-  value,
-  onSave,
-  placeholder,
-  rows = 5,
-}: Props) {
+export default function RichTextEditor({ value, onSave, placeholder, rows = 5 }: Props) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const [text, setText] = useState(value || "");
+  const lastSaved = useRef(value || "");
 
   useEffect(() => {
-    setText(value || "");
+    const incoming = value || "";
+    if (incoming !== lastSaved.current) {
+      setText(incoming);
+      lastSaved.current = incoming;
+    }
   }, [value]);
 
-  function replaceSelection(transform: (selected: string) => string, selectOffset = 0) {
-    const element = ref.current;
-    if (!element) return;
-    const start = element.selectionStart;
-    const end = element.selectionEnd;
-    const selected = text.slice(start, end) || "text";
-    const replacement = transform(selected);
-    const next = text.slice(0, start) + replacement + text.slice(end);
+  function replaceSelection(before: string, after = before, fallback = "text") {
+    const el = ref.current; if (!el) return;
+    const start = el.selectionStart; const end = el.selectionEnd;
+    const selected = text.slice(start, end) || fallback;
+    const next = text.slice(0, start) + before + selected + after + text.slice(end);
     setText(next);
-    requestAnimationFrame(() => {
-      element.focus();
-      element.selectionStart = start + selectOffset;
-      element.selectionEnd = start + replacement.length;
-    });
+    requestAnimationFrame(() => { el.focus(); el.selectionStart = start + before.length; el.selectionEnd = start + before.length + selected.length; });
   }
 
-  function wrap(marker: string) {
-    replaceSelection((selected) => `${marker}${selected}${marker}`, marker.length);
+  function insertList(prefix: (index: number) => string) {
+    const el = ref.current; if (!el) return;
+    const start = el.selectionStart; const end = el.selectionEnd;
+    const selected = text.slice(start, end) || "List item";
+    const listed = selected.split("\n").map((line, index) => `${prefix(index)}${line}`).join("\n");
+    const next = text.slice(0, start) + listed + text.slice(end);
+    setText(next); requestAnimationFrame(() => el.focus());
   }
 
-  function makeList(prefix: string) {
-    replaceSelection(
-      (selected) =>
-        selected
-          .split("\n")
-          .map((line, index) => `${prefix === "number" ? `${index + 1}. ` : "• "}${line}`)
-          .join("\n"),
-      0
-    );
+  function insertParagraphBreak() {
+    const el = ref.current; if (!el) return;
+    const start = el.selectionStart; const next = text.slice(0, start) + "\n\n" + text.slice(start);
+    setText(next); requestAnimationFrame(() => { el.focus(); el.selectionStart = el.selectionEnd = start + 2; });
   }
 
-  function paragraphBreak() {
-    const element = ref.current;
-    if (!element) return;
-    const start = element.selectionStart;
-    const next = text.slice(0, start) + "\n\n" + text.slice(start);
-    setText(next);
-    requestAnimationFrame(() => {
-      element.focus();
-      element.selectionStart = element.selectionEnd = start + 2;
-    });
-  }
+  function save() { if (text !== lastSaved.current) { lastSaved.current = text; onSave(text); } }
 
-  function toolbarButton(label: string, action: () => void, title: string) {
-    return (
-      <button
-        key={label}
-        type="button"
-        title={title}
-        onMouseDown={(event) => event.preventDefault()}
-        onClick={action}
-        className="rounded-md border border-carinex-navy/15 px-2.5 py-1.5 text-xs font-semibold text-carinex-navy hover:bg-carinex-navy/5"
-      >
-        {label}
-      </button>
-    );
-  }
-
+  const toolClass = "rounded border border-carinex-navy/15 px-2 py-1 text-xs font-semibold text-carinex-navy hover:bg-carinex-navy/5";
   return (
     <div className="overflow-hidden rounded-lg border border-carinex-navy/20 focus-within:border-carinex-emerald">
-      <div className="flex flex-wrap gap-2 border-b border-carinex-navy/10 bg-carinex-navy/[0.03] p-2">
-        {toolbarButton("B", () => wrap("**"), "Bold selected text")}
-        {toolbarButton("1. List", () => makeList("number"), "Numbered list")}
-        {toolbarButton("• List", () => makeList("bullet"), "Bulleted list")}
-        {toolbarButton("¶ Paragraph", paragraphBreak, "Insert paragraph break")}
+      <div className="flex flex-wrap items-center gap-1 border-b border-carinex-navy/10 bg-carinex-navy/[0.03] p-2">
+        <button type="button" className={toolClass} onClick={() => replaceSelection("**")}>B</button>
+        <button type="button" className={toolClass} onClick={() => replaceSelection("*", "*", "italic text")}>I</button>
+        <button type="button" className={toolClass} onClick={() => insertList((i) => `${i + 1}. `)}>1. List</button>
+        <button type="button" className={toolClass} onClick={() => insertList(() => "- ")}>• List</button>
+        <button type="button" className={toolClass} onClick={insertParagraphBreak}>¶ Paragraph</button>
       </div>
-      <textarea
-        ref={ref}
-        value={text}
-        onChange={(event) => setText(event.target.value)}
-        onBlur={() => onSave(text)}
-        placeholder={placeholder}
-        rows={rows}
-        className={`${editorClass} resize-y rounded-none border-0 focus:border-0 focus:ring-0`}
-      />
-      <p className="border-t border-carinex-navy/10 px-3 py-1.5 text-[11px] text-carinex-navy/45">
-        Select text and use the toolbar. Supports bold, numbered lists, bullet lists and paragraph breaks. Saves when you leave the editor.
-      </p>
+      <textarea ref={ref} value={text} onChange={(e) => setText(e.target.value)} onBlur={save} rows={rows} placeholder={placeholder} className="w-full resize-y border-0 bg-transparent px-3 py-2 text-sm text-carinex-navy outline-none focus:ring-0" />
+      <div className="border-t border-carinex-navy/10 px-3 py-1 text-[10px] text-carinex-navy/40">Formatting is saved automatically when you leave this field.</div>
     </div>
   );
 }

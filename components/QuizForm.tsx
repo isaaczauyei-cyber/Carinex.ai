@@ -45,7 +45,7 @@ export default function QuizForm({ nurseId, courseId, moduleId, questions }: { n
             {q.options.map((opt) => (
               <label key={opt.id} className={`flex items-start gap-3 rounded-lg border px-4 py-2.5 text-sm ${answers[q.id] === opt.id ? "border-carinex-emerald bg-carinex-emerald/5" : "border-carinex-navy/20"}`}>
                 <input type="radio" className="mt-1" name={q.id} checked={answers[q.id] === opt.id} onChange={() => selectOption(q.id, opt.id)} />
-                <span className="min-w-0 flex-1"><RichText text={opt.text} /></span>
+                <span className="min-w-0 flex-1 whitespace-pre-wrap">{opt.text}</span>
               </label>
             ))}
           </div>

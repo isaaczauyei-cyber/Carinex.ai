@@ -797,18 +797,19 @@ function QuestionEditor({
             />
             <div className="min-w-0 flex-1">
               <p className="mb-1 text-xs font-semibold text-carinex-navy/50">Option {option.id.toUpperCase()}</p>
-              <RichTextEditor
-                value={option.text}
-                onSave={(next) => void saveOption(option.id, next)}
-                placeholder={`Write option ${option.id.toUpperCase()}`}
-                rows={2}
+              <input
+                type="text"
+                defaultValue={option.text}
+                onBlur={(e) => void saveOption(option.id, e.target.value)}
+                placeholder={`Enter option ${option.id.toUpperCase()}`}
+                className="w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm focus:border-carinex-emerald focus:outline-none"
               />
             </div>
           </div>
         ))}
         <button type="button" onClick={() => void addOption()} className="w-fit text-xs font-semibold text-carinex-emerald hover:underline">+ Add option</button>
       </div>
-      <p className="mt-2 text-xs text-carinex-navy/40">Select the radio button next to the correct answer. Rich-text changes save when you leave an editor.</p>
+      <p className="mt-2 text-xs text-carinex-navy/40">Select the radio button next to the correct answer. Answer options are plain text and save when you leave the field.</p>
     </div>
   );
 }
