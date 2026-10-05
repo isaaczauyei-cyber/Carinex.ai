@@ -583,19 +583,24 @@ function AdminTableBuilder({
 }) {
   const columns = (config.columns as string[]) || ["S/N", "Column 1", "Column 2"];
   const rowLabels = (config.row_labels as string[]) || ["1", "2", "3"];
-  const raw = Array.isArray(config.table_rows) ? config.table_rows as unknown[] : [];
-  const width = Math.max(columns.length - (rowLabels.length ? 1 : 0), 1);
+  const raw = Array.isArray(config.table_rows) ? (config.table_rows as unknown[]) : [];
+  const width = Math.max(columns.length - 1, 1);
   const rows = rowLabels.map((_, i) => {
-    const row = Array.isArray(raw[i]) ? raw[i] as unknown[] : [];
+    const row = Array.isArray(raw[i]) ? (raw[i] as unknown[]) : [];
     return Array.from({ length: width }, (_, j) => String(row[j] ?? ""));
   });
 
-  function save(nextRows: string[][], nextLabels = rowLabels) {
-    onChange({ columns, row_labels: nextLabels, table_rows: nextRows });
+  function save(nextRows: string[][], nextLabels = rowLabels, nextColumns = columns) {
+    onChange({
+      columns: nextColumns,
+      row_labels: nextLabels,
+      table_rows: nextRows,
+    });
   }
 
   function updateCell(r: number, c: number, value: string) {
     const next = rows.map((row) => [...row]);
+    if (!next[r]) next[r] = Array.from({ length: width }, () => "");
     next[r][c] = value;
     save(next);
   }
@@ -606,42 +611,138 @@ function AdminTableBuilder({
     save(rows, labels);
   }
 
+  function updateHeader(index: number, value: string) {
+    const nextColumns = [...columns];
+    nextColumns[index] = value;
+    save(rows, rowLabels, nextColumns);
+  }
+
+  function addColumn() {
+    const nextColumns = [...columns, `Column ${columns.length}`];
+    const nextRows = rows.map((row) => [...row, ""]);
+    save(nextRows, rowLabels, nextColumns);
+  }
+
+  function removeColumn() {
+    if (columns.length <= 2) return;
+    const nextColumns = columns.slice(0, -1);
+    const nextRows = rows.map((row) => row.slice(0, -1));
+    save(nextRows, rowLabels, nextColumns);
+  }
+
   function addRow() {
-    save([...rows, Array.from({ length: width }, () => "")], [...rowLabels, String(rowLabels.length + 1)]);
+    save(
+      [...rows, Array.from({ length: width }, () => "")],
+      [...rowLabels, String(rowLabels.length + 1)]
+    );
   }
 
   function removeRow(index: number) {
-    save(rows.filter((_, i) => i !== index), rowLabels.filter((_, i) => i !== index));
-  }
-
-  function setHeaders(value: string) {
-    const nextColumns = value.split(",").map((x) => x.trim()).filter(Boolean);
-    const nextWidth = Math.max(nextColumns.length - (rowLabels.length ? 1 : 0), 1);
-    const nextRows = rows.map((row) => Array.from({ length: nextWidth }, (_, i) => row[i] || ""));
-    onChange({ columns: nextColumns, row_labels: rowLabels, table_rows: nextRows });
+    save(
+      rows.filter((_, i) => i !== index),
+      rowLabels.filter((_, i) => i !== index)
+    );
   }
 
   return (
     <div className="mt-4">
-      <p className="mb-1 text-xs font-semibold text-carinex-navy/50">Column headers</p>
-      <input value={columns.join(", ")} onChange={(e) => setHeaders(e.target.value)} placeholder="S/N, Test 1, Test 2, Test 3" className="w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm" />
-      <p className="mb-1 mt-4 text-xs font-semibold text-carinex-navy/50">Rows and cell content</p>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-semibold text-carinex-navy/50">
+          Column headers — edit each header directly
+        </p>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={addColumn}
+            className="text-xs font-semibold text-carinex-emerald hover:underline"
+          >
+            + Add column
+          </button>
+          {columns.length > 2 && (
+            <button
+              type="button"
+              onClick={removeColumn}
+              className="text-xs font-semibold text-red-600 hover:underline"
+            >
+              Remove last column
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {columns.map((column, index) => (
+          <input
+            key={index}
+            value={column}
+            onChange={(e) => updateHeader(index, e.target.value)}
+            placeholder={index === 0 ? "S/N" : `Column ${index}`}
+            className="w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm focus:border-carinex-emerald focus:outline-none"
+          />
+        ))}
+      </div>
+
+      <p className="mb-1 mt-4 text-xs font-semibold text-carinex-navy/50">
+        Rows and cell content — every box is editable by the admin
+      </p>
+
       <div className="overflow-x-auto rounded-lg border border-carinex-navy/20">
         <table className="w-full border-collapse text-sm">
-          <thead><tr>{columns.map((c) => <th key={c} className="border border-carinex-navy/20 bg-carinex-navy/[0.03] p-2 text-left">{c}</th>)}</tr></thead>
+          <thead>
+            <tr>
+              {columns.map((column, index) => (
+                <th
+                  key={index}
+                  className="border border-carinex-navy/20 bg-carinex-navy/[0.03] p-2 text-left font-semibold"
+                >
+                  {column || `Column ${index + 1}`}
+                </th>
+              ))}
+            </tr>
+          </thead>
           <tbody>
             {rows.map((row, r) => (
               <tr key={r}>
-                <td className="border border-carinex-navy/20 p-2"><input value={rowLabels[r] || ""} onChange={(e) => updateLabel(r, e.target.value)} className="w-full rounded border border-carinex-navy/15 px-2 py-1.5" /></td>
-                {row.map((cell, c) => <td key={c} className="border border-carinex-navy/20 p-2"><input value={cell} onChange={(e) => updateCell(r, c, e.target.value)} placeholder="Admin content" className="w-full rounded border border-carinex-navy/15 px-2 py-1.5" /></td>)}
+                <td className="border border-carinex-navy/20 p-2">
+                  <input
+                    value={rowLabels[r] || ""}
+                    onChange={(e) => updateLabel(r, e.target.value)}
+                    className="w-full rounded border border-carinex-navy/15 px-2 py-1.5"
+                  />
+                </td>
+                {row.map((cell, c) => (
+                  <td key={c} className="border border-carinex-navy/20 p-2">
+                    <input
+                      value={cell}
+                      onChange={(e) => updateCell(r, c, e.target.value)}
+                      placeholder="Admin content"
+                      className="w-full rounded border border-carinex-navy/15 px-2 py-1.5"
+                    />
+                  </td>
+                ))}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
       <div className="mt-2 flex gap-3">
-        <button type="button" onClick={addRow} className="text-xs font-semibold text-carinex-emerald hover:underline">+ Add row</button>
-        {rows.length > 1 && <button type="button" onClick={() => removeRow(rows.length - 1)} className="text-xs font-semibold text-red-600 hover:underline">Remove last row</button>}
+        <button
+          type="button"
+          onClick={addRow}
+          className="text-xs font-semibold text-carinex-emerald hover:underline"
+        >
+          + Add row
+        </button>
+        {rows.length > 1 && (
+          <button
+            type="button"
+            onClick={() => removeRow(rows.length - 1)}
+            className="text-xs font-semibold text-red-600 hover:underline"
+          >
+            Remove last row
+          </button>
+        )}
       </div>
     </div>
   );
