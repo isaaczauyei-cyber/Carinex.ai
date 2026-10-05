@@ -413,9 +413,7 @@ function SectionEditor({
 }) {
   const [title, setTitle] = useState(section.title);
   const [instructions, setInstructions] = useState(section.instructions || "");
-  const [config, setConfig] = useState<Record<string, unknown>>(
-    section.config || {}
-  );
+  const [config, setConfig] = useState<Record<string, unknown>>(section.config || {});
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
@@ -436,20 +434,41 @@ function SectionEditor({
   ) {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setUploading(true);
     const path = await onUploadFile(file, section.section_type);
     setUploading(false);
-
     if (path) {
-      patchConfig(
-        mediaType
-          ? { file_url: path, media_type: mediaType }
-          : { file_url: path }
-      );
+      patchConfig(mediaType ? { file_url: path, media_type: mediaType } : { file_url: path });
     }
-
     e.target.value = "";
+  }
+
+  const legacyMode =
+    section.section_type === "exercise"
+      ? config.mode === "checklist" ? "checklist" : config.mode === "text" ? "text" : null
+      : section.section_type === "practical_assignment"
+        ? config.submission_type === "file" ? "file" : config.submission_type === "text" ? "text" : null
+        : section.section_type === "career_application"
+          ? config.input_mode || "file"
+          : section.section_type === "training_activity"
+            ? config.activity_format === "table" ? "table" : config.activity_format === "freeform" ? "freeform" : null
+            : null;
+
+  const selectedMode = (config.input_mode as string) || legacyMode || "freeform";
+  const interactiveSection = ["exercise", "practical_assignment", "career_application"].includes(section.section_type);
+
+  function setInputMode(mode: string) {
+    const next: Record<string, unknown> = { input_mode: mode };
+    if (section.section_type === "exercise") {
+      next.mode = mode === "checklist" ? "checklist" : "text";
+    }
+    if (section.section_type === "practical_assignment") {
+      next.submission_type = mode === "file" ? "file" : "text";
+    }
+    if (section.section_type === "training_activity") {
+      next.activity_format = mode === "table" ? "table" : "freeform";
+    }
+    patchConfig(next);
   }
 
   return (
@@ -459,280 +478,171 @@ function SectionEditor({
           <span className="rounded-full bg-carinex-navy/5 px-2.5 py-1 text-xs font-semibold text-carinex-navy/60">
             {sectionTypeLabels[section.section_type] || section.section_type}
           </span>
-          <p className="mt-1 font-semibold text-carinex-navy">
-            {section.title}
-          </p>
+          <p className="mt-1 font-semibold text-carinex-navy">{section.title}</p>
         </button>
-
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-1 text-xs text-carinex-navy/60">
-            <input
-              type="checkbox"
-              checked={section.is_required}
-              onChange={(e) =>
-                void onUpdate({ is_required: e.target.checked })
-              }
-            />
+            <input type="checkbox" checked={section.is_required} onChange={(e) => void onUpdate({ is_required: e.target.checked })} />
             Required to advance
           </label>
-
-          <button
-            onClick={onDelete}
-            className="text-xs font-semibold text-red-600 hover:underline"
-          >
-            Delete
-          </button>
-
-          <button onClick={onToggle} className="text-carinex-navy/40">
-            {expanded ? "▲" : "▼"}
-          </button>
+          <button onClick={onDelete} className="text-xs font-semibold text-red-600 hover:underline">Delete</button>
+          <button onClick={onToggle} className="text-carinex-navy/40">{expanded ? "▲" : "▼"}</button>
         </div>
       </div>
 
       {expanded && (
-        <div className="flex flex-col gap-3 border-t border-carinex-navy/10 p-4">
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            onBlur={() => void onUpdate({ title })}
-            placeholder="Section title"
-            className="rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm focus:border-carinex-emerald focus:outline-none"
-          />
-
-          <div>
-            <p className="mb-1 text-xs font-semibold text-carinex-navy/50">Section instructions</p>
-            <RichTextEditor
-              value={instructions}
-              onSave={(next) => {
-                setInstructions(next);
-                void onUpdate({ instructions: next });
-              }}
-              placeholder="Write the instructions for this section"
-              rows={5}
-            />
-          </div>
+        <div className="flex flex-col gap-4 border-t border-carinex-navy/10 p-4">
+          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} onBlur={() => void onUpdate({ title })} placeholder="Section title" className="rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm" />
+          <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} onBlur={() => void onUpdate({ instructions })} placeholder="Instructions" rows={3} className="rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm" />
 
           {section.section_type === "course_material" && (
-            <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                disabled={uploading}
-                onClick={() =>
-                  document.getElementById(`file-${section.id}`)?.click()
-                }
-                className="w-fit rounded-full border border-carinex-navy/20 px-4 py-2 text-sm font-semibold text-carinex-navy disabled:opacity-60"
-              >
-                {uploading ? "Uploading…" : "Upload PDF or audio"}
-              </button>
-
-              <input
-                id={`file-${section.id}`}
-                type="file"
-                accept=".pdf,audio/*"
-                className="hidden"
-                onChange={(e) =>
-                  void handleFileUpload(
-                    e,
-                    e.target.files?.[0]?.type.startsWith("audio")
-                      ? "audio"
-                      : "pdf"
-                  )
-                }
-              />
-
-              {!!config.file_url && (
-                <p className="text-xs text-carinex-navy/50">
-                  File saved: {config.media_type === "audio" ? "Audio" : "PDF"} ✓
-                </p>
-              )}
+            <div className="rounded-lg border border-carinex-navy/10 p-4">
+              <p className="text-sm font-semibold text-carinex-navy">Course media</p>
+              <p className="mt-1 text-xs text-carinex-navy/50">Upload a video, PDF, or audio file for learners.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <label className="cursor-pointer rounded-full border border-carinex-navy/20 px-4 py-2 text-sm font-semibold text-carinex-navy">
+                  {uploading ? "Uploading…" : "Upload video / PDF / audio"}
+                  <input
+                    type="file"
+                    accept="video/*,.mp4,.webm,.mov,.pdf,audio/*"
+                    className="hidden"
+                    disabled={uploading}
+                    onChange={(e) => {
+                      const type = e.target.files?.[0]?.type || "";
+                      void handleFileUpload(e, type.startsWith("video") ? "video" : type.startsWith("audio") ? "audio" : "pdf");
+                    }}
+                  />
+                </label>
+              </div>
+              {!!config.file_url && <p className="mt-2 text-xs text-carinex-navy/50">Saved: {String(config.media_type || "file")} ✓</p>}
             </div>
           )}
 
-          {section.section_type === "exercise" && (
-            <div className="flex flex-col gap-2">
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => patchConfig({ mode: "checklist" })}
-                  className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                    config.mode === "checklist"
-                      ? "bg-carinex-navy text-white"
-                      : "border border-carinex-navy/20"
-                  }`}
-                >
-                  Checklist
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => patchConfig({ mode: "text" })}
-                  className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                    config.mode === "text"
-                      ? "bg-carinex-navy text-white"
-                      : "border border-carinex-navy/20"
-                  }`}
-                >
-                  Fill-in text
-                </button>
+          {(interactiveSection || section.section_type === "training_activity") && (
+            <div className="rounded-lg border border-carinex-navy/10 p-4">
+              <p className="text-sm font-semibold text-carinex-navy">Learner response format</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {[
+                  ["table", "Tabular"],
+                  ["freeform", "Freeform"],
+                  ["checklist", "Checklist"],
+                  ["text", "Fill-in text"],
+                  ["file", "File upload"],
+                ].map(([mode, label]) => (
+                  <button key={mode} type="button" onClick={() => setInputMode(mode)} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${selectedMode === mode ? "bg-carinex-navy text-white" : "border border-carinex-navy/20 text-carinex-navy"}`}>
+                    {label}
+                  </button>
+                ))}
               </div>
 
-              {config.mode === "checklist" && (
-                <div className="flex flex-col gap-3">
-                  {(((config.items as string[]) || []).map((item, index) => (
-                    <div key={index} className="rounded-lg border border-carinex-navy/10 p-3">
-                      <div className="mb-1 flex items-center justify-between">
-                        <p className="text-xs font-semibold text-carinex-navy/60">Checklist item {index + 1}</p>
-                        <button type="button" onClick={() => patchConfig({ items: ((config.items as string[]) || []).filter((_, i) => i !== index) })} className="text-xs text-red-600 hover:underline">Remove</button>
-                      </div>
-                      <RichTextEditor value={item} onSave={(next) => { const items = [...(((config.items as string[]) || []))]; items[index] = next; patchConfig({ items }); }} placeholder="Write this checklist item" rows={2} />
-                    </div>
-                  )))}
-                  <button type="button" onClick={() => patchConfig({ items: [...(((config.items as string[]) || [])), ""] })} className="w-fit text-xs font-semibold text-carinex-emerald hover:underline">+ Add checklist item</button>
+              {selectedMode === "checklist" && (
+                <div className="mt-4">
+                  <p className="mb-1 text-xs font-semibold text-carinex-navy/50">Checklist items — one per line</p>
+                  <textarea value={((config.items as string[]) || []).join("\n")} onChange={(e) => patchConfig({ items: e.target.value.split("\n") })} rows={5} placeholder="Item 1\nItem 2" className="w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm" />
+                </div>
+              )}
+
+              {selectedMode === "table" && (
+                <AdminTableBuilder config={config} onChange={patchConfig} />
+              )}
+
+              {selectedMode === "file" && (
+                <div className="mt-4">
+                  <p className="mb-2 text-xs text-carinex-navy/50">Learners will be able to upload a file when completing this section.</p>
+                  <p className="text-xs font-semibold text-carinex-emerald">File upload enabled ✓</p>
                 </div>
               )}
             </div>
           )}
 
-          {section.section_type === "practical_assignment" && (
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => patchConfig({ submission_type: "file" })}
-                className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                  config.submission_type === "file"
-                    ? "bg-carinex-navy text-white"
-                    : "border border-carinex-navy/20"
-                }`}
-              >
-                File submission
-              </button>
-
-              <button
-                type="button"
-                onClick={() => patchConfig({ submission_type: "text" })}
-                className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                  config.submission_type === "text"
-                    ? "bg-carinex-navy text-white"
-                    : "border border-carinex-navy/20"
-                }`}
-              >
-                Text submission
-              </button>
-            </div>
-          )}
-
           {section.section_type === "key_takeaways" && (
-             <div>
+            <div>
               <p className="mb-1 text-xs font-semibold text-carinex-navy/50">Key takeaways</p>
-              <RichTextEditor
-                value={(config.body as string) || ""}
-                onSave={(next) => patchConfig({ body: next })}
-                placeholder="Write the key takeaways here"
-                rows={6}
-              />
-          </div>
-          )}
-
-          {section.section_type === "career_application" && (
-            <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                disabled={uploading}
-                onClick={() =>
-                  document.getElementById(`file-${section.id}`)?.click()
-                }
-                className="w-fit rounded-full border border-carinex-navy/20 px-4 py-2 text-sm font-semibold text-carinex-navy disabled:opacity-60"
-              >
-                {uploading ? "Uploading…" : "Upload PDF"}
-              </button>
-
-              <input
-                id={`file-${section.id}`}
-                type="file"
-                accept=".pdf"
-                className="hidden"
-                onChange={(e) => void handleFileUpload(e)}
-              />
-
-              {!!config.file_url && (
-                <p className="text-xs text-carinex-navy/50">
-                  PDF saved ✓
-                </p>
-              )}
+              <RichTextEditor value={(config.body as string) || ""} onSave={(next) => patchConfig({ body: next })} placeholder="Write the key takeaways here" rows={6} />
             </div>
           )}
 
           {section.section_type === "training_activity" && (
-            <div className="flex flex-col gap-3">
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => patchConfig({ activity_format: "table" })}
-                  className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                    config.activity_format === "table"
-                      ? "bg-carinex-navy text-white"
-                      : "border border-carinex-navy/20"
-                  }`}
-                >
-                  Tabular
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => patchConfig({ activity_format: "freeform" })}
-                  className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                    config.activity_format === "freeform"
-                      ? "bg-carinex-navy text-white"
-                      : "border border-carinex-navy/20"
-                  }`}
-                >
-                  Freeform
-                </button>
-              </div>
-
-              {config.activity_format === "table" && (
-                <>
-                  <div>
-                    <p className="mb-2 text-xs font-semibold text-carinex-navy/50">Column headers — one rich-text field per column</p>
-                    <div className="flex flex-col gap-2">
-                      {(((config.columns as string[]) || []).map((col, index) => (
-                        <div key={index} className="flex items-start gap-2">
-                          <div className="min-w-0 flex-1"><RichTextEditor value={col} onSave={(next) => { const columns = [...(((config.columns as string[]) || []))]; columns[index] = next; patchConfig({ columns }); }} placeholder={`Column ${index + 1}`} rows={2} /></div>
-                          <button type="button" onClick={() => patchConfig({ columns: ((config.columns as string[]) || []).filter((_, i) => i !== index) })} className="pt-2 text-xs text-red-600 hover:underline">Remove</button>
-                        </div>
-                      )))}
-                      <button type="button" onClick={() => patchConfig({ columns: [...(((config.columns as string[]) || [])), ""] })} className="w-fit text-xs font-semibold text-carinex-emerald hover:underline">+ Add column</button>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="mb-2 text-xs font-semibold text-carinex-navy/50">Row labels — first column's content. Leave empty to let the nurse add her own rows.</p>
-                    <div className="flex flex-col gap-2">
-                      {(((config.row_labels as string[]) || []).map((label, index) => (
-                        <div key={index} className="flex items-start gap-2">
-                          <div className="min-w-0 flex-1"><RichTextEditor value={label} onSave={(next) => { const row_labels = [...(((config.row_labels as string[]) || []))]; row_labels[index] = next; patchConfig({ row_labels }); }} placeholder={`Row label ${index + 1}`} rows={2} /></div>
-                          <button type="button" onClick={() => patchConfig({ row_labels: ((config.row_labels as string[]) || []).filter((_, i) => i !== index) })} className="pt-2 text-xs text-red-600 hover:underline">Remove</button>
-                        </div>
-                      )))}
-                      <button type="button" onClick={() => patchConfig({ row_labels: [...(((config.row_labels as string[]) || [])), ""] })} className="w-fit text-xs font-semibold text-carinex-emerald hover:underline">+ Add row label</button>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              <div>
-                <p className="mb-1 text-xs font-semibold text-carinex-navy/50">Why this matters</p>
-                <RichTextEditor
-                  value={(config.why_it_matters as string) || ""}
-                  onSave={(next) => patchConfig({ why_it_matters: next })}
-                  placeholder="Why this matters for healthcare AI teams"
-                  rows={4}
-                />
-              </div>
+            <div>
+              <p className="mb-1 text-xs font-semibold text-carinex-navy/50">Why this matters</p>
+              <RichTextEditor value={(config.why_it_matters as string) || ""} onSave={(next) => patchConfig({ why_it_matters: next })} placeholder="Why this matters for healthcare AI teams" rows={4} />
             </div>
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+function AdminTableBuilder({
+  config,
+  onChange,
+}: {
+  config: Record<string, unknown>;
+  onChange: (next: Record<string, unknown>) => void;
+}) {
+  const columns = (config.columns as string[]) || ["S/N", "Column 1", "Column 2"];
+  const rowLabels = (config.row_labels as string[]) || ["1", "2", "3"];
+  const raw = Array.isArray(config.table_rows) ? config.table_rows as unknown[] : [];
+  const width = Math.max(columns.length - (rowLabels.length ? 1 : 0), 1);
+  const rows = rowLabels.map((_, i) => {
+    const row = Array.isArray(raw[i]) ? raw[i] as unknown[] : [];
+    return Array.from({ length: width }, (_, j) => String(row[j] ?? ""));
+  });
+
+  function save(nextRows: string[][], nextLabels = rowLabels) {
+    onChange({ columns, row_labels: nextLabels, table_rows: nextRows });
+  }
+
+  function updateCell(r: number, c: number, value: string) {
+    const next = rows.map((row) => [...row]);
+    next[r][c] = value;
+    save(next);
+  }
+
+  function updateLabel(r: number, value: string) {
+    const labels = [...rowLabels];
+    labels[r] = value;
+    save(rows, labels);
+  }
+
+  function addRow() {
+    save([...rows, Array.from({ length: width }, () => "")], [...rowLabels, String(rowLabels.length + 1)]);
+  }
+
+  function removeRow(index: number) {
+    save(rows.filter((_, i) => i !== index), rowLabels.filter((_, i) => i !== index));
+  }
+
+  function setHeaders(value: string) {
+    const nextColumns = value.split(",").map((x) => x.trim()).filter(Boolean);
+    const nextWidth = Math.max(nextColumns.length - (rowLabels.length ? 1 : 0), 1);
+    const nextRows = rows.map((row) => Array.from({ length: nextWidth }, (_, i) => row[i] || ""));
+    onChange({ columns: nextColumns, row_labels: rowLabels, table_rows: nextRows });
+  }
+
+  return (
+    <div className="mt-4">
+      <p className="mb-1 text-xs font-semibold text-carinex-navy/50">Column headers</p>
+      <input value={columns.join(", ")} onChange={(e) => setHeaders(e.target.value)} placeholder="S/N, Test 1, Test 2, Test 3" className="w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm" />
+      <p className="mb-1 mt-4 text-xs font-semibold text-carinex-navy/50">Rows and cell content</p>
+      <div className="overflow-x-auto rounded-lg border border-carinex-navy/20">
+        <table className="w-full border-collapse text-sm">
+          <thead><tr>{columns.map((c) => <th key={c} className="border border-carinex-navy/20 bg-carinex-navy/[0.03] p-2 text-left">{c}</th>)}</tr></thead>
+          <tbody>
+            {rows.map((row, r) => (
+              <tr key={r}>
+                <td className="border border-carinex-navy/20 p-2"><input value={rowLabels[r] || ""} onChange={(e) => updateLabel(r, e.target.value)} className="w-full rounded border border-carinex-navy/15 px-2 py-1.5" /></td>
+                {row.map((cell, c) => <td key={c} className="border border-carinex-navy/20 p-2"><input value={cell} onChange={(e) => updateCell(r, c, e.target.value)} placeholder="Admin content" className="w-full rounded border border-carinex-navy/15 px-2 py-1.5" /></td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="mt-2 flex gap-3">
+        <button type="button" onClick={addRow} className="text-xs font-semibold text-carinex-emerald hover:underline">+ Add row</button>
+        {rows.length > 1 && <button type="button" onClick={() => removeRow(rows.length - 1)} className="text-xs font-semibold text-red-600 hover:underline">Remove last row</button>}
+      </div>
     </div>
   );
 }
