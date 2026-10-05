@@ -242,7 +242,7 @@ export default function SectionActions({
                 <thead>
                   <tr>
                     {columns.map((col) => (
-                      <th key={col} className="border-b border-carinex-navy/10 p-2 text-left font-semibold text-carinex-navy">
+                      <th key={col} className="border border-carinex-navy/20 bg-carinex-navy/[0.03] p-2 text-left font-semibold text-carinex-navy">
                         <RichText text={col} />
                       </th>
                     ))}
@@ -253,16 +253,17 @@ export default function SectionActions({
                   {hasRowLabels
                     ? rowLabels.map((label, rIdx) => (
                         <tr key={rIdx}>
-                          <td className="border-b border-carinex-navy/5 p-2 align-top text-sm text-carinex-navy">
+                          <td className="border border-carinex-navy/15 p-2 align-top text-sm text-carinex-navy">
                             <RichText text={label} />
                           </td>
                           {editableColumns.map((_, cIdx) => (
-                            <td key={cIdx} className="border-b border-carinex-navy/5 p-2">
-                              <RichTextEditor
+                            <td key={cIdx} className="border border-carinex-navy/15 p-2">
+                              <input
+                                type="text"
                                 value={rows[rIdx]?.[cIdx] || ""}
-                                onSave={(value) => updateCell(rIdx, cIdx, value)}
+                                onChange={(e) => updateCell(rIdx, cIdx, e.target.value)}
                                 placeholder="Enter your response"
-                                rows={2}
+                                className="w-full rounded border border-carinex-navy/20 px-3 py-2 text-sm focus:border-carinex-emerald focus:outline-none"
                               />
                             </td>
                           ))}
@@ -271,16 +272,17 @@ export default function SectionActions({
                     : rows.map((row, rIdx) => (
                         <tr key={rIdx}>
                           {row.map((cell, cIdx) => (
-                            <td key={cIdx} className="border-b border-carinex-navy/5 p-2">
-                              <RichTextEditor
+                            <td key={cIdx} className="border border-carinex-navy/15 p-2">
+                              <input
+                                type="text"
                                 value={cell}
-                                onSave={(value) => updateCell(rIdx, cIdx, value)}
+                                onChange={(e) => updateCell(rIdx, cIdx, e.target.value)}
                                 placeholder="Enter your response"
-                                rows={2}
+                                className="w-full rounded border border-carinex-navy/20 px-3 py-2 text-sm focus:border-carinex-emerald focus:outline-none"
                               />
                             </td>
                           ))}
-                          <td className="border-b border-carinex-navy/5 p-2">
+                          <td className="border border-carinex-navy/15 p-2">
                             <button
                               type="button"
                               onClick={() => removeRow(rIdx)}

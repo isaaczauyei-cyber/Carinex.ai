@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import RichText from "@/components/RichText";
 
@@ -13,6 +13,7 @@ export default function QuizForm({ nurseId, courseId, moduleId, questions }: { n
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ score: number; passed: boolean; courseCompleted?: boolean } | null>(null);
   const [error, setError] = useState("");
+  const [leaving, setLeaving] = useState(false);
 
   function selectOption(questionId: string, optionId: string) { setAnswers((prev) => ({ ...prev, [questionId]: optionId })); }
 
@@ -25,14 +26,36 @@ export default function QuizForm({ nurseId, courseId, moduleId, questions }: { n
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Something went wrong — try again."); return; }
       setResult(data);
+      if (data.passed) setLeaving(true);
     } catch { setError("Unable to submit the quiz. Check your connection and try again."); }
     finally { setSubmitting(false); }
   }
 
+  useEffect(() => {
+    if (!result?.passed) return;
+    const timer = window.setTimeout(() => {
+      router.push(`/dashboard/learning/inhouse/${courseId}/start`);
+    }, 1800);
+    return () => window.clearTimeout(timer);
+  }, [result?.passed, courseId, router]);
+
   if (result) return (
-    <div className="rounded-xl border border-carinex-navy/10 p-6 text-center">
-      <p className="text-3xl font-bold text-carinex-navy">{result.score}%</p>
-      {result.passed ? <><p className="mt-2 font-semibold text-carinex-emerald">You passed! 🎉</p><button onClick={() => router.push("/dashboard/learning")} className="mt-4 rounded-full bg-carinex-emerald px-6 py-2.5 text-sm font-semibold text-carinex-white">Back to Learning Hub</button></> : <><p className="mt-2 text-amber-700">Not quite — review the lessons and try again.</p><button onClick={() => window.location.reload()} className="mt-4 rounded-full bg-carinex-navy px-6 py-2.5 text-sm font-semibold text-carinex-white">Retake quiz</button></>}
+    <div className="rounded-xl border border-carinex-navy/10 p-8 text-center">
+      {result.passed ? (
+        <div className="animate-[fadeIn_0.35s_ease-out]">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-carinex-emerald/10 text-3xl">✓</div>
+          <p className="mt-4 text-2xl font-bold text-carinex-navy">Module complete! 🎉</p>
+          <p className="mt-2 font-semibold text-carinex-emerald">You scored {result.score}% and passed.</p>
+          <p className="mt-2 text-sm text-carinex-navy/60">Taking you to the next module…</p>
+          <button disabled={leaving} onClick={() => router.push(`/dashboard/learning/inhouse/${courseId}/start`)} className="mt-5 rounded-full bg-carinex-emerald px-6 py-2.5 text-sm font-semibold text-carinex-white disabled:opacity-60">Continue</button>
+        </div>
+      ) : (
+        <>
+          <p className="text-3xl font-bold text-carinex-navy">{result.score}%</p>
+          <p className="mt-2 text-amber-700">Not quite — review the lessons and try again.</p>
+          <button onClick={() => window.location.reload()} className="mt-4 rounded-full bg-carinex-navy px-6 py-2.5 text-sm font-semibold text-carinex-white">Retake quiz</button>
+        </>
+      )}
     </div>
   );
 
