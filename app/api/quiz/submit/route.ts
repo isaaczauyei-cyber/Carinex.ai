@@ -1,20 +1,26 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { hasPassedEveryModule } from "@/lib/course-content";
+import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
   const { nurseId, courseId, moduleId, answers } = await request.json();
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorised" }, { status: 401 });
+  const { data: profile } = await supabase.from("nurse_profiles").select("id").eq("user_id", user.id).maybeSingle();
+  if (!profile || profile.id !== nurseId) return NextResponse.json({ error: "Invalid nurse profile" }, { status: 403 });
 
-  if (!nurseId || !courseId || !moduleId || !answers) {
-    return NextResponse.json({ error: "Missing required fields." }, { status: 400 });
+  if (!nurseId || !moduleId || !answers) {
+    return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
   const admin = createAdminClient();
-
-  const { data: questions } = await admin
-    .from("assessment_questions")
-    .select("id, correct_option_id, points")
-    .eq("module_id", moduleId);
+  if (Number(courseId) === 23) {
+    const { data: access } = await admin.from("course_enrollments").select("id").eq("user_id", user.id).eq("course_id", 23).eq("status", "approved").limit(1).maybeSingle();
+    if (!access) return NextResponse.json({ error: "Course access has not been approved." }, { status: 403 });
+  }
+  const { data: moduleRow } = await admin.from("course_modules").select("id").eq("id", moduleId).eq("course_id", courseId).maybeSingle();
+  if (!moduleRow) return NextResponse.json({ error: "Invalid course module" }, { status: 400 });
 
   const { data: courseModule } = await admin
     .from("course_modules")
@@ -22,45 +28,74 @@ export async function POST(request: Request) {
     .eq("id", moduleId)
     .maybeSingle();
 
-  if (!questions || questions.length === 0 || !courseModule) {
-    return NextResponse.json({ error: "Quiz not found." }, { status: 404 });
+  const { data: legacyQuestions } = await admin
+    .from("course_quiz_questions")
+    .select("id, course_quiz_options(id, is_correct)")
+    .eq("module_id", moduleId);
+
+  let correctCount = 0;
+  let questionCount = 0;
+
+  if (legacyQuestions && legacyQuestions.length > 0) {
+    questionCount = legacyQuestions.length;
+    for (const q of legacyQuestions) {
+      const submittedOptionId = answers[q.id];
+      const correctOption = (q.course_quiz_options || []).find((o: { is_correct: boolean }) => o.is_correct);
+      if (correctOption && submittedOptionId === (correctOption as { id: string }).id) correctCount++;
+    }
+  } else {
+    const { data: assessmentQuestions } = await admin.from("assessment_questions").select("id, options, correct_option_id").eq("module_id", moduleId);
+    if (!assessmentQuestions || assessmentQuestions.length === 0) return NextResponse.json({ error: "Quiz not found" }, { status: 404 });
+    questionCount = assessmentQuestions.length;
+    for (const q of assessmentQuestions) if (answers[q.id] && answers[q.id] === q.correct_option_id) correctCount++;
   }
 
-  const totalPoints = questions.reduce((sum, q) => sum + Number(q.points || 1), 0);
-  const earnedPoints = questions.reduce((sum, q) => {
-    const submitted = answers[q.id];
-    return submitted === q.correct_option_id ? sum + Number(q.points || 1) : sum;
-  }, 0);
+  const score = Math.round((correctCount / questionCount) * 100);
+  const passingScore = courseModule?.quiz_passing_score ?? 70;
+  const passed = score >= passingScore;
 
-  const score = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0;
-  const passed = score >= (courseModule.quiz_passing_score || 70);
+  await admin.from("nurse_quiz_attempts").insert({ nurse_id: nurseId, course_id: courseId, module_id: moduleId, score, passed });
 
-  await admin.from("nurse_quiz_attempts").insert({
-    nurse_id: nurseId,
-    course_id: courseId,
-    module_id: moduleId,
-    score,
-    passed,
-    attempted_at: new Date().toISOString(),
-  });
-
-  let courseCompleted = false;
-
+  // Course-level completion now means: every module's quiz has been passed.
   if (passed) {
-    courseCompleted = await hasPassedEveryModule(nurseId, courseId);
+    const { data: allModules } = await admin
+      .from("course_modules")
+      .select("id")
+      .eq("course_id", courseId);
 
-    if (courseCompleted) {
-      await admin.from("nurse_course_completions").upsert(
-        {
+    const { data: passedAttempts } = await admin
+      .from("nurse_quiz_attempts")
+      .select("module_id")
+      .eq("nurse_id", nurseId)
+      .eq("course_id", courseId)
+      .eq("passed", true);
+
+    const passedModuleIds = new Set((passedAttempts || []).map((a) => a.module_id));
+    const allPassed = (allModules || []).every((m) => passedModuleIds.has(m.id));
+
+    if (allPassed) {
+      const { data: existing } = await admin
+        .from("nurse_course_completions")
+        .select("id")
+        .eq("nurse_id", nurseId)
+        .eq("course_id", courseId)
+        .maybeSingle();
+
+      if (existing) {
+        await admin
+          .from("nurse_course_completions")
+          .update({ status: "completed", completed_at: new Date().toISOString() })
+          .eq("id", existing.id);
+      } else {
+        await admin.from("nurse_course_completions").insert({
           nurse_id: nurseId,
           course_id: courseId,
           status: "completed",
           completed_at: new Date().toISOString(),
-        },
-        { onConflict: "nurse_id,course_id" }
-      );
+        });
+      }
     }
   }
 
-  return NextResponse.json({ score, passed, courseCompleted });
+  return NextResponse.json({ score, passed });
 }
