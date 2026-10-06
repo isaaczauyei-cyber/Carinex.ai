@@ -56,7 +56,7 @@ export default async function LearningHubPage() {
   const specIds = specializations.map((s) => s.id);
 
   const { data: allCourses } = specIds.length
-    ? await supabase.from("courses").select("*").in("specialization_id", specIds)
+    ? await supabase.from("courses").select("*").in("specialization_id", specIds).or("is_in_house.is.null,is_in_house.eq.false,is_published.eq.true")
     : { data: [] };
 
   const { data: completions } = await supabase
