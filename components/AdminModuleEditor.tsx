@@ -68,6 +68,12 @@ export default function AdminModuleEditor({
   const [questions, setQuestions] = useState<Question[]>(initialQuestions || []);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
 
+  async function markCoursePrivate() {
+    try {
+      await fetch(`/api/admin/in-house-courses/${module.course_id}/touch`, { method: "POST" });
+    } catch {}
+  }
+
   useEffect(() => {
     setTitle(module.title || "");
     setSummary(module.summary || "");
@@ -103,7 +109,8 @@ export default function AdminModuleEditor({
       return;
     }
 
-    alert("Module details saved.");
+    await markCoursePrivate();
+    alert("Module details saved. The course is now private until you publish it again.");
   }
 
   async function addSection(type: string) {
@@ -134,6 +141,7 @@ export default function AdminModuleEditor({
     }
 
     if (data) {
+      await markCoursePrivate();
       setSections((prev) => [...prev, data as Section]);
       setExpandedSection(data.id);
     }
@@ -150,6 +158,7 @@ export default function AdminModuleEditor({
       return;
     }
 
+    await markCoursePrivate();
     setSections((prev) =>
       prev.map((section) =>
         section.id === id ? { ...section, ...patch } : section
@@ -170,6 +179,7 @@ export default function AdminModuleEditor({
       return;
     }
 
+    await markCoursePrivate();
     setSections((prev) => prev.filter((section) => section.id !== id));
 
     if (expandedSection === id) {
@@ -225,6 +235,7 @@ export default function AdminModuleEditor({
     }
 
     if (data) {
+      await markCoursePrivate();
       setQuestions((prev) => [...prev, data as Question]);
     }
   }
@@ -240,6 +251,7 @@ export default function AdminModuleEditor({
       return;
     }
 
+    await markCoursePrivate();
     setQuestions((prev) =>
       prev.map((question) =>
         question.id === id ? { ...question, ...patch } : question
@@ -260,6 +272,7 @@ export default function AdminModuleEditor({
       return;
     }
 
+    await markCoursePrivate();
     setQuestions((prev) => prev.filter((question) => question.id !== id));
   }
 

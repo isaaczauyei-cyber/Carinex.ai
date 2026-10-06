@@ -49,6 +49,7 @@ export default function InHouseCoursePricingEditor({
       price_course_plus_guide: guide && guide > 0 ? guide : null,
       price_display: display,
       is_free: only <= 0,
+      is_published: false,
     }).eq("id", courseId);
 
     setSaving(false);

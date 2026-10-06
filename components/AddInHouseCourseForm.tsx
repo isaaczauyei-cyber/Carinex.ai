@@ -39,7 +39,7 @@ export default function AddInHouseCourseForm({ specializations }: { specializati
       title: title.trim(),
       provider: provider.trim() || "Carinex",
       specialization_id: specializationId ? Number(specializationId) : null,
-      track_type: "in_house",
+      track_type: "national",
       price_display: priceDisplay,
       price_course_only: only,
       price_course_plus_guide: guide && guide > 0 ? guide : null,
@@ -47,6 +47,7 @@ export default function AddInHouseCourseForm({ specializations }: { specializati
       summary: summary.trim() || null,
       is_free: only <= 0,
       is_in_house: true,
+      is_published: false,
     }).select("id").single();
 
     setSaving(false);

@@ -1,29 +1,124 @@
 "use client";
+
 import { useMemo, useRef, useState } from "react";
 import RichTextEditor from "@/components/RichTextEditor";
-type Course = { id: number; title: string; provider: string | null; specialization_id: number | null; track_type: string | null; price_display: string | null; affiliate_link: string; summary: string | null; is_free: boolean | null; description_long: string | null; duration_display: string | null; level: string | null; image_url: string | null };
+
+type Course = {
+  id: number;
+  title: string;
+  provider: string | null;
+  specialization_id: number | null;
+  track_type: string | null;
+  price_display: string | null;
+  affiliate_link: string | null;
+  summary: string | null;
+  is_free: boolean | null;
+  description_long: string | null;
+  duration_display: string | null;
+  level: string | null;
+  image_url: string | null;
+  is_in_house: boolean | null;
+  is_published?: boolean | null;
+};
 type Specialization = { id: number; name: string; track_type: string | null };
 type SyllabusItem = { id?: number | string; course_id: number; order_index: number; title: string; description: string | null };
-type Draft = Omit<Course, "id">;
+type Draft = Omit<Course, "id" | "is_in_house" | "is_published">;
+
 const emptyDraft: Draft = { title: "", provider: "", specialization_id: null, track_type: "global", price_display: "", affiliate_link: "", summary: "", is_free: false, description_long: "", duration_display: "", level: "", image_url: "" };
 const inputClass = "w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm text-carinex-navy focus:border-carinex-emerald focus:outline-none";
+
+function toDraft(course: Course): Draft {
+  const { id, is_in_house, is_published, ...rest } = course;
+  return { ...emptyDraft, ...rest };
+}
+
 export default function ExternalCourseManager({ courses, specializations, syllabus }: { courses: Course[]; specializations: Specialization[]; syllabus: SyllabusItem[] }) {
- const [rows,setRows]=useState(courses); const [syllabusRows,setSyllabusRows]=useState(syllabus); const [selectedId,setSelectedId]=useState<number|"new">(courses[0]?.id??"new");
- const [draft,setDraft]=useState<Draft>(courses[0]?toDraft(courses[0]):{...emptyDraft,specialization_id:specializations[0]?.id??null}); const [items,setItems]=useState<SyllabusItem[]>(courses[0]?syllabus.filter(x=>x.course_id===courses[0].id):[]); const [saving,setSaving]=useState(false); const [notice,setNotice]=useState(""); const [uploadingImage,setUploadingImage]=useState(false); const imageInputRef=useRef<HTMLInputElement>(null);
- function toDraft(course:Course):Draft { const {id,...rest}=course; return {...emptyDraft,...rest}; }
- function choose(id:number|"new") { setSelectedId(id);setNotice(""); if(id==="new"){setDraft({...emptyDraft,specialization_id:specializations[0]?.id??null});setItems([]);}else{const c=rows.find(r=>r.id===id);setDraft(c?toDraft(c):{...emptyDraft});setItems(syllabusRows.filter(x=>x.course_id===id).sort((a,b)=>a.order_index-b.order_index));} }
- function set<K extends keyof Draft>(key:K,value:Draft[K]){setDraft(prev=>({...prev,[key]:value}));}
- function updateItem(index:number,patch:Partial<SyllabusItem>){setItems(prev=>prev.map((item,i)=>i===index?{...item,...patch}:item));}
- async function uploadCourseImage(file:File){setUploadingImage(true);setNotice("");try{const form=new FormData();form.append("file",file);if(selectedId!=="new")form.append("courseId",String(selectedId));const response=await fetch("/api/admin/course-content/image",{method:"POST",body:form});const result=await response.json();if(!response.ok)throw new Error(result.error||"Could not upload image.");setDraft(prev=>({...prev,image_url:result.url}));setNotice("Course image uploaded. Save the course to keep it.");}catch(error){setNotice(error instanceof Error?error.message:"Image upload failed.");}finally{setUploadingImage(false);}}
- async function save(){setSaving(true);setNotice("");try{const response=await fetch("/api/admin/course-content",{method:selectedId==="new"?"POST":"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({...draft,specialization_id:Number(draft.specialization_id),...(selectedId==="new"?{}:{id:selectedId})})});const result=await response.json();if(!response.ok)throw new Error(result.error||"Could not save course.");const id=selectedId==="new"?Number(result.id):selectedId;const sr=await fetch("/api/admin/course-content/syllabus",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({courseId:id,items})});const syllabusResult=await sr.json();if(!sr.ok)throw new Error(syllabusResult.error||"Course saved, but syllabus could not be saved.");const saved={...draft,id,specialization_id:Number(draft.specialization_id)} as Course;setRows(prev=>selectedId==="new"?[...prev,saved].sort((a,b)=>a.title.localeCompare(b.title)):prev.map(row=>row.id===id?saved:row));const savedItems=items.map((item,index)=>({...item,course_id:id,order_index:index+1}));setSyllabusRows(prev=>[...prev.filter(item=>item.course_id!==id),...savedItems]);setSelectedId(id);setItems(savedItems);setNotice("Course content saved successfully.");}catch(error){setNotice(error instanceof Error?error.message:"Something went wrong.");}finally{setSaving(false);}}
- const selectedLabel=useMemo(()=>selectedId==="new"?"New external course":rows.find(r=>r.id===selectedId)?.title||"Course",[selectedId,rows]);
- const field=(label:string,key:keyof Draft,type:"text"|"url"="text",placeholder="")=><label className="flex flex-col gap-1 text-xs font-semibold text-carinex-navy/70">{label}<input className={inputClass} type={type} value={String(draft[key]??"")} placeholder={placeholder} onChange={e=>set(key,e.target.value as never)}/></label>;
- return <div className="mt-8 grid gap-6 lg:grid-cols-[260px_1fr]">
-  <aside className="rounded-xl border border-carinex-navy/10 p-3"><button type="button" onClick={()=>choose("new")} className={`mb-3 w-full rounded-lg px-3 py-2 text-left text-sm font-bold ${selectedId==="new"?"bg-carinex-emerald text-white":"bg-carinex-navy/5 text-carinex-navy"}`}>+ Add external course</button><p className="px-2 pb-2 text-xs font-bold uppercase tracking-wide text-carinex-navy/40">Existing courses ({rows.length})</p><div className="flex max-h-[65vh] flex-col gap-1 overflow-y-auto">{rows.map(course=><button key={course.id} type="button" onClick={()=>choose(course.id)} className={`rounded-lg px-3 py-2 text-left text-sm ${selectedId===course.id?"bg-carinex-navy text-white":"text-carinex-navy hover:bg-carinex-navy/5"}`}>{course.title}<span className={`block text-xs ${selectedId===course.id?"text-white/60":"text-carinex-navy/40"}`}>{course.provider||"No provider"} · #{course.id}</span></button>)}{rows.length===0&&<p className="px-2 py-4 text-xs text-carinex-navy/50">No external courses found.</p>}</div></aside>
-  <div className="rounded-xl border border-carinex-navy/10 p-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-wide text-carinex-emerald">Course editor</p><h2 className="mt-1 text-xl font-bold text-carinex-navy">{selectedLabel}</h2></div><button type="button" onClick={save} disabled={saving} className="rounded-full bg-carinex-navy px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{saving?"Saving…":"Save course"}</button></div>
-  {notice&&<p className={`mt-4 rounded-lg p-3 text-sm ${notice.includes("successfully")?"bg-emerald-50 text-emerald-800":"bg-red-50 text-red-700"}`}>{notice}</p>}
-  <div className="mt-6 grid gap-4 sm:grid-cols-2">{field("Course title *","title","text","e.g. Introduction to Telehealth")}{field("Provider *","provider","text","Coursera, edX, etc.")}<label className="flex flex-col gap-1 text-xs font-semibold text-carinex-navy/70">Specialization *<select className={inputClass} value={draft.specialization_id??""} onChange={e=>set("specialization_id",e.target.value?Number(e.target.value):null)}><option value="">Select specialization</option>{specializations.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select></label><label className="flex flex-col gap-1 text-xs font-semibold text-carinex-navy/70">Track *<select className={inputClass} value={draft.track_type||"global"} onChange={e=>set("track_type",e.target.value)}><option value="national">National</option><option value="global">Global</option></select></label>{field("Price display","price_display","text","Free or $49")}{field("Duration","duration_display","text","e.g. 6 weeks")}{field("Level","level","text","Beginner / Intermediate")}<div className="flex flex-col gap-2"><span>Course image</span><div className="flex flex-wrap items-center gap-3"><button type="button" disabled={uploadingImage} onClick={()=>imageInputRef.current?.click()} className="rounded-full border border-carinex-navy/20 px-4 py-2 text-sm font-semibold text-carinex-navy disabled:opacity-50">{uploadingImage?"Uploading…":"Upload image"}</button><input ref={imageInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={e=>{const file=e.target.files?.[0];if(file)void uploadCourseImage(file);e.currentTarget.value=""}}/>{draft.image_url&&<span className="text-xs text-carinex-navy/50">Image uploaded ✓</span>}</div>{draft.image_url&&<img src={draft.image_url} alt="Course preview" className="h-24 w-full max-w-xs rounded-lg border border-carinex-navy/10 object-cover"/>}</div><div className="sm:col-span-2">{field("External course / affiliate URL *","affiliate_link","url","https://...")}</div><label className="flex items-center gap-2 text-sm text-carinex-navy"><input type="checkbox" checked={!!draft.is_free} onChange={e=>set("is_free",e.target.checked)}/>This course is free</label><div className="flex flex-col gap-1 text-xs font-semibold text-carinex-navy/70 sm:col-span-2"><span>Short summary</span><RichTextEditor value={draft.summary||""} onSave={next=>set("summary",next)} placeholder="Write a concise summary of the course" rows={3}/></div><div className="flex flex-col gap-1 text-xs font-semibold text-carinex-navy/70 sm:col-span-2"><span>Full course description</span><RichTextEditor value={draft.description_long||""} onSave={next=>set("description_long",next)} placeholder="Write an original Carinex summary. Do not copy provider descriptions verbatim." rows={7}/></div></div>
-  <div className="mt-8 border-t border-carinex-navy/10 pt-6"><div className="flex items-center justify-between gap-3"><div><h3 className="font-bold text-carinex-navy">Syllabus / course outline</h3><p className="mt-1 text-xs text-carinex-navy/50">Add the topics shown on the course detail page.</p></div><button type="button" onClick={()=>setItems(prev=>[...prev,{course_id:selectedId==="new"?0:selectedId,order_index:prev.length+1,title:"",description:""}])} className="rounded-full border border-carinex-navy/20 px-3 py-2 text-xs font-semibold text-carinex-navy">+ Add topic</button></div><div className="mt-4 flex flex-col gap-3">{items.map((item,index)=><div key={item.id??`new-${index}`} className="rounded-lg bg-carinex-navy/[0.03] p-3"><div className="flex items-center justify-between gap-3"><span className="text-xs font-bold text-carinex-navy/40">TOPIC {index+1}</span><button type="button" onClick={()=>setItems(prev=>prev.filter((_,i)=>i!==index))} className="text-xs font-semibold text-red-600">Remove</button></div><input className={`${inputClass} mt-2`} value={item.title} onChange={e=>updateItem(index,{title:e.target.value})} placeholder="Topic title"/><div className="mt-2"><RichTextEditor value={item.description||""} onSave={next=>updateItem(index,{description:next})} placeholder="Short topic description (optional)" rows={3}/></div></div>)}{items.length===0&&<p className="rounded-lg border border-dashed border-carinex-navy/20 p-5 text-center text-sm text-carinex-navy/40">No syllabus topics added.</p>}</div></div>
-  <div className="mt-6 flex justify-end"><button type="button" onClick={save} disabled={saving} className="rounded-full bg-carinex-emerald px-6 py-3 text-sm font-semibold text-white disabled:opacity-50">{saving?"Saving…":"Save course and syllabus"}</button></div></div>
- </div>;
+  const [rows, setRows] = useState(courses);
+  const [syllabusRows, setSyllabusRows] = useState(syllabus);
+  const [selectedId, setSelectedId] = useState<number | "new">(courses[0]?.id ?? "new");
+  const [draft, setDraft] = useState<Draft>(courses[0] ? toDraft(courses[0]) : { ...emptyDraft, specialization_id: specializations[0]?.id ?? null });
+  const [items, setItems] = useState<SyllabusItem[]>(courses[0] ? syllabus.filter((x) => x.course_id === courses[0].id).sort((a, b) => a.order_index - b.order_index) : []);
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+
+  const selectedCourse = selectedId === "new" ? null : rows.find((r) => r.id === selectedId) || null;
+  const isInHouse = Boolean(selectedCourse?.is_in_house);
+
+  function choose(id: number | "new") {
+    setSelectedId(id); setNotice("");
+    if (id === "new") { setDraft({ ...emptyDraft, specialization_id: specializations[0]?.id ?? null }); setItems([]); return; }
+    const c = rows.find((r) => r.id === id);
+    setDraft(c ? toDraft(c) : { ...emptyDraft });
+    setItems(syllabusRows.filter((x) => x.course_id === id).sort((a, b) => a.order_index - b.order_index));
+  }
+
+  function set<K extends keyof Draft>(key: K, value: Draft[K]) { setDraft((prev) => ({ ...prev, [key]: value })); }
+  function updateItem(index: number, patch: Partial<SyllabusItem>) { setItems((prev) => prev.map((item, i) => i === index ? { ...item, ...patch } : item)); }
+
+  async function uploadCourseImage(file: File) {
+    setUploadingImage(true); setNotice("");
+    try {
+      const form = new FormData(); form.append("file", file); if (selectedId !== "new") form.append("courseId", String(selectedId));
+      const response = await fetch("/api/admin/course-content/image", { method: "POST", body: form });
+      const result = await response.json(); if (!response.ok) throw new Error(result.error || "Could not upload image.");
+      setDraft((prev) => ({ ...prev, image_url: result.url })); setNotice("Course image uploaded. Save the course to keep it.");
+    } catch (error) { setNotice(error instanceof Error ? error.message : "Image upload failed."); }
+    finally { setUploadingImage(false); }
+  }
+
+  async function save() {
+    setSaving(true); setNotice("");
+    try {
+      const response = await fetch("/api/admin/course-content", { method: selectedId === "new" ? "POST" : "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...draft, specialization_id: draft.specialization_id ? Number(draft.specialization_id) : null, ...(selectedId === "new" ? {} : { id: selectedId }) }) });
+      const result = await response.json(); if (!response.ok) throw new Error(result.error || "Could not save course.");
+      const id = selectedId === "new" ? Number(result.id) : selectedId;
+      const updatedCourse: Course = { ...(selectedId === "new" ? { id } : rows.find((r) => r.id === id) || { id } as Course), ...draft, id, is_in_house: selectedId === "new" ? false : rows.find((r) => r.id === id)?.is_in_house || false, is_published: selectedId === "new" ? false : rows.find((r) => r.id === id)?.is_published };
+      setRows((prev) => prev.some((r) => r.id === id) ? prev.map((r) => r.id === id ? updatedCourse : r) : [...prev, updatedCourse]);
+      if (items.length >= 0) {
+        const syllabusResponse = await fetch("/api/admin/course-content/syllabus", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ courseId: id, items: items.map((item, index) => ({ ...item, course_id: id, order_index: index + 1 })) }) });
+        const syllabusResult = await syllabusResponse.json();
+        if (!syllabusResponse.ok) throw new Error(syllabusResult.error || "Course saved, but syllabus could not be saved.");
+        const savedItems = items.map((item, index) => ({ ...item, course_id: id, order_index: index + 1 }));
+        setSyllabusRows((prev) => [...prev.filter((item) => item.course_id !== id), ...savedItems]);
+        setItems(savedItems);
+      }
+      setSelectedId(id); setNotice(isInHouse ? "In-house course saved privately. Publish it from In-House Courses when ready." : "Course content saved successfully.");
+    } catch (error) { setNotice(error instanceof Error ? error.message : "Something went wrong."); }
+    finally { setSaving(false); }
+  }
+
+  const selectedLabel = useMemo(() => selectedId === "new" ? "New external course" : selectedCourse?.title || "Course", [selectedId, selectedCourse]);
+  const field = (label: string, key: keyof Draft, type: "text" | "url" = "text", placeholder = "") => <label className="flex flex-col gap-1 text-xs font-semibold text-carinex-navy/70">{label}<input className={inputClass} type={type} value={String(draft[key] ?? "")} placeholder={placeholder} onChange={(e) => set(key, e.target.value as never)} /></label>;
+
+  return <div className="mt-8 grid gap-6 lg:grid-cols-[270px_1fr]">
+    <aside className="rounded-xl border border-carinex-navy/10 p-3">
+      <button type="button" onClick={() => choose("new")} className={`mb-3 w-full rounded-lg px-3 py-2 text-left text-sm font-bold ${selectedId === "new" ? "bg-carinex-emerald text-white" : "bg-carinex-navy/5 text-carinex-navy"}`}>+ Add external course</button>
+      <p className="px-2 pb-2 text-xs font-bold uppercase tracking-wide text-carinex-navy/40">Existing courses ({rows.length})</p>
+      <div className="flex max-h-[65vh] flex-col gap-1 overflow-y-auto">{rows.map((course) => <button key={course.id} type="button" onClick={() => choose(course.id)} className={`rounded-lg px-3 py-2 text-left text-sm ${selectedId === course.id ? "bg-carinex-navy text-white" : "text-carinex-navy hover:bg-carinex-navy/5"}`}><span className="block">{course.title}</span><span className={`mt-0.5 block text-xs ${selectedId === course.id ? "text-white/60" : "text-carinex-navy/40"}`}>{course.is_in_house ? "Carinex Original · In-house" : course.provider || "No provider"} · #{course.id}</span></button>)}{rows.length === 0 && <p className="px-2 py-4 text-xs text-carinex-navy/50">No courses found.</p>}</div>
+    </aside>
+
+    <div className="rounded-xl border border-carinex-navy/10 p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-wide text-carinex-emerald">General course information</p><h2 className="mt-1 text-xl font-bold text-carinex-navy">{selectedLabel}</h2></div><button type="button" onClick={save} disabled={saving} className="rounded-full bg-carinex-navy px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">{saving ? "Saving…" : "Save course"}</button></div>
+      {isInHouse && <p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">This is an in-house course. Changes here are saved privately and make the course unpublished until you publish it from <strong>In-House Courses</strong>.</p>}
+      {notice && <p className={`mt-4 rounded-lg p-3 text-sm ${notice.includes("successfully") || notice.includes("privately") ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-700"}`}>{notice}</p>}
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">
+        {field("Course title *", "title", "text", "e.g. Introduction to Telehealth")}
+        {field("Provider *", "provider", "text", "Coursera, ACMSO, Carinex, etc.")}
+        <label className="flex flex-col gap-1 text-xs font-semibold text-carinex-navy/70">Specialization *<select className={inputClass} value={draft.specialization_id ?? ""} onChange={(e) => set("specialization_id", e.target.value ? Number(e.target.value) : null)}><option value="">Select specialization</option>{specializations.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
+        <label className="flex flex-col gap-1 text-xs font-semibold text-carinex-navy/70">Track *<select className={inputClass} value={draft.track_type || "national"} onChange={(e) => set("track_type", e.target.value)}><option value="national">National</option><option value="global">Global</option></select></label>
+        {field("Price display", "price_display", "text", "Free or $49")}{field("Duration", "duration_display", "text", "e.g. 6 weeks")}{field("Level", "level", "text", "Beginner / Intermediate")}
+        <div className="flex flex-col gap-2"><span className="text-xs font-semibold text-carinex-navy/70">Course image</span><div className="flex flex-wrap items-center gap-3"><button type="button" disabled={uploadingImage} onClick={() => imageInputRef.current?.click()} className="rounded-full border border-carinex-navy/20 px-4 py-2 text-sm font-semibold text-carinex-navy disabled:opacity-50">{uploadingImage ? "Uploading…" : "Upload image"}</button><input ref={imageInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) void uploadCourseImage(file); e.currentTarget.value = ""; }} />{draft.image_url && <span className="text-xs text-carinex-navy/50">Image uploaded ✓</span>}</div>{draft.image_url && <img src={draft.image_url} alt="Course preview" className="h-24 w-full max-w-xs rounded-lg border border-carinex-navy/10 object-cover" />}</div>
+        {!isInHouse && <div className="sm:col-span-2">{field("External course / affiliate URL *", "affiliate_link", "url", "https://...")}</div>}
+        <label className="flex items-center gap-2 text-sm text-carinex-navy"><input type="checkbox" checked={!!draft.is_free} onChange={(e) => set("is_free", e.target.checked)} />This course is free</label>
+        <div className="sm:col-span-2"><span className="text-xs font-semibold text-carinex-navy/70">Short summary</span><RichTextEditor value={draft.summary || ""} onSave={(next) => set("summary", next)} placeholder="Write a concise summary of the course" rows={3} /></div>
+        <div className="sm:col-span-2"><span className="text-xs font-semibold text-carinex-navy/70">Full course description</span><RichTextEditor value={draft.description_long || ""} onSave={(next) => set("description_long", next)} placeholder="Write the general course description" rows={7} /></div>
+      </div>
+
+      <div className="mt-8 border-t border-carinex-navy/10 pt-6"><div className="flex items-center justify-between gap-3"><div><h3 className="font-bold text-carinex-navy">Syllabus / course outline</h3><p className="mt-1 text-xs text-carinex-navy/50">General course information only. In-house modules and sections are edited under In-House Courses.</p></div><button type="button" onClick={() => setItems((prev) => [...prev, { course_id: selectedId === "new" ? 0 : selectedId, order_index: prev.length + 1, title: "", description: "" }])} className="rounded-full border border-carinex-navy/20 px-3 py-2 text-xs font-semibold text-carinex-navy">+ Add topic</button></div><div className="mt-4 flex flex-col gap-3">{items.map((item, index) => <div key={item.id ?? `new-${index}`} className="rounded-lg bg-carinex-navy/[0.03] p-3"><div className="flex items-center justify-between"><span className="text-xs font-bold text-carinex-navy/40">TOPIC {index + 1}</span><button type="button" onClick={() => setItems((prev) => prev.filter((_, i) => i !== index))} className="text-xs font-semibold text-red-600">Remove</button></div><input className={`${inputClass} mt-2`} value={item.title} onChange={(e) => updateItem(index, { title: e.target.value })} placeholder="Topic title" /><div className="mt-2"><RichTextEditor value={item.description || ""} onSave={(next) => updateItem(index, { description: next })} placeholder="Short topic description" rows={3} /></div></div>)}{items.length === 0 && <p className="rounded-lg border border-dashed border-carinex-navy/20 p-5 text-center text-sm text-carinex-navy/40">No syllabus topics added.</p>}</div></div>
+      <div className="mt-6 flex justify-end"><button type="button" onClick={save} disabled={saving} className="rounded-full bg-carinex-emerald px-6 py-3 text-sm font-semibold text-white disabled:opacity-50">{saving ? "Saving…" : "Save course and syllabus"}</button></div>
+    </div>
+  </div>;
 }

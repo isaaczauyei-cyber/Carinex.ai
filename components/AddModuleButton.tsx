@@ -24,6 +24,7 @@ export default function AddModuleButton({ courseId }: { courseId: number }) {
     }).select("id").single();
     setSaving(false);
     if (error) { alert("Could not create module: " + error.message); return; }
+    await fetch(`/api/admin/in-house-courses/${courseId}/touch`, { method: "POST" });
     router.push(`/admin/in-house-courses/${courseId}/modules/${data.id}`);
     router.refresh();
   }
