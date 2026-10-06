@@ -9,7 +9,7 @@ export default async function StartCoursePage({ params }: { params: { courseId: 
   const supabase = await createClient(); const { data: { user } } = await supabase.auth.getUser(); if (!user) redirect("/login");
   const { data: profile } = await supabase.from("nurse_profiles").select("id").eq("user_id", user.id).maybeSingle(); if (!profile) redirect("/onboarding");
   const courseId = Number(params.courseId); await requireCourseApproval(user.id, courseId); const admin = createAdminClient();
-  const { data: course } = await admin.from("courses").select("id, title").eq("id", courseId).maybeSingle(); if (!course) redirect("/dashboard/learning");
+  const { data: course } = await admin.from("courses").select("id, title, is_in_house, is_published").eq("id", courseId).maybeSingle(); if (!course || !course.is_in_house || !course.is_published) redirect("/dashboard/learning");
   const { data: modules } = await admin.from("course_modules").select("id, title, order_index, quiz_passing_score").eq("course_id", courseId).order("order_index");
   const moduleIds = (modules || []).map((m) => m.id);
   const [{ data: sections }, { data: questions }, { data: progress }, { data: quizAttempts }] = await Promise.all([
@@ -30,5 +30,5 @@ export default async function StartCoursePage({ params }: { params: { courseId: 
 
   const { data: existing } = await admin.from("nurse_course_completions").select("id").eq("nurse_id", profile.id).eq("course_id", courseId).maybeSingle();
   if (existing) await admin.from("nurse_course_completions").update({ status: "completed", completed_at: new Date().toISOString() }).eq("id", existing.id); else await admin.from("nurse_course_completions").insert({ nurse_id: profile.id, course_id: courseId, status: "completed", completed_at: new Date().toISOString() });
-  return <main><CourseSessionNavbar courseId={courseId} /><section className="mx-auto max-w-2xl px-6 py-24 text-center"><div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-carinex-emerald/10 text-4xl">✓</div><h1 className="mt-5 text-3xl font-bold text-carinex-navy">Course complete! 🎉</h1><p className="mt-3 text-carinex-navy/70">You completed {course.title}. Your matched opportunities can now appear in Opportunity Intelligence.</p><Link href="/dashboard/opportunities" className="mt-7 inline-block rounded-full bg-carinex-emerald px-6 py-3 text-sm font-semibold text-white">View opportunities</Link></section></main>;
+  return <main><CourseSessionNavbar courseId={courseId} nurseId={profile.id} /><section className="mx-auto max-w-2xl px-6 py-24 text-center"><div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-carinex-emerald/10 text-4xl">✓</div><h1 className="mt-5 text-3xl font-bold text-carinex-navy">Course complete! 🎉</h1><p className="mt-3 text-carinex-navy/70">You completed {course.title}. Your matched opportunities can now appear in Opportunity Intelligence.</p><Link href="/dashboard/opportunities" className="mt-7 inline-block rounded-full bg-carinex-emerald px-6 py-3 text-sm font-semibold text-white">View opportunities</Link></section></main>;
 }
