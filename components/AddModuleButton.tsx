@@ -15,6 +15,8 @@ export default function AddModuleButton({ courseId }: { courseId: number }) {
     const trimmed = title.trim();
     if (!trimmed) { alert("Please enter a module title."); return; }
     setSaving(true);
+    const { error: privacyError } = await supabase.from("courses").update({ is_published: false }).eq("id", courseId).eq("is_in_house", true);
+    if (privacyError) { setSaving(false); alert("Could not prepare the course for editing: " + privacyError.message); return; }
     const { data: existing, error: existingError } = await supabase.from("course_modules")
       .select("order_index").eq("course_id", courseId).order("order_index", { ascending: false }).limit(1);
     if (existingError) { setSaving(false); alert("Could not determine the next module number: " + existingError.message); return; }
@@ -24,7 +26,6 @@ export default function AddModuleButton({ courseId }: { courseId: number }) {
     }).select("id").single();
     setSaving(false);
     if (error) { alert("Could not create module: " + error.message); return; }
-    await fetch(`/api/admin/in-house-courses/${courseId}/touch`, { method: "POST" });
     router.push(`/admin/in-house-courses/${courseId}/modules/${data.id}`);
     router.refresh();
   }

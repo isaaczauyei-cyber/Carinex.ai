@@ -38,6 +38,8 @@ export default function InHouseCoursePricingEditor({
     }
 
     setSaving(true);
+    const { error: privacyError } = await supabase.from("courses").update({ is_published: false }).eq("id", courseId).eq("is_in_house", true);
+    if (privacyError) { setSaving(false); alert("Could not prepare the course for editing: " + privacyError.message); return; }
     const display = only > 0
       ? guide && guide > 0
         ? `${formatNaira(only)} course / ${formatNaira(guide)} with interview guide`
@@ -49,7 +51,6 @@ export default function InHouseCoursePricingEditor({
       price_course_plus_guide: guide && guide > 0 ? guide : null,
       price_display: display,
       is_free: only <= 0,
-      is_published: false,
     }).eq("id", courseId);
 
     setSaving(false);

@@ -57,6 +57,11 @@ export default function AdminModuleEditor({
 }) {
   const supabase = createClient();
 
+  async function markCoursePrivate() {
+    const { error } = await supabase.from("courses").update({ is_published: false }).eq("id", module.course_id).eq("is_in_house", true);
+    if (error) throw new Error(error.message);
+  }
+
   const [title, setTitle] = useState(module.title || "");
   const [summary, setSummary] = useState(module.summary || "");
   const [passingScore, setPassingScore] = useState(
@@ -67,12 +72,6 @@ export default function AdminModuleEditor({
   const [sections, setSections] = useState<Section[]>(initialSections || []);
   const [questions, setQuestions] = useState<Question[]>(initialQuestions || []);
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
-
-  async function markCoursePrivate() {
-    try {
-      await fetch(`/api/admin/in-house-courses/${module.course_id}/touch`, { method: "POST" });
-    } catch {}
-  }
 
   useEffect(() => {
     setTitle(module.title || "");
@@ -93,14 +92,17 @@ export default function AdminModuleEditor({
   async function saveModuleMeta() {
     setSavingMeta(true);
 
-    const { error } = await supabase
+    let error: { message: string } | null = null;
+    try { await markCoursePrivate(); } catch (e) { setSavingMeta(false); alert("Could not prepare the course for editing: " + (e instanceof Error ? e.message : "Unknown error")); return; }
+
+    ({ error } = await supabase
       .from("course_modules")
       .update({
         title,
         summary: summary || null,
         quiz_passing_score: Number(passingScore) || 70,
       })
-      .eq("id", module.id);
+      .eq("id", module.id));
 
     setSavingMeta(false);
 
@@ -109,11 +111,11 @@ export default function AdminModuleEditor({
       return;
     }
 
-    await markCoursePrivate();
-    alert("Module details saved. The course is now private until you publish it again.");
+    alert("Module details saved.");
   }
 
   async function addSection(type: string) {
+    try { await markCoursePrivate(); } catch (e) { alert("Could not prepare the course for editing: " + (e instanceof Error ? e.message : "Unknown error")); return; }
     const nextOrder =
       sections.length > 0
         ? Math.max(...sections.map((s) => s.order_index)) + 1
@@ -141,13 +143,13 @@ export default function AdminModuleEditor({
     }
 
     if (data) {
-      await markCoursePrivate();
       setSections((prev) => [...prev, data as Section]);
       setExpandedSection(data.id);
     }
   }
 
   async function updateSection(id: string, patch: Partial<Section>) {
+    try { await markCoursePrivate(); } catch (e) { alert("Could not prepare the course for editing: " + (e instanceof Error ? e.message : "Unknown error")); return; }
     const { error } = await supabase
       .from("module_sections")
       .update(patch)
@@ -158,7 +160,6 @@ export default function AdminModuleEditor({
       return;
     }
 
-    await markCoursePrivate();
     setSections((prev) =>
       prev.map((section) =>
         section.id === id ? { ...section, ...patch } : section
@@ -167,6 +168,7 @@ export default function AdminModuleEditor({
   }
 
   async function deleteSection(id: string) {
+    try { await markCoursePrivate(); } catch (e) { alert("Could not prepare the course for editing: " + (e instanceof Error ? e.message : "Unknown error")); return; }
     if (!confirm("Delete this section? This cannot be undone.")) return;
 
     const { error } = await supabase
@@ -179,7 +181,6 @@ export default function AdminModuleEditor({
       return;
     }
 
-    await markCoursePrivate();
     setSections((prev) => prev.filter((section) => section.id !== id));
 
     if (expandedSection === id) {
@@ -207,6 +208,7 @@ export default function AdminModuleEditor({
   }
 
   async function addQuestion() {
+    try { await markCoursePrivate(); } catch (e) { alert("Could not prepare the course for editing: " + (e instanceof Error ? e.message : "Unknown error")); return; }
     const nextOrder =
       questions.length > 0
         ? Math.max(...questions.map((q) => q.order_index)) + 1
@@ -235,12 +237,12 @@ export default function AdminModuleEditor({
     }
 
     if (data) {
-      await markCoursePrivate();
       setQuestions((prev) => [...prev, data as Question]);
     }
   }
 
   async function updateQuestion(id: string, patch: Partial<Question>) {
+    try { await markCoursePrivate(); } catch (e) { alert("Could not prepare the course for editing: " + (e instanceof Error ? e.message : "Unknown error")); return; }
     const { error } = await supabase
       .from("assessment_questions")
       .update(patch)
@@ -251,7 +253,6 @@ export default function AdminModuleEditor({
       return;
     }
 
-    await markCoursePrivate();
     setQuestions((prev) =>
       prev.map((question) =>
         question.id === id ? { ...question, ...patch } : question
@@ -260,6 +261,7 @@ export default function AdminModuleEditor({
   }
 
   async function deleteQuestion(id: string) {
+    try { await markCoursePrivate(); } catch (e) { alert("Could not prepare the course for editing: " + (e instanceof Error ? e.message : "Unknown error")); return; }
     if (!confirm("Delete this question? This cannot be undone.")) return;
 
     const { error } = await supabase
@@ -272,7 +274,6 @@ export default function AdminModuleEditor({
       return;
     }
 
-    await markCoursePrivate();
     setQuestions((prev) => prev.filter((question) => question.id !== id));
   }
 

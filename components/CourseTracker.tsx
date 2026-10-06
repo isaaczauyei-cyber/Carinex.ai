@@ -84,7 +84,7 @@ export default function CourseTracker({
           <p className="mt-2 text-sm text-carinex-navy/70">{course.summary}</p>
         )}
 
-        <p className="mt-3 text-sm font-semibold text-carinex-emerald">View details →</p>
+        <p className="mt-3 text-sm font-semibold text-carinex-emerald">{course.is_in_house ? "Open course →" : "View details →"}</p>
       </div>
     </a>
   );
