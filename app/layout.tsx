@@ -19,11 +19,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Carinex — Your Next Care, Connected",
     description: "Turn your nursing experience into a global remote healthcare career.",
-    url: "https://carinex-ai.vercel.app",
+    url: "https://carinex.info",
     siteName: "Carinex",
     images: [
       {
-        url: "https://carinex-ai.vercel.app/og-image.jpg",
+        url: "https://carinex.info/og-image.jpg",
         width: 1200,
         height: 630,
         alt: "Carinex — Your Next Care, Connected",
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Carinex — Your Next Care, Connected",
     description: "Turn your nursing experience into a global remote healthcare career.",
-    images: ["https://carinex-ai.vercel.app/og-image.jpg"],
+    images: ["https://carinex.info/og-image.jpg"],
   },
 };
 
