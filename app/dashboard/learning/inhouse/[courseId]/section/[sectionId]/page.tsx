@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import Navbar from "@/components/Navbar";
+import CourseSessionNavbar from "@/components/CourseSessionNavbar";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireCourseApproval } from "@/lib/course-access";
@@ -21,5 +21,5 @@ export default async function CourseSectionPage({ params }: { params: { courseId
   const sequence = (allModules || []).flatMap((m) => [ ...(allSections || []).filter((s) => s.module_id === m.id).sort((a,b) => a.order_index-b.order_index).map((s) => ({ type: "section" as const, id: s.id, moduleId: m.id })), ...((quizQuestions || []).some((q) => q.module_id === m.id) ? [{ type: "quiz" as const, id: m.id, moduleId: m.id }] : []) ]);
   const currentIndex = sequence.findIndex((x) => x.type === "section" && x.id === section.id); const next = currentIndex >= 0 ? sequence[currentIndex + 1] : null;
   const nextHref = next ? next.type === "section" ? `/dashboard/learning/inhouse/${courseId}/section/${next.id}` : `/dashboard/learning/inhouse/${courseId}/quiz/${next.moduleId}` : `/dashboard/learning/inhouse/${courseId}/start`;
-  return <main><Navbar /><section className="mx-auto max-w-4xl px-6 py-10"><Link href={`/dashboard/learning/inhouse/${courseId}/start`} className="text-sm font-semibold text-carinex-emerald hover:underline">← Course overview</Link><div className="mt-6"><span className="text-xs font-semibold uppercase tracking-wide text-carinex-emerald">{course.title} · Module {module.order_index}</span><h1 className="mt-2 text-3xl font-bold text-carinex-navy">{section.title}</h1>{section.instructions && <p className="mt-3 whitespace-pre-wrap leading-relaxed text-carinex-navy/70">{section.instructions}</p>}</div><div className="mt-8"><SectionActions nurseId={profile.id} section={section} initialProgress={progress as any} nextHref={nextHref} /></div></section></main>;
+  return <main><CourseSessionNavbar courseId={courseId} /><section className="mx-auto max-w-4xl px-6 py-10"><Link href={`/dashboard/learning/inhouse/${courseId}/start`} className="text-sm font-semibold text-carinex-emerald hover:underline">← Course overview</Link><div className="mt-6"><span className="text-xs font-semibold uppercase tracking-wide text-carinex-emerald">{course.title} · Module {module.order_index}</span><h1 className="mt-2 text-3xl font-bold text-carinex-navy">{section.title}</h1>{section.instructions && <p className="mt-3 whitespace-pre-wrap leading-relaxed text-carinex-navy/70">{section.instructions}</p>}</div><div className="mt-8"><SectionActions nurseId={profile.id} section={section} initialProgress={progress as any} nextHref={nextHref} /></div></section></main>;
 }
