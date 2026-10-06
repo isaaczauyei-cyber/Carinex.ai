@@ -5,7 +5,6 @@ import AdminTabs from "@/components/AdminTabs";
 import Link from "next/link";
 import AddModuleButton from "@/components/AddModuleButton";
 import InHouseCoursePricingEditor from "@/components/InHouseCoursePricingEditor";
-import InHouseCoursePublishButton from "@/components/InHouseCoursePublishButton";
 
 export const dynamic = "force-dynamic";
 
@@ -15,9 +14,8 @@ export default async function AdminCourseModulesPage({ params }: { params: { cou
 
   const { data: course } = await supabase
     .from("courses")
-    .select("id, title, price_course_only, price_course_plus_guide, is_published")
+    .select("id, title, price_course_only, price_course_plus_guide")
     .eq("id", courseId)
-    .eq("is_in_house", true)
     .maybeSingle();
 
   const { data: modules } = await supabase
@@ -36,10 +34,6 @@ export default async function AdminCourseModulesPage({ params }: { params: { cou
     <AdminTabs />
 
     <div className="mt-8">
-      <InHouseCoursePublishButton courseId={courseId} initialPublished={Boolean(course?.is_published)} />
-    </div>
-
-    <div className="mt-4">
       <InHouseCoursePricingEditor
         courseId={courseId}
         initialCourseOnly={Number(course?.price_course_only || 0)}
