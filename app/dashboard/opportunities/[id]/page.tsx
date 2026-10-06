@@ -35,6 +35,20 @@ export default async function JobDetailPage({ params }: { params: { id: string }
 
   if (!job || job.status !== "live") notFound();
 
+  const { data: profile } = await supabase.from("nurse_profiles").select("id").eq("user_id", user.id).maybeSingle();
+  if (!profile) redirect("/onboarding");
+
+  if (!job.specialization_id) notFound();
+  const { data: eligible } = await supabase
+    .from("nurse_course_completions")
+    .select("id, courses!inner(specialization_id)")
+    .eq("nurse_id", profile.id)
+    .eq("status", "completed")
+    .eq("courses.specialization_id", job.specialization_id)
+    .limit(1)
+    .maybeSingle();
+  if (!eligible) notFound();
+
   const employer = job.employer_profiles as unknown as { company_name: string; company_website: string | null } | null;
   const spec = job.specializations as unknown as { name: string } | null;
   const descriptionParagraphs = splitParagraphs(job.description);
@@ -72,8 +86,15 @@ export default async function JobDetailPage({ params }: { params: { id: string }
         <h1 className="mt-4 text-3xl font-bold tracking-tight text-carinex-navy">{job.title}</h1>
         <p className="mt-1 text-carinex-navy/60">
           {employer?.company_name || "Employer"}
-          {job.currency ? ` · Paid in ${job.currency}` : ""}
+          {job.pay_display ? ` · ${job.pay_display}` : ""}
         </p>
+
+        {job.pay_display && (
+          <div className="mt-6 rounded-2xl border border-carinex-emerald/20 bg-carinex-emerald/5 p-5">
+            <p className="text-xs font-semibold uppercase tracking-wide text-carinex-emerald">Pay / compensation</p>
+            <p className="mt-1 text-lg font-bold text-carinex-navy">{job.pay_display}</p>
+          </div>
+        )}
 
         {job.requires_foreign_license && (
           <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
