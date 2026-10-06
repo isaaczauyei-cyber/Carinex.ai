@@ -4,8 +4,6 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AdminTabs from "@/components/AdminTabs";
 
-export const dynamic = "force-dynamic";
-
 export default async function AdminJobsPage() {
   const supabase = await requireAdmin();
 
@@ -44,25 +42,18 @@ export default async function AdminJobsPage() {
                     {spec?.name ? ` · ${spec.name}` : ""}
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                      j.status === "live"
-                        ? "bg-carinex-emerald/10 text-carinex-emerald"
-                        : j.status === "pending_review"
-                        ? "bg-amber-50 text-amber-700"
-                        : "bg-carinex-navy/5 text-carinex-navy/50"
-                    }`}
-                  >
-                    {j.status}
-                  </span>
-                  <Link
-                    href={`/admin/jobs/${j.id}/edit`}
-                    className="text-sm font-semibold text-carinex-emerald hover:underline"
-                  >
-                    Edit
-                  </Link>
-                </div>
+                                <Link href={`/admin/jobs/${j.id}/edit`} className="mr-3 text-sm font-semibold text-carinex-emerald hover:underline">Edit</Link>
+                                <span
+                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                    j.status === "live"
+                      ? "bg-carinex-emerald/10 text-carinex-emerald"
+                      : j.status === "pending_review"
+                      ? "bg-amber-50 text-amber-700"
+                      : "bg-carinex-navy/5 text-carinex-navy/50"
+                  }`}
+                >
+                  {j.status}
+                </span>
               </div>
             );
           })}
