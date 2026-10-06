@@ -1,7 +1,7 @@
 import Navbar from "@/components/Navbar";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export default async function CourseSessionNavbar({ courseId }: { courseId: number }) {
+export default async function CourseSessionNavbar({ courseId, nurseId }: { courseId: number; nurseId: string }) {
   const admin = createAdminClient();
 
   const [{ data: course }, { data: modules }] = await Promise.all([
@@ -14,7 +14,7 @@ export default async function CourseSessionNavbar({ courseId }: { courseId: numb
   const moduleIds = (modules || []).map((m) => m.id);
   const [{ data: sections }, { data: questions }] = await Promise.all([
     moduleIds.length
-      ? admin.from("module_sections").select("id, module_id, order_index, title").in("module_id", moduleIds).order("order_index")
+      ? admin.from("module_sections").select("id, module_id, order_index, title, section_type").in("module_id", moduleIds).order("order_index")
       : Promise.resolve({ data: [] as any[] }),
     moduleIds.length
       ? admin.from("assessment_questions").select("id, module_id").in("module_id", moduleIds)
@@ -22,8 +22,8 @@ export default async function CourseSessionNavbar({ courseId }: { courseId: numb
   ]);
 
   const [{ data: progress }, { data: quizAttempts }] = await Promise.all([
-    admin.from("nurse_section_progress").select("section_id, status"),
-    admin.from("nurse_quiz_attempts").select("module_id, passed").eq("course_id", courseId).eq("passed", true),
+    admin.from("nurse_section_progress").select("section_id, status").eq("nurse_id", nurseId),
+    admin.from("nurse_quiz_attempts").select("module_id, passed").eq("nurse_id", nurseId).eq("course_id", courseId).eq("passed", true),
   ]);
 
   const doneSections = new Set((progress || []).filter((p) => p.status === "completed").map((p) => p.section_id));
