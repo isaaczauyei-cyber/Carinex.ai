@@ -44,6 +44,7 @@ export default async function CourseSessionNavbar({ courseId }: { courseId: numb
               .map((section) => ({
                 id: section.id,
                 title: section.title,
+                sectionType: section.section_type,
                 href: `/dashboard/learning/inhouse/${courseId}/section/${section.id}`,
                 kind: "section" as const,
                 completed: doneSections.has(section.id),
