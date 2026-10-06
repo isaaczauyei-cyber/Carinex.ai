@@ -7,6 +7,7 @@ const tabs = [
   { href: "/admin/users", label: "Users" },
   { href: "/admin/analytics", label: "Analytics" },
   { href: "/admin/in-house-courses", label: "In-House Courses" },
+  { href: "/admin/paid-enrollment", label: "paid enrollment" },
   { href: "/admin/courses", label: "Course Reviews" },
   { href: "/admin/course-content", label: "Course Content" },
   { href: "/admin/jobs", label: "Jobs" },
