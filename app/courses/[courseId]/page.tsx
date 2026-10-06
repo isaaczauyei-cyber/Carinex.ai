@@ -3,6 +3,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/server";
 import CourseEnrollAction from "@/components/CourseEnrollAction";
+import RichText from "@/components/RichText";
 import { formatNaira } from "@/lib/course-pricing";
 
 export default async function CourseDetailPage({ params }: { params: { courseId: string } }) {
@@ -11,7 +12,7 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
 
   const { data: course } = await supabase.from("courses").select("*").eq("id", courseId).maybeSingle();
   if (!course) notFound();
-  if (course.is_in_house && course.is_published === false) notFound();
+  if (course.is_in_house && course.is_published !== true) notFound();
 
   const { data: syllabus } = await supabase.from("course_syllabus_items").select("*").eq("course_id", courseId).order("order_index");
   const { data: { user } } = await supabase.auth.getUser();
@@ -42,7 +43,7 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
       : formatNaira(courseOnlyPrice)
     : course.price_display || "";
 
-  const descriptionParagraphs = (course.description_long || course.summary || "").split(/\n\s*\n/).map((p: string) => p.trim()).filter(Boolean);
+  const descriptionText = course.description_long || course.summary || "";
 
   return <main>
     <Navbar />
@@ -60,8 +61,8 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
       <h1 className="mt-4 text-3xl font-bold tracking-tight text-carinex-navy">{course.title}</h1>
       <p className="mt-1 text-carinex-navy/60">{course.provider}{priceLine ? ` · ${priceLine}` : ""}</p>
 
-      <div className="mt-8 flex flex-col gap-4">
-        {descriptionParagraphs.length > 0 ? descriptionParagraphs.map((para: string, i: number) => <p key={i} className="leading-relaxed text-carinex-navy/80">{para}</p>) : <p className="text-carinex-navy/50">No description available yet.</p>}
+      <div className="mt-8">
+        {descriptionText ? <RichText text={descriptionText} /> : <p className="text-carinex-navy/50">No description available yet.</p>}
       </div>
 
       {syllabus && syllabus.length > 0 && <div className="mt-10">
@@ -69,7 +70,7 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
         <div className="mt-4 flex flex-col gap-3">
           {syllabus.map((item, i) => <div key={item.id} className="rounded-lg border border-carinex-navy/10 p-4">
             <p className="font-semibold text-carinex-navy">{i + 1}. {item.title}</p>
-            {item.description && <p className="mt-1 text-sm leading-relaxed text-carinex-navy/70">{item.description}</p>}
+            {item.description && <div className="mt-1"><RichText text={item.description} /></div>}
           </div>)}
         </div>
       </div>}
