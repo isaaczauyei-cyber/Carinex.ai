@@ -3,8 +3,7 @@ import { requireAdminWithService } from "@/lib/admin";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AdminCourseReviewRow from "@/components/AdminCourseReviewRow";
-
-export const dynamic = "force-dynamic";
+import AdminUserActions from "@/components/AdminUserActions";
 
 export default async function AdminUserDetailPage({ params }: { params: { id: string } }) {
   const { supabase, adminClient } = await requireAdminWithService();
@@ -19,39 +18,28 @@ export default async function AdminUserDetailPage({ params }: { params: { id: st
 
   const userInfo = profile.users as unknown as { full_name: string; phone: string | null; id: string };
 
-  const [
-    { data: experience },
-    { data: certifications },
-    { data: completions },
-    { data: activity },
-    { data: nurseSpecs },
-    { data: recentViews },
-  ] = await Promise.all([
-    supabase.from("nurse_experience").select("*").eq("nurse_id", profile.id),
-    supabase.from("nurse_certifications").select("*").eq("nurse_id", profile.id),
-    supabase.from("nurse_course_completions").select("*, courses(title)").eq("nurse_id", profile.id),
-    supabase
-      .from("nurse_activity_log")
-      .select("activity_date")
-      .eq("nurse_id", profile.id)
-      .order("activity_date", { ascending: false }),
-    supabase
-      .from("nurse_specializations")
-      .select("specializations(name, slug)")
-      .eq("nurse_id", profile.id),
-    supabase
-      .from("nurse_page_views")
-      .select("path, visited_at")
-      .eq("nurse_id", profile.id)
-      .order("visited_at", { ascending: false })
-      .limit(25),
-  ]);
+  const [{ data: experience }, { data: certifications }, { data: completions }, { data: activity }, { data: nurseSpecs }] =
+    await Promise.all([
+      supabase.from("nurse_experience").select("*").eq("nurse_id", profile.id),
+      supabase.from("nurse_certifications").select("*").eq("nurse_id", profile.id),
+      supabase.from("nurse_course_completions").select("*, courses(title)").eq("nurse_id", profile.id),
+      supabase
+        .from("nurse_activity_log")
+        .select("activity_date")
+        .eq("nurse_id", profile.id)
+        .order("activity_date", { ascending: false }),
+      supabase
+        .from("nurse_specializations")
+        .select("specializations(name, slug)")
+        .eq("nurse_id", profile.id),
+    ]);
 
   // Email lives on auth.users, not public.users — fetch via service client.
   const { data: authUser } = userInfo?.id
     ? await adminClient.auth.admin.getUserById(userInfo.id)
     : { data: null };
   const email = authUser?.user?.email || "—";
+  const terminated = Boolean(authUser?.user?.banned_until && new Date(authUser.user.banned_until).getTime() > Date.now());
 
   const pendingCompletions = (completions || []).filter((c) => c.status === "verification_pending");
   const visitCount = (activity || []).length;
@@ -74,6 +62,7 @@ export default async function AdminUserDetailPage({ params }: { params: { id: st
           <h1 className="text-2xl font-bold tracking-tight text-carinex-navy">{userInfo?.full_name}</h1>
           <p className="mt-1 text-sm text-carinex-navy/60">{email}</p>
           {userInfo?.phone && <p className="text-sm text-carinex-navy/60">{userInfo.phone}</p>}
+          <div className="mt-4"><AdminUserActions userId={userInfo.id} terminated={terminated} /></div>
         </div>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -127,23 +116,6 @@ export default async function AdminUserDetailPage({ params }: { params: { id: st
           <div className="mt-6">
             <h2 className="text-lg font-bold text-carinex-navy">Bio</h2>
             <p className="mt-2 text-carinex-navy/70">{profile.bio}</p>
-          </div>
-        )}
-
-        {recentViews && recentViews.length > 0 && (
-          <div className="mt-8">
-            <h2 className="text-lg font-bold text-carinex-navy">Recent activity</h2>
-            <p className="mt-1 text-sm text-carinex-navy/50">Last {recentViews.length} pages visited, most recent first.</p>
-            <div className="mt-3 flex flex-col divide-y divide-carinex-navy/10 rounded-xl border border-carinex-navy/10">
-              {recentViews.map((v, i) => (
-                <div key={i} className="flex items-center justify-between px-4 py-2.5 text-sm">
-                  <span className="font-mono text-carinex-navy/80">{v.path}</span>
-                  <span className="shrink-0 text-xs text-carinex-navy/40">
-                    {new Date(v.visited_at).toLocaleString()}
-                  </span>
-                </div>
-              ))}
-            </div>
           </div>
         )}
 
