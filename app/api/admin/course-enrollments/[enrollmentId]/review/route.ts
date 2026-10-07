@@ -14,7 +14,7 @@ export async function POST(req: NextRequest, { params }: { params: { enrollmentI
   const update = body.action === "under_review"
     ? { review_status: "under_review", review_note: typeof body.note === "string" ? body.note.slice(0, 1000) : null }
     : { status: body.action, review_status: body.action === "rejected" ? "pending_review" : "resolved", review_note: typeof body.note === "string" ? body.note.slice(0, 1000) : null, reviewed_by: user.id, reviewed_at: new Date().toISOString() };
-  const { error } = await admin.from("course_enrollments").update(update).eq("id", params.enrollmentId).eq("course_id", 23);
+  const { error } = await admin.from("course_enrollments").update(update).eq("id", params.enrollmentId);
   if (error) return NextResponse.json({ error: "Could not update enrolment" }, { status: 500 });
   return NextResponse.json({ success: true });
 }
