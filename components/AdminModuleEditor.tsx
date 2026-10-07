@@ -91,18 +91,16 @@ export default function AdminModuleEditor({
 
   async function saveModuleMeta() {
     setSavingMeta(true);
-
-    let error: { message: string } | null = null;
     try { await markCoursePrivate(); } catch (e) { setSavingMeta(false); alert("Could not prepare the course for editing: " + (e instanceof Error ? e.message : "Unknown error")); return; }
 
-    ({ error } = await supabase
+    const { error } = await supabase
       .from("course_modules")
       .update({
         title,
         summary: summary || null,
         quiz_passing_score: Number(passingScore) || 70,
       })
-      .eq("id", module.id));
+      .eq("id", module.id);
 
     setSavingMeta(false);
 

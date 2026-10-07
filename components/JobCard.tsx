@@ -4,7 +4,6 @@ type Job = {
   description: string;
   work_mode: string;
   currency: string | null;
-  pay_display: string | null;
   location_restriction: string | null;
   external_apply_url: string;
   requires_foreign_license: boolean;
@@ -37,7 +36,7 @@ export default function JobCard({ job }: { job: Job }) {
 
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-carinex-navy/50">
         {job.location_restriction && <span>{job.location_restriction}</span>}
-        {job.pay_display && <span className="font-semibold text-carinex-emerald">{job.pay_display}</span>}
+        {job.currency && <span>Paid in {job.currency}</span>}
       </div>
 
       {job.requires_foreign_license && (

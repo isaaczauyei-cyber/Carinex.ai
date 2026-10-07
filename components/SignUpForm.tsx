@@ -1,4 +1,6 @@
 // components/SignUpForm.tsx
+// Example of wiring a form to your existing Supabase Auth — this is the
+// pattern to reuse for login, the assessment form, and profile updates.
 "use client";
 
 import { useState } from "react";
@@ -10,7 +12,6 @@ export default function SignUpForm() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [agreed, setAgreed] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
 
@@ -30,11 +31,6 @@ export default function SignUpForm() {
     if (password.length < 8) {
       setStatus("error");
       setMessage("Password must be at least 8 characters.");
-      return;
-    }
-    if (!agreed) {
-      setStatus("error");
-      setMessage("Please agree to the Terms of Service and Privacy Policy to continue.");
       return;
     }
 
@@ -107,36 +103,20 @@ export default function SignUpForm() {
         disabled={status === "loading"}
         className="h-12 rounded-lg border border-carinex-navy/20 px-4 text-base focus:border-carinex-emerald focus:outline-none"
       />
-
-      <label className="flex items-start gap-2.5 py-1 text-sm text-carinex-navy/70">
-        <input
-          type="checkbox"
-          checked={agreed}
-          onChange={(e) => setAgreed(e.target.checked)}
-          disabled={status === "loading"}
-          className="mt-0.5 h-4 w-4 shrink-0"
-        />
-        <span>
-          I agree to Carinex&apos;s{" "}
-          <a href="/terms" target="_blank" className="font-semibold text-carinex-emerald hover:underline">
-            Terms of Service
-          </a>{" "}
-          and{" "}
-          <a href="/privacy" target="_blank" className="font-semibold text-carinex-emerald hover:underline">
-            Privacy Policy
-          </a>
-          .
-        </span>
-      </label>
-
       <button
         type="submit"
-        disabled={status === "loading" || !agreed}
+        disabled={status === "loading"}
         className="h-12 rounded-full bg-carinex-navy text-carinex-white font-semibold disabled:opacity-60"
       >
         {status === "loading" ? "Creating account…" : "Create account"}
       </button>
       {status === "error" && <p className="text-sm text-red-600">{message}</p>}
+      <p className="text-center text-xs text-carinex-navy/60">
+        Already have an account?{" "}
+        <a href="/login" className="underline hover:text-carinex-navy">
+          Log in
+        </a>
+      </p>
     </form>
   );
 }

@@ -9,7 +9,6 @@ import type { User } from "@supabase/supabase-js";
 import type { ModuleSummary } from "@/lib/course-content";
 
 const menuLinks = [
-  { href: "/dashboard/profile", label: "Profile" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/pathways", label: "All Pathways" },
   { href: "/dashboard/learning", label: "Learning Hub" },

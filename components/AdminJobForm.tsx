@@ -299,11 +299,6 @@ export default function AdminJobForm({
             <option value="GBP">GBP</option>
           </select>
         </div>
-        <div className="sm:col-span-2">
-          <label className="text-sm font-medium text-carinex-navy">Pay / compensation display (optional)</label>
-          <input value={payDisplay} onChange={(e) => setPayDisplay(e.target.value)} placeholder="e.g. ₦250,000/month or USD $2,000–$2,500/month" className="mt-2 w-full rounded-lg border border-carinex-navy/20 px-4 py-2.5 focus:border-carinex-emerald focus:outline-none" />
-          <p className="mt-1 text-xs text-carinex-navy/50">Leave blank to keep compensation hidden from nurses.</p>
-        </div>
       </div>
 
       <div>
