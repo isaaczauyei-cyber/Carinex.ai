@@ -2,14 +2,20 @@ import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireCourseApproval } from "@/lib/course-access";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getCourseStructure, getProgress } from "@/lib/course-content";
+import {
+  getCourseStructure,
+  getProgress,
+} from "@/lib/course-content";
 import CoursePlayerHeader from "@/components/CoursePlayerHeader";
 import QuizForm from "@/components/QuizForm";
 
 export default async function ModuleQuizPage({
   params,
 }: {
-  params: { courseId: string; moduleId: string };
+  params: {
+    courseId: string;
+    moduleId: string;
+  };
 }) {
   const supabase = await createClient();
 
@@ -41,41 +47,61 @@ export default async function ModuleQuizPage({
 
   const admin = createAdminClient();
 
-  const { data: course } = await admin
-    .from("courses")
-    .select("id, title")
-    .eq("id", courseId)
-    .maybeSingle();
+  /*
+   * Course and module are independent.
+   */
+  const [{ data: course }, { data: courseModule }] =
+    await Promise.all([
+      admin
+        .from("courses")
+        .select("id, title")
+        .eq("id", courseId)
+        .maybeSingle(),
+
+      admin
+        .from("course_modules")
+        .select(
+          "id, course_id, title, quiz_passing_score"
+        )
+        .eq("id", params.moduleId)
+        .eq("course_id", courseId)
+        .maybeSingle(),
+    ]);
 
   if (!course) {
     notFound();
   }
-
-  /*
-   * The module must belong to this course.
-   */
-  const { data: courseModule } = await admin
-    .from("course_modules")
-    .select("id, course_id, title, quiz_passing_score")
-    .eq("id", params.moduleId)
-    .eq("course_id", courseId)
-    .maybeSingle();
 
   if (!courseModule) {
     notFound();
   }
 
   /*
-   * Load the quiz questions.
+   * Once we know the module, its questions can be loaded
+   * while the learner's TOC/progress is loaded.
    */
-  const { data: questions, error: questionsError } = await admin
-    .from("assessment_questions")
-    .select("id, prompt, options")
-    .eq("module_id", courseModule.id)
-    .order("order_index");
+  const [
+    { data: questions, error: questionsError },
+    structure,
+    progress,
+  ] = await Promise.all([
+    admin
+      .from("assessment_questions")
+      .select("id, prompt, options")
+      .eq("module_id", courseModule.id)
+      .order("order_index"),
+
+    getCourseStructure(courseId),
+
+    getProgress(profile.id, courseId),
+  ]);
 
   if (questionsError) {
-    console.error("Quiz questions error:", questionsError.message);
+    console.error(
+      "Quiz questions error:",
+      questionsError.message
+    );
+
     notFound();
   }
 
@@ -92,22 +118,6 @@ export default async function ModuleQuizPage({
     }[],
   }));
 
-  /*
-   * Course structure is used for:
-   * - TOC
-   * - learner-specific progress
-   * - determining the next module
-   */
-  const structure = await getCourseStructure(courseId);
-
-  const { completedSectionIds, passedModuleIds } = await getProgress(
-    profile.id,
-    courseId
-  );
-
-  /*
-   * Find the current module.
-   */
   const currentModuleIndex = structure.findIndex(
     (module) => module.id === courseModule.id
   );
@@ -117,25 +127,22 @@ export default async function ModuleQuizPage({
   }
 
   /*
-   * After passing this quiz, go directly to the
-   * beginning of the NEXT MODULE.
+   * Preserve the existing next-module behavior.
    */
-  const nextModule = structure[currentModuleIndex + 1];
+  const nextModule =
+    structure[currentModuleIndex + 1];
 
   let nextHref = "/dashboard/learning";
 
   if (nextModule) {
-    /*
-     * Normally the next module starts with its first section.
-     */
     if (nextModule.sections.length > 0) {
-      nextHref = `/dashboard/learning/inhouse/${courseId}/section/${nextModule.sections[0].id}`;
+      nextHref =
+        `/dashboard/learning/inhouse/${courseId}/section/` +
+        nextModule.sections[0].id;
     } else if (nextModule.hasQuiz) {
-      /*
-       * If a module has no sections but has a quiz,
-       * go directly to that module's quiz.
-       */
-      nextHref = `/dashboard/learning/inhouse/${courseId}/quiz/${nextModule.id}`;
+      nextHref =
+        `/dashboard/learning/inhouse/${courseId}/quiz/` +
+        nextModule.id;
     }
   }
 
@@ -145,8 +152,12 @@ export default async function ModuleQuizPage({
         courseTitle={course.title}
         courseId={courseId}
         structure={structure}
-        completedSectionIds={completedSectionIds}
-        passedModuleIds={passedModuleIds}
+        completedSectionIds={
+          progress.completedSectionIds
+        }
+        passedModuleIds={
+          progress.passedModuleIds
+        }
         currentQuizModuleId={courseModule.id}
       />
 
@@ -160,7 +171,8 @@ export default async function ModuleQuizPage({
         </h1>
 
         <p className="mt-2 text-carinex-navy/70">
-          You need {courseModule.quiz_passing_score}% or higher to pass.
+          You need {courseModule.quiz_passing_score}% or
+          higher to pass.
         </p>
 
         <div className="mt-8">
