@@ -5,6 +5,7 @@ import AssessmentForm from "@/components/AssessmentForm";
 
 export default async function AssessmentPage() {
   const supabase = await createClient();
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -25,24 +26,41 @@ export default async function AssessmentPage() {
     .eq("nurse_id", profile.id);
 
   const initialEnrolledSlugs = (nurseSpecs || [])
-    .map((r) => (r.specializations as unknown as { slug: string })?.slug)
+    .map(
+      (row) =>
+        (row.specializations as unknown as { slug: string })?.slug
+    )
     .filter(Boolean) as string[];
 
-  const { data: aiCourse } = await supabase
+  /*
+   * Always find the Carinex AI in Nursing course.
+   *
+   * Do not require an exact title match or is_in_house=true
+   * here. The assessment should still be able to recommend
+   * the course if the course record uses slightly different
+   * metadata.
+   */
+  const { data: aiCourses } = await supabase
     .from("courses")
-    .select("id, title, summary, duration_display, level, specialization_id")
-    .eq("title", "AI in Nursing")
-    .eq("is_in_house", true)
-    .maybeSingle();
+    .select(
+      "id, title, summary, duration_display, level, specialization_id"
+    )
+    .ilike("title", "%AI in Nursing%")
+    .order("id", { ascending: true })
+    .limit(1);
+
+  const aiCourse = aiCourses?.[0] || null;
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-carinex-navy via-carinex-navy to-carinex-emerald/20">
       <Navbar />
+
       <section className="mx-auto max-w-2xl px-6 py-16">
         <div className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-lg">
             🎯
           </span>
+
           <span className="text-sm font-semibold uppercase tracking-wide text-carinex-emerald">
             Career Assessment
           </span>
@@ -51,6 +69,7 @@ export default async function AssessmentPage() {
         <h1 className="mt-4 text-4xl font-bold tracking-tight text-white">
           What fits your background?
         </h1>
+
         <p className="mt-3 max-w-lg text-white/70">
           A few questions — instant recommendations, based on what each
           pathway actually requires, not a guess.
@@ -60,9 +79,11 @@ export default async function AssessmentPage() {
           <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/80">
             ⏱️ Takes about 2 minutes
           </span>
+
           <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/80">
             🔒 Based on your real experience
           </span>
+
           <span className="flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/80">
             ✨ Instant results
           </span>
