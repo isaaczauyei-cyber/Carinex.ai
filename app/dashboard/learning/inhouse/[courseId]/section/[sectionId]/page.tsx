@@ -106,21 +106,11 @@ export default async function SectionPage({
   /*
    * Build learner-specific progress sets for the course player.
    */
-  const completedSectionIds = new Set(
-    (progress?.sections || [])
-      .filter(
-        (item: { status?: string }) => item.status === "completed"
-      )
-      .map((item: { section_id: number }) => item.section_id)
-  );
+  const completedSectionIds =
+  progress?.completedSectionIds ?? new Set<number>();
 
-  const passedModuleIds = new Set(
-    (progress?.quizzes || [])
-      .filter(
-        (item: { passed?: boolean }) => item.passed === true
-      )
-      .map((item: { module_id: number }) => item.module_id)
-  );
+const passedModuleIds =
+  progress?.passedModuleIds ?? new Set<number>();
 
   const sequence = flattenSequence(structure);
 
