@@ -1,214 +1,118 @@
-import { redirect } from "next/navigation";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import { createClient } from "@/lib/supabase/server";
-import { getSpecializationProgress } from "@/lib/specialization-status";
-import { recordActivityAndGetStreak } from "@/lib/streak";
-import ProfileSummary from "@/components/ProfileSummary";
-import DashboardHero from "@/components/DashboardHero";
-
-const statusStyles = {
-  not_started: { label: "Not Started", badgeClass: "bg-carinex-navy/5 text-carinex-navy/60", accent: "border-l-carinex-navy/20" },
-  in_progress: { label: "In Progress", badgeClass: "bg-amber-50 text-amber-700", accent: "border-l-amber-400" },
-  unlocked: { label: "Completed", badgeClass: "bg-carinex-emerald/10 text-carinex-emerald", accent: "border-l-carinex-emerald" },
-};
-
 export default async function DashboardPage() {
   const supabase = await createClient();
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
 
-  const { data: userRow } = await supabase
-    .from("users")
-    .select("first_name, last_name, full_name")
-    .eq("id", user.id)
-    .maybeSingle();
+  /*
+   * These two queries are independent.
+   */
+  const [{ data: userRow }, { data: profile }] = await Promise.all([
+    supabase
+      .from("users")
+      .select("first_name, last_name, full_name")
+      .eq("id", user.id)
+      .maybeSingle(),
 
-  const firstName = userRow?.first_name || userRow?.full_name?.split(" ")[0] || "there";
+    supabase
+      .from("nurse_profiles")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle(),
+  ]);
 
-  const { data: profile } = await supabase
-    .from("nurse_profiles")
-    .select("*")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const firstName =
+    userRow?.first_name ||
+    userRow?.full_name?.split(" ")[0] ||
+    "there";
 
   if (!profile || !profile.onboarding_completed) {
     redirect("/onboarding");
   }
 
-  const progress = await getSpecializationProgress(profile.id);
-  const streak = await recordActivityAndGetStreak(profile.id);
+  /*
+   * These are now independent once the profile is known.
+   */
+  const [
+    progress,
+    streak,
+    { data: completions },
+    { data: nurseSkills },
+    { data: nurseServices },
+    { data: nurseSpecs },
+  ] = await Promise.all([
+    getSpecializationProgress(profile.id),
 
-  const { data: completions } = await supabase
-    .from("nurse_course_completions")
-    .select("status, courses(title)")
-    .eq("nurse_id", profile.id);
+    recordActivityAndGetStreak(profile.id),
+
+    supabase
+      .from("nurse_course_completions")
+      .select("status, courses(title)")
+      .eq("nurse_id", profile.id),
+
+    supabase
+      .from("nurse_skills")
+      .select("skills(id, name)")
+      .eq("nurse_id", profile.id),
+
+    supabase
+      .from("nurse_services")
+      .select("services(id, name)")
+      .eq("nurse_id", profile.id),
+
+    supabase
+      .from("nurse_specializations")
+      .select("specializations(id, name)")
+      .eq("nurse_id", profile.id),
+  ]);
 
   const completedTitles = new Set(
     (completions || [])
       .filter((c) => c.status === "completed")
-      .map((c) => (c.courses as unknown as { title: string })?.title)
+      .map(
+        (c) =>
+          (c.courses as unknown as { title: string })?.title
+      )
       .filter(Boolean)
   );
+
   const coursesCompleted = completedTitles.size;
 
   const specializationsEnrolled = progress.length;
-  const roadmapsCompleted = progress.filter((p) => p.status === "unlocked").length;
 
-  const [{ data: nurseSkills }, { data: nurseServices }, { data: nurseSpecs }] = await Promise.all([
-    supabase.from("nurse_skills").select("skills(id, name)").eq("nurse_id", profile.id),
-    supabase.from("nurse_services").select("services(id, name)").eq("nurse_id", profile.id),
-    supabase.from("nurse_specializations").select("specializations(id, name)").eq("nurse_id", profile.id),
-  ]);
+  const roadmapsCompleted = progress.filter(
+    (p) => p.status === "unlocked"
+  ).length;
 
-  const skills = (nurseSkills || []).map((r) => r.skills as unknown as { id: number; name: string }).filter(Boolean);
-  const services = (nurseServices || []).map((r) => r.services as unknown as { id: number; name: string }).filter(Boolean);
-  const interests = (nurseSpecs || []).map((r) => r.specializations as unknown as { id: number; name: string }).filter(Boolean);
+  const skills = (nurseSkills || [])
+    .map(
+      (r) =>
+        r.skills as unknown as {
+          id: number;
+          name: string;
+        }
+    )
+    .filter(Boolean);
 
-  return (
-    <main>
-      <div className="min-h-screen bg-gradient-to-b from-carinex-navy via-carinex-navy to-carinex-emerald/20">
-        <Navbar />
+  const services = (nurseServices || [])
+    .map(
+      (r) =>
+        r.services as unknown as {
+          id: number;
+          name: string;
+        }
+    )
+    .filter(Boolean);
 
-        <section className="mx-auto max-w-4xl px-6 py-12">
-          <DashboardHero
-            firstName={firstName}
-            streak={streak}
-            coursesCompleted={coursesCompleted}
-            specializationsEnrolled={specializationsEnrolled}
-            roadmapsCompleted={roadmapsCompleted}
-          />
-
-          <div className="mt-6">
-            <ProfileSummary
-              firstName={firstName}
-              lastName={userRow?.last_name || ""}
-              bio={profile.bio || null}
-              trackNational={profile.track_national || false}
-              trackGlobal={profile.track_global || false}
-              skills={skills}
-              services={services}
-              interests={interests}
-            />
-          </div>
-
-          <div className="mt-8 rounded-2xl border border-white/15 bg-white/10 p-8 backdrop-blur-sm">
-            <span className="text-xs font-semibold uppercase tracking-wide text-white/70">
-              Career Fit Assessment
-            </span>
-            <h2 className="mt-2 text-2xl font-bold tracking-tight text-white">
-              Find out exactly where your clinical experience fits, globally.
-            </h2>
-            <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/80">
-              Most nurses guess which remote pathway suits them and waste months on the
-              wrong courses. This assessment reads your real clinical background —
-              ICU, public health, call-centre, whatever it is — and tells you precisely
-              which specializations you&apos;re already strong in, and what stands between
-              you and the rest.
-            </p>
-            <a
-              href="/assessment"
-              className="mt-5 inline-block rounded-full bg-white px-6 py-3 text-sm font-bold text-carinex-navy transition hover:bg-white/90"
-            >
-              Take the assessment →
-            </a>
-          </div>
-
-          <div className="mt-12">
-            <h2 className="text-xl font-bold text-white">Your specializations</h2>
-
-            {progress.length === 0 ? (
-              <div className="mt-4 rounded-2xl border border-dashed border-white/25 p-8 text-center">
-                <p className="text-white/70">You haven&apos;t selected a specialization yet.</p>
-                <a href="/pathways" className="mt-3 inline-block text-sm font-semibold text-white hover:underline">
-                  Explore pathways
-                </a>
-              </div>
-            ) : (
-              <div className="mt-4 flex flex-col gap-4">
-                {progress.map((p) => {
-                  const style = statusStyles[p.status];
-                  const progressPct =
-                    p.requiredCourses > 0
-                      ? Math.min(100, Math.round((p.completedCourses / p.requiredCourses) * 100))
-                      : 0;
-
-                  let buttonLabel = "Start course";
-                  let buttonHref = `/pathways/${p.slug}`;
-
-                  if (p.status === "unlocked") {
-                    buttonLabel = "Completed";
-                  } else if (p.primaryCourse) {
-                    if (p.primaryCourse.status === "completed") {
-                      buttonLabel = "Completed";
-                    } else if (p.primaryCourse.status === "verification_pending") {
-                      buttonLabel = "Pending review";
-                    } else if (p.primaryCourse.isInHouse) {
-                      buttonLabel = "Continue course";
-                      buttonHref = `/dashboard/learning/inhouse/${p.primaryCourse.courseId}/start`;
-                    } else {
-                      buttonLabel = "Submit completion";
-                    }
-                  }
-
-                  return (
-                    <div
-                      key={p.specializationId}
-                      className={`rounded-2xl border-l-4 bg-white p-6 shadow-sm ${style.accent}`}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <h3 className="text-base font-semibold text-carinex-navy">{p.name}</h3>
-                        <div className="flex shrink-0 flex-col items-end gap-2">
-                          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${style.badgeClass}`}>
-                            {style.label}
-                          </span>
-                          <a
-                            href={`/dashboard/roadmap/${p.slug}`}
-                            className="rounded-full border border-carinex-navy/20 px-3 py-1 text-xs font-semibold text-carinex-navy transition hover:bg-carinex-navy/5"
-                          >
-                            View roadmap
-                          </a>
-                        </div>
-                      </div>
-
-                      {p.requiredCourses > 0 && (
-                        <div className="mt-4">
-                          <div className="h-1.5 w-full overflow-hidden rounded-full bg-carinex-navy/10">
-                            <div
-                              className="h-full rounded-full bg-carinex-emerald transition-all"
-                              style={{ width: `${progressPct}%` }}
-                            />
-                          </div>
-                          <p className="mt-2 text-sm text-carinex-navy/60">
-                            {p.completedCourses} of {p.requiredCourses} required courses complete
-                            {p.minYearsExperience && !p.meetsExperienceGate && (
-                              <> · requires {p.minYearsExperience}+ years experience</>
-                            )}
-                          </p>
-                        </div>
-                      )}
-
-                      <div className="mt-5">
-                        <a
-                          href={buttonHref}
-                          className="inline-block rounded-full bg-carinex-emerald px-4 py-2 text-sm font-semibold text-white transition hover:bg-carinex-emerald/90"
-                        >
-                          {buttonLabel}
-                        </a>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        </section>
-      </div>
-
-      <Footer />
-    </main>
-  );
-}
+  const interests = (nurseSpecs || [])
+    .map(
+      (r) =>
+        r.specializations as unknown as {
+          id: number;
+          name: string;
+        }
+    )
+    .filter(Boolean);
