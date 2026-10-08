@@ -36,37 +36,67 @@ export default async function LearningHubPage() {
 
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("nurse_profiles")
-    .select("*")
-    .eq("user_id", user!.id)
-    .maybeSingle();
+const { data: profile } = await supabase
+  .from("nurse_profiles")
+  .select(
+    "id, track_national, track_global"
+  )
+  .eq("user_id", user.id)
+  .maybeSingle();
 
-  if (!profile) redirect("/dashboard/profile");
+if (!profile) redirect("/dashboard/profile");
 
-  const { data: nurseSpecs } = await supabase
+/*
+ * These queries do not depend on each other.
+ */
+const [{ data: nurseSpecs }, { data: completions }] = await Promise.all([
+  supabase
     .from("nurse_specializations")
     .select("specialization_id, specializations(id, name, slug)")
-    .eq("nurse_id", profile.id);
+    .eq("nurse_id", profile.id),
 
-  const specializations = (nurseSpecs || [])
-    .map((row) => row.specializations as unknown as { id: number; name: string; slug: string })
-    .filter(Boolean);
-
-  const specIds = specializations.map((s) => s.id);
-
-  const { data: allCourses } = specIds.length
-    ? await supabase.from("courses").select("*").in("specialization_id", specIds).or("is_in_house.is.null,is_in_house.eq.false,is_published.eq.true")
-    : { data: [] };
-
-  const { data: completions } = await supabase
+  supabase
     .from("nurse_course_completions")
     .select("*")
-    .eq("nurse_id", profile.id);
+    .eq("nurse_id", profile.id),
+]);
 
-  const completionByCourseId = new Map(
-    (completions || []).map((c) => [c.course_id, c])
-  );
+const specializations = (nurseSpecs || [])
+  .map(
+    (row) =>
+      row.specializations as unknown as {
+        id: number;
+        name: string;
+        slug: string;
+      }
+  )
+  .filter(Boolean);
+
+const specIds = specializations.map((s) => s.id);
+
+/*
+ * Preserve the existing Learning Hub publication rules:
+ *
+ * - external courses remain visible
+ * - legacy NULL publication values remain visible
+ * - published in-house courses remain visible
+ * - is_published = false remains private
+ */
+const { data: allCourses } = specIds.length
+  ? await supabase
+      .from("courses")
+      .select(
+        "id, title, provider, track_type, price_display, affiliate_link, summary, specialization_id, duration_display, level, image_url, is_in_house, is_published"
+      )
+      .in("specialization_id", specIds)
+      .or(
+        "is_in_house.is.null,is_in_house.eq.false,is_published.is.null,is_published.eq.true"
+      )
+  : { data: [] };
+
+const completionByCourseId = new Map(
+  (completions || []).map((c) => [c.course_id, c])
+);
 
   function dedupeCourses(courses: CourseRow[]): CourseRow[] {
     const byTitle = new Map<string, CourseRow>();
