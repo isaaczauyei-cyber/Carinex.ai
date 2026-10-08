@@ -2,22 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/server";
-
-function splitList(value: string | null): string[] {
-  if (!value) return [];
-  return value
-    .split(/\s*·\s*|\n/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
-function splitParagraphs(value: string | null): string[] {
-  if (!value) return [];
-  return value
-    .split(/\n\s*\n/)
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
+import RichText from "@/components/RichText";
 
 export default async function JobDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient();
@@ -112,27 +97,15 @@ export default async function JobDetailPage({ params }: { params: { id: string }
         <div className="mt-10 flex flex-col gap-8">
           <div>
             <h2 className="text-lg font-bold text-carinex-navy">About this role</h2>
-            <div className="mt-3 flex flex-col gap-3">
-              {descriptionParagraphs.length > 0 ? (
-                descriptionParagraphs.map((para, i) => (
-                  <p key={i} className="leading-relaxed text-carinex-navy/80">
-                    {para}
-                  </p>
-                ))
-              ) : (
-                <p className="text-carinex-navy/50">No description provided.</p>
-              )}
+            <div className="mt-3">
+              {job.description ? <RichText text={job.description} /> : <p className="text-carinex-navy/50">No description provided.</p>}
             </div>
           </div>
 
-          {requirements.length > 0 && (
+          {job.eligibility_requirements && (
             <div className="rounded-2xl border border-carinex-navy/10 bg-carinex-navy/5 p-6">
               <h2 className="text-lg font-bold text-carinex-navy">Eligibility requirements</h2>
-              <ul className="mt-3 flex flex-col gap-1.5">
-                {requirements.map((req, i) => (
-                  <li key={i} className="text-sm text-carinex-navy/70">· {req}</li>
-                ))}
-              </ul>
+              <div className="mt-3"><RichText text={job.eligibility_requirements} /></div>
             </div>
           )}
 
