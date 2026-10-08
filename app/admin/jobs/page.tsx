@@ -15,9 +15,9 @@ export default async function AdminJobsPage() {
   return (
     <main>
       <Navbar />
-      <section className="mx-auto max-w-4xl px-6 py-12">
+      <section className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
         <span className="text-sm font-semibold uppercase tracking-wide text-carinex-emerald">Admin</span>
-        <div className="mt-2 flex items-center justify-between">
+        <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-3xl font-bold tracking-tight text-carinex-navy">Jobs</h1>
           <Link
             href="/admin/jobs/new"
