@@ -12,6 +12,8 @@ type Job = {
   pay_display: string | null;
   employer_profiles: { company_name: string } | null;
   specializations: { id: number; name: string } | null;
+  requires_foreign_license?: boolean | null;
+  foreign_license_country?: string | null;
 };
 
 export default function OpportunityFilters({ jobs }: { jobs: Job[] }) {
@@ -49,9 +51,20 @@ export default function OpportunityFilters({ jobs }: { jobs: Job[] }) {
 
       {filtered.length > 0 ? (
         <div className="mt-4 flex flex-col gap-3">
-          {filtered.map((job) => <Link key={job.id} href={`/dashboard/opportunities/${job.id}`} className="rounded-xl border border-carinex-navy/10 bg-white p-5 transition hover:border-carinex-emerald/40 hover:shadow-sm">
-            <div className="flex items-start justify-between gap-4"><div className="min-w-0"><p className="font-semibold text-carinex-navy">{job.title}</p><p className="mt-0.5 text-sm text-carinex-navy/50">{job.employer_profiles?.company_name || "Employer"}{job.specializations?.name ? ` · ${job.specializations.name}` : ""}</p></div><div className="flex shrink-0 flex-wrap justify-end gap-1.5">{job.track_type && <span className="rounded-full bg-carinex-navy/5 px-2.5 py-1 text-xs font-semibold text-carinex-navy/70">{job.track_type === "national" ? "National" : "Global"}</span>}{job.work_mode && <span className="rounded-full bg-carinex-navy/5 px-2.5 py-1 text-xs text-carinex-navy/50">{job.work_mode === "sync" ? "Real-time" : job.work_mode === "async" ? "Flexible" : "On-site"}</span>}</div></div>
-            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-carinex-navy/50">{job.location_restriction && <span>{job.location_restriction}</span>}{job.pay_display && <span className="font-semibold text-carinex-emerald">{job.pay_display}</span>}</div>
+          {filtered.map((job) => <Link key={job.id} href={`/dashboard/opportunities/${job.id}`} className="rounded-xl border border-carinex-navy/10 bg-white p-4 transition hover:border-carinex-emerald/40 hover:shadow-sm sm:p-5">
+            <div className="flex flex-col gap-3">
+              <div className="min-w-0">
+                <p className="font-semibold text-carinex-navy">{job.title}</p>
+                {job.specializations?.name && <p className="mt-1 text-sm text-carinex-navy/55">{job.specializations.name}</p>}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {job.track_type && <span className="rounded-full bg-carinex-navy/5 px-2.5 py-1 text-xs font-semibold text-carinex-navy/70">{job.track_type === "national" ? "National" : "Global"}</span>}
+                {job.work_mode && <span className="rounded-full bg-carinex-navy/5 px-2.5 py-1 text-xs text-carinex-navy/60">{job.work_mode === "sync" ? "Real-time" : job.work_mode === "async" ? "Flexible" : "On-site"}</span>}
+                {job.location_restriction && <span className="rounded-full bg-carinex-navy/5 px-2.5 py-1 text-xs text-carinex-navy/60">{job.location_restriction}</span>}
+                {job.requires_foreign_license && <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">Foreign license required</span>}
+              </div>
+              {job.pay_display && <p className="text-sm font-semibold text-carinex-emerald">{job.pay_display}</p>}
+            </div>
           </Link>)}
         </div>
       ) : <div className="mt-4 rounded-2xl border border-dashed border-carinex-navy/20 p-10 text-center"><p className="font-semibold text-carinex-navy">No matching opportunities</p><p className="mt-2 text-sm text-carinex-navy/50">Try changing your search or filters.</p></div>}

@@ -91,16 +91,18 @@ export default function AdminModuleEditor({
 
   async function saveModuleMeta() {
     setSavingMeta(true);
+
+    let error: { message: string } | null = null;
     try { await markCoursePrivate(); } catch (e) { setSavingMeta(false); alert("Could not prepare the course for editing: " + (e instanceof Error ? e.message : "Unknown error")); return; }
 
-    const { error } = await supabase
+    ({ error } = await supabase
       .from("course_modules")
       .update({
         title,
         summary: summary || null,
         quiz_passing_score: Number(passingScore) || 70,
       })
-      .eq("id", module.id);
+      .eq("id", module.id));
 
     setSavingMeta(false);
 
@@ -505,7 +507,18 @@ function SectionEditor({
       {expanded && (
         <div className="flex flex-col gap-4 border-t border-carinex-navy/10 p-4">
           <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} onBlur={() => void onUpdate({ title })} placeholder="Section title" className="rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm" />
-          <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} onBlur={() => void onUpdate({ instructions })} placeholder="Instructions" rows={3} className="rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm" />
+          <div>
+            <p className="mb-1 text-xs font-semibold text-carinex-navy/50">Instructions</p>
+            <RichTextEditor
+              value={instructions}
+              onSave={(next) => {
+                setInstructions(next);
+                void onUpdate({ instructions: next });
+              }}
+              placeholder="Write the instructions here"
+              rows={5}
+            />
+          </div>
 
           {section.section_type === "course_material" && (
             <div className="rounded-lg border border-carinex-navy/10 p-4">

@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import RichTextEditor from "@/components/RichTextEditor";
 
 type Employer = { id: string; company_name: string };
 type Specialization = { id: number; name: string };
@@ -238,12 +239,14 @@ export default function AdminJobForm({
 
       <div>
         <label className="text-sm font-medium text-carinex-navy">Description</label>
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          rows={5}
-          className="mt-2 w-full rounded-lg border border-carinex-navy/20 px-4 py-2.5 focus:border-carinex-emerald focus:outline-none"
-        />
+        <div className="mt-2">
+          <RichTextEditor
+            value={description}
+            onSave={setDescription}
+            placeholder="Write the job description"
+            rows={8}
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -299,17 +302,23 @@ export default function AdminJobForm({
             <option value="GBP">GBP</option>
           </select>
         </div>
+        <div className="sm:col-span-2">
+          <label className="text-sm font-medium text-carinex-navy">Pay / compensation display (optional)</label>
+          <input value={payDisplay} onChange={(e) => setPayDisplay(e.target.value)} placeholder="e.g. ₦250,000/month or USD $2,000–$2,500/month" className="mt-2 w-full rounded-lg border border-carinex-navy/20 px-4 py-2.5 focus:border-carinex-emerald focus:outline-none" />
+          <p className="mt-1 text-xs text-carinex-navy/50">Leave blank to keep compensation hidden from nurses.</p>
+        </div>
       </div>
 
       <div>
         <label className="text-sm font-medium text-carinex-navy">Eligibility requirements</label>
-        <textarea
-          value={eligibilityRequirements}
-          onChange={(e) => setEligibilityRequirements(e.target.value)}
-          rows={3}
-          placeholder="e.g. Active NMCN license · 2+ years clinical experience"
-          className="mt-2 w-full rounded-lg border border-carinex-navy/20 px-4 py-2.5 focus:border-carinex-emerald focus:outline-none"
-        />
+        <div className="mt-2">
+          <RichTextEditor
+            value={eligibilityRequirements}
+            onSave={setEligibilityRequirements}
+            placeholder="e.g. Active NMCN license; 2+ years clinical experience"
+            rows={5}
+          />
+        </div>
       </div>
 
       <div>
