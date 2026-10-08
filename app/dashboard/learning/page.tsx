@@ -114,26 +114,29 @@ export default async function LearningHubPage() {
   );
 
   function dedupeCourses(courses: CourseRow[]): CourseRow[] {
-    const byTitle = new Map<string, CourseRow>();
+  const byTitle = new Map<string, CourseRow>();
 
-    for (const course of courses) {
-      const existing = byTitle.get(course.title);
+  const trackNational = profile?.track_national ?? false;
+  const trackGlobal = profile?.track_global ?? false;
 
-      if (!existing) {
-        byTitle.set(course.title, course);
-        continue;
-      }
+  for (const course of courses) {
+    const existing = byTitle.get(course.title);
 
-      const prefersThis =
-        (course.track_type === "national" && profile.track_national) ||
-        (course.track_type === "global" && profile.track_global);
-
-      if (prefersThis) {
-        byTitle.set(course.title, course);
-      }
+    if (!existing) {
+      byTitle.set(course.title, course);
+      continue;
     }
 
-    return Array.from(byTitle.values());
+    const prefersThis =
+      (course.track_type === "national" && trackNational) ||
+      (course.track_type === "global" && trackGlobal);
+
+    if (prefersThis) {
+      byTitle.set(course.title, course);
+    }
+  }
+
+  return Array.from(byTitle.values());
   }
 
   return (
