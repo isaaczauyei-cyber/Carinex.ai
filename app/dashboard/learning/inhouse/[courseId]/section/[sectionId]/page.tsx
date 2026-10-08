@@ -41,11 +41,10 @@ export default async function SectionPage({
 
   const admin = createAdminClient();
 
-/*
- * Course and section can be fetched at the same time.
- */
-const [{ data: course }, { data: section }] =
-  await Promise.all([
+  /*
+   * Course and section can be fetched at the same time.
+   */
+  const [{ data: course }, { data: section }] = await Promise.all([
     admin
       .from("courses")
       .select("title")
@@ -59,37 +58,36 @@ const [{ data: course }, { data: section }] =
       .maybeSingle(),
   ]);
 
-if (!course) {
-  notFound();
-}
+  if (!course) {
+    notFound();
+  }
 
-if (!section) {
-  notFound();
-}
+  if (!section) {
+    notFound();
+  }
 
-/*
- * IMPORTANT:
- * Keep this relationship/security check.
- *
- * It prevents a learner from requesting a section from
- * another course by changing the URL.
- */
-const { data: module } = await admin
-  .from("course_modules")
-  .select("id")
-  .eq("id", section.module_id)
-  .eq("course_id", courseId)
-  .maybeSingle();
+  /*
+   * IMPORTANT:
+   * Keep this relationship/security check.
+   *
+   * It prevents a learner from requesting a section from
+   * another course by changing the URL.
+   */
+  const { data: module } = await admin
+    .from("course_modules")
+    .select("id")
+    .eq("id", section.module_id)
+    .eq("course_id", courseId)
+    .maybeSingle();
 
-if (!module) {
-  notFound();
-}
+  if (!module) {
+    notFound();
+  }
 
-/*
- * Progress and course structure are independent.
- */
-const [{ data: progressRow }, structureProgress] =
-  await Promise.all([
+  /*
+   * Progress and course structure are independent.
+   */
+  const [{ data: progressRow }, structureProgress] = await Promise.all([
     admin
       .from("nurse_section_progress")
       .select("status, submission_text")
@@ -103,70 +101,89 @@ const [{ data: progressRow }, structureProgress] =
     ]),
   ]);
 
-const [structure, progress] = structureProgress;
+  const [structure, progress] = structureProgress;
 
-const sequence = flattenSequence(structure);
+  /*
+   * Build learner-specific progress sets for the course player.
+   */
+  const completedSectionIds = new Set(
+    (progress?.sections || [])
+      .filter(
+        (item: { status?: string }) => item.status === "completed"
+      )
+      .map((item: { section_id: number }) => item.section_id)
+  );
 
-const currentIndex = sequence.findIndex(
-  (item) =>
-    item.type === "section" &&
-    item.id === section.id
-);
+  const passedModuleIds = new Set(
+    (progress?.quizzes || [])
+      .filter(
+        (item: { passed?: boolean }) => item.passed === true
+      )
+      .map((item: { module_id: number }) => item.module_id)
+  );
 
-const next =
-  currentIndex >= 0
-    ? sequence[currentIndex + 1]
-    : null;
+  const sequence = flattenSequence(structure);
 
-const config =
-  (section.config || {}) as Record<string, unknown>;
+  const currentIndex = sequence.findIndex(
+    (item) =>
+      item.type === "section" &&
+      item.id === section.id
+  );
 
-const filePath =
-  typeof config.file_url === "string"
-    ? config.file_url
-    : null;
+  const next =
+    currentIndex >= 0
+      ? sequence[currentIndex + 1]
+      : null;
 
-const mediaType =
-  typeof config.media_type === "string"
-    ? config.media_type.toLowerCase()
-    : "";
+  const config =
+    (section.config || {}) as Record<string, unknown>;
 
-let signedFileUrl: string | null = null;
-let fileError: string | null = null;
+  const filePath =
+    typeof config.file_url === "string"
+      ? config.file_url
+      : null;
 
-if (
-  (section.section_type === "course_material" ||
-    section.section_type === "career_application") &&
-  filePath
-) {
-  const { data, error } =
-    await admin.storage
+  const mediaType =
+    typeof config.media_type === "string"
+      ? config.media_type.toLowerCase()
+      : "";
+
+  let signedFileUrl: string | null = null;
+  let fileError: string | null = null;
+
+  if (
+    (section.section_type === "course_material" ||
+      section.section_type === "career_application") &&
+    filePath
+  ) {
+    const { data, error } = await admin.storage
       .from("course-content")
       .createSignedUrl(filePath, 3600);
 
-  if (error) {
-    console.error(
-      "Course file signed URL error:",
-      error.message
-    );
+    if (error) {
+      console.error(
+        "Course file signed URL error:",
+        error.message
+      );
 
-    fileError =
-      "The course file could not be loaded. Please try again later.";
-  } else {
-    signedFileUrl = data?.signedUrl || null;
-
-    if (!signedFileUrl) {
       fileError =
-        "The course file is currently unavailable.";
+        "The course file could not be loaded. Please try again later.";
+    } else {
+      signedFileUrl = data?.signedUrl || null;
+
+      if (!signedFileUrl) {
+        fileError =
+          "The course file is currently unavailable.";
+      }
     }
   }
-}
 
-const isAudio = mediaType === "audio";
+  const isAudio = mediaType === "audio";
 
-const isPdf =
-  mediaType === "pdf" ||
-  filePath?.toLowerCase().endsWith(".pdf") || false;
+  const isPdf =
+    mediaType === "pdf" ||
+    filePath?.toLowerCase().endsWith(".pdf") ||
+    false;
 
   return (
     <main className="min-h-screen bg-white">
@@ -180,7 +197,9 @@ const isPdf =
       />
 
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-        <h1 className="text-2xl font-bold text-carinex-navy">{section.title}</h1>
+        <h1 className="text-2xl font-bold text-carinex-navy">
+          {section.title}
+        </h1>
 
         {section.instructions && (
           <div className="mt-4">
@@ -192,7 +211,9 @@ const isPdf =
           section.section_type === "career_application") && (
           <div className="mt-6">
             {fileError && (
-              <p className="rounded-lg bg-red-50 p-4 text-red-700">{fileError}</p>
+              <p className="rounded-lg bg-red-50 p-4 text-red-700">
+                {fileError}
+              </p>
             )}
 
             {!filePath && (
