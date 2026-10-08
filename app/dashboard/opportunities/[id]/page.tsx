@@ -36,8 +36,8 @@ export default async function JobDetailPage({ params }: { params: { id: string }
 
   const employer = job.employer_profiles as unknown as { company_name: string; company_website: string | null } | null;
   const spec = job.specializations as unknown as { name: string } | null;
-  const descriptionParagraphs = splitParagraphs(job.description);
-  const requirements = splitList(job.eligibility_requirements);
+  <RichText text={job.description} />
+  <RichText text={job.eligibility_requirements} />
 
   return (
     <main>
