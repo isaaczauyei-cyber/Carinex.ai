@@ -117,7 +117,7 @@ export default function Navbar({ courseSession }: { courseSession?: CourseSessio
             )}
             <Link href="/" className="flex items-center gap-2">
               <Image src="/carinex-logo.png" alt="Carinex" width={34} height={34} className="shrink-0 rounded-lg object-contain" />
-              <span className="text-lg font-bold leading-none tracking-tight text-carinex-navy">Carinex.ai</span>
+              <span className="text-lg font-bold leading-none tracking-tight text-carinex-navy">Carinex</span>
             </Link>
           </div>
 
