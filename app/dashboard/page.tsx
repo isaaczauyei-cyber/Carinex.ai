@@ -91,9 +91,7 @@ export default async function DashboardPage() {
         (c) =>
           (c.courses as unknown as { title: string })?.title
       )
-      .filter(Boolean)
-  );
-
+      .filter(Boolean);
   const coursesCompleted = completedTitles.size;
 
   const specializationsEnrolled = progress.length;
@@ -131,7 +129,6 @@ export default async function DashboardPage() {
         }
     )
     .filter(Boolean);
-  );
   const coursesCompleted = completedTitles.size;
 
   const specializationsEnrolled = progress.length;
