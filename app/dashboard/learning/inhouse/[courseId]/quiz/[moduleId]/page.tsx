@@ -9,10 +9,7 @@ import QuizForm from "@/components/QuizForm";
 export default async function ModuleQuizPage({
   params,
 }: {
-  params: {
-    courseId: string;
-    moduleId: string;
-  };
+  params: { courseId: string; moduleId: string };
 }) {
   const supabase = await createClient();
 
@@ -44,39 +41,32 @@ export default async function ModuleQuizPage({
 
   const admin = createAdminClient();
 
-  /*
-   * Get the course first.
-   */
-  const { data: course, error: courseError } = await admin
+  const { data: course } = await admin
     .from("courses")
-    .select("id, title, is_in_house, is_published")
+    .select("id, title")
     .eq("id", courseId)
     .maybeSingle();
 
-  if (courseError || !course) {
+  if (!course) {
     notFound();
   }
 
   /*
-   * Get the module ONLY if it belongs to this course.
-   *
-   * This prevents a module from another course being treated
-   * as part of the current learner's course.
+   * The module must belong to this course.
    */
-  const { data: courseModule, error: moduleError } = await admin
+  const { data: courseModule } = await admin
     .from("course_modules")
     .select("id, course_id, title, quiz_passing_score")
     .eq("id", params.moduleId)
     .eq("course_id", courseId)
     .maybeSingle();
 
-  if (moduleError || !courseModule) {
+  if (!courseModule) {
     notFound();
   }
 
   /*
-   * Only modules that actually contain assessment questions
-   * should open the quiz page.
+   * Load the quiz questions.
    */
   const { data: questions, error: questionsError } = await admin
     .from("assessment_questions")
@@ -103,8 +93,10 @@ export default async function ModuleQuizPage({
   }));
 
   /*
-   * Build the course TOC using the authenticated learner's
-   * own progress.
+   * Course structure is used for:
+   * - TOC
+   * - learner-specific progress
+   * - determining the next module
    */
   const structure = await getCourseStructure(courseId);
 
@@ -112,6 +104,40 @@ export default async function ModuleQuizPage({
     profile.id,
     courseId
   );
+
+  /*
+   * Find the current module.
+   */
+  const currentModuleIndex = structure.findIndex(
+    (module) => module.id === courseModule.id
+  );
+
+  if (currentModuleIndex === -1) {
+    notFound();
+  }
+
+  /*
+   * After passing this quiz, go directly to the
+   * beginning of the NEXT MODULE.
+   */
+  const nextModule = structure[currentModuleIndex + 1];
+
+  let nextHref = "/dashboard/learning";
+
+  if (nextModule) {
+    /*
+     * Normally the next module starts with its first section.
+     */
+    if (nextModule.sections.length > 0) {
+      nextHref = `/dashboard/learning/inhouse/${courseId}/section/${nextModule.sections[0].id}`;
+    } else if (nextModule.hasQuiz) {
+      /*
+       * If a module has no sections but has a quiz,
+       * go directly to that module's quiz.
+       */
+      nextHref = `/dashboard/learning/inhouse/${courseId}/quiz/${nextModule.id}`;
+    }
+  }
 
   return (
     <main className="min-h-screen bg-white">
@@ -143,6 +169,7 @@ export default async function ModuleQuizPage({
             courseId={courseId}
             moduleId={courseModule.id}
             questions={safeQuestions}
+            nextHref={nextHref}
           />
         </div>
       </div>
