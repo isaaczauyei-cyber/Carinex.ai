@@ -85,20 +85,22 @@ export default async function DashboardPage() {
   ]);
 
   const completedTitles = new Set(
-    (completions || [])
-      .filter((c) => c.status === "completed")
-      .map(
-        (c) =>
-          (c.courses as unknown as { title: string })?.title
-      )
-      .filter(Boolean)
-  const coursesCompleted = completedTitles.size;
+  (completions || [])
+    .filter((c) => c.status === "completed")
+    .map(
+      (c) =>
+        (c.courses as unknown as { title: string })?.title
+    )
+    .filter(Boolean)
+);
 
-  const specializationsEnrolled = progress.length;
+const coursesCompleted = completedTitles.size;
 
-  const roadmapsCompleted = progress.filter(
-    (p) => p.status === "unlocked"
-  ).length;
+const specializationsEnrolled = progress.length;
+
+const roadmapsCompleted = progress.filter(
+  (p) => p.status === "unlocked"
+).length;
 
   const skills = (nurseSkills || [])
     .map(
