@@ -124,88 +124,138 @@ export default function AssessmentForm({
   }
 
   if (result) {
-    return (
-      <div className="flex flex-col gap-4">
-        {result.matched ? (
-          <>
-            <div className="flex items-center gap-2 rounded-xl bg-carinex-emerald/10 px-4 py-3">
-              <span className="text-lg">✨</span>
-              <p className="text-sm font-semibold text-carinex-navy">Your best-fit specialization</p>
-            </div>
-            <div className="rounded-xl border border-carinex-emerald/30 bg-carinex-emerald/5 p-6">
-              <p className="text-xl font-bold text-carinex-navy">{result.title}</p>
-              <ul className="mt-3 flex flex-col gap-1.5">
-                {result.reasons.map((reason, i) => (
-                  <li key={i} className="text-sm text-carinex-navy/70">· {reason}</li>
-                ))}
-              </ul>
-              <div className="mt-5 flex items-center gap-3">
-                <a
-                  href={`/pathways/${result.slug}`}
-                  className="rounded-full bg-carinex-navy px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-carinex-navy/90"
-                >
-                  View pathway
-                </a>
-                <button
-                  onClick={() => addInterest(result.slug)}
-                  disabled={addState !== "idle"}
-                  className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${
-                    addState === "added"
-                      ? "bg-carinex-emerald/10 text-carinex-emerald"
-                      : "border border-carinex-navy/20 text-carinex-navy hover:bg-carinex-navy/5"
-                  } disabled:cursor-default`}
-                >
-                  {addState === "added" ? "Added ✓" : addState === "adding" ? "Adding…" : "Add to my pathways"}
-                </button>
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-6">
-            <p className="text-lg font-bold text-amber-900">Not quite ready for a match yet</p>
+  return (
+    <div className="flex flex-col gap-5">
+      {/* Primary recommendation: AI in Nursing */}
+      {aiCourse && (
+        <div className="rounded-2xl border-2 border-carinex-emerald/30 bg-carinex-emerald/5 p-6">
+          <div className="flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-carinex-emerald text-white">
+              ✨
+            </span>
+
+            <p className="text-sm font-bold uppercase tracking-wide text-carinex-emerald">
+              Recommended next step
+            </p>
+          </div>
+
+          <h2 className="mt-4 text-2xl font-bold text-carinex-navy">
+            {aiCourse.title}
+          </h2>
+
+          <p className="mt-3 text-sm leading-6 text-carinex-navy/70">
+            Based on your current knowledge and experience, AI in Nursing is
+            the recommended course to take next. It gives you practical,
+            job-ready skills you can build on before moving into your best-fit
+            career pathway.
+          </p>
+
+          {aiCourse.summary && (
+            <p className="mt-3 text-sm leading-6 text-carinex-navy/70">
+              {aiCourse.summary}
+            </p>
+          )}
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {aiCourse.duration_display && (
+              <span className="rounded-full bg-white px-3 py-1.5 text-xs font-medium text-carinex-navy/70">
+                ⏱ {aiCourse.duration_display}
+              </span>
+            )}
+
+            {aiCourse.level && (
+              <span className="rounded-full bg-white px-3 py-1.5 text-xs font-medium text-carinex-navy/70">
+                🎯 {aiCourse.level}
+              </span>
+            )}
+          </div>
+
+          <button
+            onClick={handleAiEnroll}
+            disabled={aiEnrollState !== "idle"}
+            className="mt-5 rounded-full bg-carinex-navy px-6 py-3 text-sm font-semibold text-white transition hover:bg-carinex-navy/90 disabled:opacity-60"
+          >
+            {aiEnrollState === "adding"
+              ? "Starting…"
+              : "Start AI in Nursing →"}
+          </button>
+        </div>
+      )}
+
+      {/* Assessment result: best-fit pathway */}
+      {result.matched ? (
+        <>
+          <div className="mt-2 flex items-center gap-2">
+            <span className="text-lg">🎯</span>
+
+            <p className="text-sm font-semibold text-carinex-navy">
+              Your best-fit career pathway
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-carinex-navy/10 bg-white p-6">
+            <p className="text-xl font-bold text-carinex-navy">
+              {result.title}
+            </p>
+
             <ul className="mt-3 flex flex-col gap-1.5">
-              {result.blockedReasons.map((reason, i) => (
-                <li key={i} className="text-sm text-amber-900/80">· {reason}</li>
+              {result.reasons.map((reason, i) => (
+                <li
+                  key={i}
+                  className="text-sm text-carinex-navy/70"
+                >
+                  · {reason}
+                </li>
               ))}
             </ul>
-          </div>
-        )}
 
-        {/* Always-shown pitch — separate from the real result above */}
-        {aiCourse && (
-          <div className="mt-2 rounded-xl border-2 border-dashed border-carinex-navy/20 bg-carinex-navy/[0.02] p-6">
-            <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-amber-800">
-              Sponsored by Carinex
-            </span>
-            <p className="mt-3 text-lg font-bold text-carinex-navy">{aiCourse.title}</p>
-            <p className="mt-1 text-sm text-carinex-navy/70">
-              {aiCourse.summary || "Job-ready skills, built by Carinex — no heavy external certification required to get started."}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {aiCourse.duration_display && (
-                <span className="rounded-full bg-white px-2.5 py-1 text-xs text-carinex-navy/70">
-                  ⏱ {aiCourse.duration_display}
-                </span>
-              )}
-              {aiCourse.level && (
-                <span className="rounded-full bg-white px-2.5 py-1 text-xs text-carinex-navy/70">
-                  🎯 {aiCourse.level}
-                </span>
-              )}
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <a
+                href={`/pathways/${result.slug}`}
+                className="rounded-full bg-carinex-navy px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-carinex-navy/90"
+              >
+                View pathway
+              </a>
+
+              <button
+                onClick={() => addInterest(result.slug)}
+                disabled={addState !== "idle"}
+                className={`rounded-full px-5 py-2.5 text-sm font-semibold transition ${
+                  addState === "added"
+                    ? "bg-carinex-emerald/10 text-carinex-emerald"
+                    : "border border-carinex-navy/20 text-carinex-navy hover:bg-carinex-navy/5"
+                } disabled:cursor-default`}
+              >
+                {addState === "added"
+                  ? "Added ✓"
+                  : addState === "adding"
+                  ? "Adding…"
+                  : "Add to my pathways"}
+              </button>
             </div>
-            <button
-              onClick={handleAiEnroll}
-              disabled={aiEnrollState !== "idle"}
-              className="mt-4 rounded-full bg-carinex-navy px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-carinex-navy/90 disabled:opacity-60"
-            >
-              {aiEnrollState === "adding" ? "Starting…" : "Start this course →"}
-            </button>
           </div>
-        )}
-      </div>
-    );
-  }
+        </>
+      ) : (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-6">
+          <p className="text-lg font-bold text-amber-900">
+            Your career pathway needs another step
+          </p>
 
+          <ul className="mt-3 flex flex-col gap-1.5">
+            {result.blockedReasons.map((reason, i) => (
+              <li
+                key={i}
+                className="text-sm text-amber-900/80"
+              >
+                · {reason}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
   return (
     <div>
       <div className="flex items-center gap-2">
