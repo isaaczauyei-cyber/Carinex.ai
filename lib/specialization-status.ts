@@ -25,26 +25,65 @@ export async function getSpecializationProgress(
 ): Promise<SpecializationProgress[]> {
   const supabase = await createClient();
 
-  const { data: profile } = await supabase
-    .from("nurse_profiles")
-    .select("license_status, user_id")
-    .eq("id", nurseProfileId)
-    .single();
+  /*
+   * These three pieces of information are independent,
+   * so fetch them together.
+   */
+  const [{ data: profile }, { data: nurseSpecs }] = await Promise.all([
+    supabase
+      .from("nurse_profiles")
+      .select("license_status, user_id")
+      .eq("id", nurseProfileId)
+      .single(),
 
-  const { data: userRow } = profile
-    ? await supabase.from("users").select("years_experience").eq("id", profile.user_id).maybeSingle()
-    : { data: null };
+    supabase
+      .from("nurse_specializations")
+      .select(
+        "specialization_id, specializations(id, name, slug, required_course_count, min_years_experience)"
+      )
+      .eq("nurse_id", nurseProfileId),
+  ]);
+
+  if (!profile) {
+    return [];
+  }
+
+  if (!nurseSpecs || nurseSpecs.length === 0) {
+    return [];
+  }
+
+  /*
+   * Only one user query instead of one query per specialization.
+   */
+  const { data: userRow } = await supabase
+    .from("users")
+    .select("years_experience")
+    .eq("id", profile.user_id)
+    .maybeSingle();
 
   const yearsExperience = userRow?.years_experience || 0;
 
-  const { data: nurseSpecs } = await supabase
-    .from("nurse_specializations")
-    .select(
-      "specialization_id, specializations(id, name, slug, required_course_count, min_years_experience)"
-    )
-    .eq("nurse_id", nurseProfileId);
+  const specializationIds = nurseSpecs
+    .map((row) => row.specialization_id)
+    .filter((id): id is number => Number.isInteger(id));
 
-  if (!nurseSpecs || nurseSpecs.length === 0) return [];
+  /*
+   * ONE completion query for all of the learner's
+   * selected specializations.
+   *
+   * Previously this was executed once per specialization.
+   */
+  const { data: allRows } = specializationIds.length
+    ? await supabase
+        .from("nurse_course_completions")
+        .select(
+          "status, course_id, courses!inner(specialization_id, title, is_in_house)"
+        )
+        .eq("nurse_id", nurseProfileId)
+        .in("courses.specialization_id", specializationIds)
+    : { data: [] };
+
+  const completionRows = allRows || [];
 
   const results: SpecializationProgress[] = [];
 
@@ -56,45 +95,70 @@ export async function getSpecializationProgress(
       required_course_count: number | null;
       min_years_experience: number | null;
     };
+
     if (!spec) continue;
 
-    const { data: allRows } = await supabase
-      .from("nurse_course_completions")
-      .select("status, course_id, courses!inner(specialization_id, title, is_in_house)")
-      .eq("nurse_id", nurseProfileId)
-      .eq("courses.specialization_id", spec.id);
+    /*
+     * Keep the exact existing completion logic,
+     * but work from the single query above.
+     */
+    const specRows = completionRows.filter(
+      (completion) =>
+        (completion.courses as unknown as {
+          specialization_id: number;
+        })?.specialization_id === spec.id
+    );
 
     const completedCourseTitles = new Set(
-      (allRows || [])
-        .filter((r) => r.status === "completed")
-        .map((r) => (r.courses as unknown as { title: string })?.title)
+      specRows
+        .filter((completion) => completion.status === "completed")
+        .map(
+          (completion) =>
+            (completion.courses as unknown as { title: string })?.title
+        )
         .filter(Boolean)
     );
+
     const completedCourses = completedCourseTitles.size;
     const requiredCourses = spec.required_course_count || 0;
 
-    const licenseActive = profile?.license_status === "active";
-    const coursesComplete = requiredCourses > 0 && completedCourses >= requiredCourses;
+    const licenseActive = profile.license_status === "active";
+
+    const coursesComplete =
+      requiredCourses > 0 && completedCourses >= requiredCourses;
+
     const meetsExperienceGate = spec.min_years_experience
       ? yearsExperience >= spec.min_years_experience
       : true;
 
     let status: SpecializationStatus = "not_started";
+
     if (licenseActive && coursesComplete && meetsExperienceGate) {
       status = "unlocked";
     } else if (completedCourses > 0 || licenseActive) {
       status = "in_progress";
     }
 
-    const startedRow = (allRows || []).find((r) => r.status === "in_progress")
-      || (allRows || []).find((r) => r.status === "verification_pending")
-      || (allRows || []).find((r) => r.status === "completed");
+    /*
+     * Preserve the existing primary-course selection order.
+     */
+    const startedRow =
+      specRows.find((r) => r.status === "in_progress") ||
+      specRows.find((r) => r.status === "verification_pending") ||
+      specRows.find((r) => r.status === "completed");
 
     const primaryCourse: PrimaryCourseState = startedRow
       ? {
           courseId: startedRow.course_id,
-          status: startedRow.status as "in_progress" | "verification_pending" | "completed",
-          isInHouse: !!(startedRow.courses as unknown as { is_in_house: boolean })?.is_in_house,
+          status: startedRow.status as
+            | "in_progress"
+            | "verification_pending"
+            | "completed",
+          isInHouse: !!(
+            startedRow.courses as unknown as {
+              is_in_house: boolean;
+            }
+          )?.is_in_house,
         }
       : null;
 
