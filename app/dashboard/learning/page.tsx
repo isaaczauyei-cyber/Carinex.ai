@@ -16,7 +16,7 @@ type CourseRow = {
   duration_display?: string | null;
   level?: string | null;
   image_url?: string | null;
-  is_in_house?: boolean | null;
+  is_in_house?: boolean;
   is_published?: boolean | null;
 };
 
