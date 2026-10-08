@@ -5,6 +5,7 @@ import AdminTabs from "@/components/AdminTabs";
 import Link from "next/link";
 import AddModuleButton from "@/components/AddModuleButton";
 import InHouseCoursePricingEditor from "@/components/InHouseCoursePricingEditor";
+import InHousePublishToggle from "@/components/InHousePublishToggle";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ export default async function AdminCourseModulesPage({ params }: { params: { cou
 
   const { data: course } = await supabase
     .from("courses")
-    .select("id, title, price_course_only, price_course_plus_guide")
+    .select("id, title, price_course_only, price_course_plus_guide, is_published")
     .eq("id", courseId)
     .maybeSingle();
 
@@ -24,12 +25,12 @@ export default async function AdminCourseModulesPage({ params }: { params: { cou
     .eq("course_id", courseId)
     .order("order_index");
 
-  return <main><Navbar /><section className="mx-auto max-w-3xl px-6 py-12">
+  return <main><Navbar /><section className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
     <Link href="/admin/in-house-courses" className="text-sm font-semibold text-carinex-emerald hover:underline">← All courses</Link>
     <span className="mt-4 block text-sm font-semibold uppercase tracking-wide text-carinex-emerald">Admin</span>
-    <div className="mt-1 flex items-start justify-between gap-4">
+    <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <h1 className="text-3xl font-bold tracking-tight text-carinex-navy">{course?.title}</h1>
-      <AddModuleButton courseId={courseId} />
+      <div className="flex flex-wrap items-center gap-2"><InHousePublishToggle courseId={courseId} initialPublished={Boolean(course?.is_published)} /><AddModuleButton courseId={courseId} /></div>
     </div>
     <AdminTabs />
 
