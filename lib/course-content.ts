@@ -29,51 +29,94 @@ export async function getCourseStructure(courseId: number) {
 
   const moduleIds = (modules || []).map((m) => m.id);
 
-  const { data: sections } = moduleIds.length
-    ? await admin
+  if (!moduleIds.length) {
+    return [];
+  }
+
+  /*
+   * Sections and quiz information are independent.
+   * Fetch them together.
+   */
+  const [{ data: sections }, { data: quizModuleIds }] =
+    await Promise.all([
+      admin
         .from("module_sections")
-        .select("id, title, order_index, module_id, section_type, is_required, is_graded")
+        .select(
+          "id, title, order_index, module_id, section_type, is_required, is_graded"
+        )
         .in("module_id", moduleIds)
-        .order("order_index")
-    : { data: [] };
+        .order("order_index"),
 
-  const { data: quizModuleIds } = moduleIds.length
-    ? await admin.from("assessment_questions").select("module_id").in("module_id", moduleIds)
-    : { data: [] };
+      admin
+        .from("assessment_questions")
+        .select("module_id")
+        .in("module_id", moduleIds),
+    ]);
 
-  const modulesWithQuiz = new Set((quizModuleIds || []).map((q) => q.module_id));
+  const modulesWithQuiz = new Set(
+    (quizModuleIds || []).map((q) => q.module_id)
+  );
 
-  const structure: ModuleSummary[] = (modules || []).map((m) => ({
-    id: m.id,
-    title: m.title,
-    order_index: m.order_index,
-    quiz_passing_score: m.quiz_passing_score,
-    sections: (sections || [])
-      .filter((s) => s.module_id === m.id)
-      .map((s) => ({
-        id: s.id,
-        title: s.title,
-        order_index: s.order_index,
-        section_type: s.section_type,
-        is_required: s.is_required,
-        is_graded: s.is_graded,
-      })),
-    hasQuiz: modulesWithQuiz.has(m.id),
+  /*
+   * Group sections once rather than repeatedly filtering
+   * the entire sections array for every module.
+   */
+  const sectionsByModule = new Map<string, SectionSummary[]>();
+
+  for (const section of sections || []) {
+    const existing = sectionsByModule.get(section.module_id) || [];
+
+    existing.push({
+      id: section.id,
+      title: section.title,
+      order_index: section.order_index,
+      section_type: section.section_type,
+      is_required: section.is_required,
+      is_graded: section.is_graded,
+    });
+
+    sectionsByModule.set(section.module_id, existing);
+  }
+
+  return (modules || []).map((module) => ({
+    id: module.id,
+    title: module.title,
+    order_index: module.order_index,
+    quiz_passing_score: module.quiz_passing_score,
+    sections: sectionsByModule.get(module.id) || [],
+    hasQuiz: modulesWithQuiz.has(module.id),
   }));
-
-  return structure;
 }
 
-export async function getProgress(nurseId: string, courseId: number) {
+export async function getProgress(
+  nurseId: string,
+  courseId: number
+) {
   const admin = createAdminClient();
 
-  const { data: sectionRows } = await admin
-    .from("module_sections")
-    .select("id, course_modules!inner(course_id)")
-    .eq("course_modules.course_id", courseId);
+  /*
+   * Section IDs and quiz attempts are independent.
+   */
+  const [{ data: sectionRows }, { data: quizAttempts }] =
+    await Promise.all([
+      admin
+        .from("module_sections")
+        .select("id, course_modules!inner(course_id)")
+        .eq("course_modules.course_id", courseId),
+
+      admin
+        .from("nurse_quiz_attempts")
+        .select("module_id, passed")
+        .eq("nurse_id", nurseId)
+        .eq("course_id", courseId),
+    ]);
 
   const sectionIds = (sectionRows || []).map((s) => s.id);
 
+  /*
+   * Only run the progress query if this course actually
+   * contains sections.
+   */
   const { data: progressRows } = sectionIds.length
     ? await admin
         .from("nurse_section_progress")
@@ -82,55 +125,84 @@ export async function getProgress(nurseId: string, courseId: number) {
         .in("section_id", sectionIds)
     : { data: [] };
 
-  const { data: quizAttempts } = await admin
-    .from("nurse_quiz_attempts")
-    .select("module_id, passed")
-    .eq("nurse_id", nurseId)
-    .eq("course_id", courseId);
-
   return {
     completedSectionIds: new Set(
-      (progressRows || []).filter((p) => p.status === "completed").map((p) => p.section_id)
+      (progressRows || [])
+        .filter((p) => p.status === "completed")
+        .map((p) => p.section_id)
     ),
+
     passedModuleIds: new Set(
-      (quizAttempts || []).filter((a) => a.passed).map((a) => a.module_id)
+      (quizAttempts || [])
+        .filter((a) => a.passed)
+        .map((a) => a.module_id)
     ),
   };
 }
 
-// Builds a single ordered sequence across all modules — section, section,
-// quiz, section, section, quiz — so "next" always has one clear meaning.
-export function flattenSequence(structure: ModuleSummary[]) {
-  const sequence: { type: "section" | "quiz"; id: string; moduleId: string }[] = [];
+export function flattenSequence(
+  structure: ModuleSummary[]
+) {
+  const sequence: {
+    type: "section" | "quiz";
+    id: string;
+    moduleId: string;
+  }[] = [];
+
   for (const mod of structure) {
     for (const section of mod.sections) {
-      sequence.push({ type: "section", id: section.id, moduleId: mod.id });
+      sequence.push({
+        type: "section",
+        id: section.id,
+        moduleId: mod.id,
+      });
     }
+
     if (mod.hasQuiz) {
-      sequence.push({ type: "quiz", id: mod.id, moduleId: mod.id });
+      sequence.push({
+        type: "quiz",
+        id: mod.id,
+        moduleId: mod.id,
+      });
     }
   }
+
   return sequence;
 }
 
-// Add this function to the existing file, alongside the others.
-export async function hasPassedEveryModule(nurseId: string, courseId: number) {
+export async function hasPassedEveryModule(
+  nurseId: string,
+  courseId: number
+) {
   const admin = createAdminClient();
 
-  const { data: modules } = await admin
-    .from("course_modules")
-    .select("id")
-    .eq("course_id", courseId);
+  /*
+   * These are independent.
+   */
+  const [{ data: modules }, { data: passedAttempts }] =
+    await Promise.all([
+      admin
+        .from("course_modules")
+        .select("id")
+        .eq("course_id", courseId),
 
-  if (!modules || modules.length === 0) return false;
+      admin
+        .from("nurse_quiz_attempts")
+        .select("module_id")
+        .eq("nurse_id", nurseId)
+        .eq("course_id", courseId)
+        .eq("passed", true),
+    ]);
 
-  const { data: passedAttempts } = await admin
-    .from("nurse_quiz_attempts")
-    .select("module_id")
-    .eq("nurse_id", nurseId)
-    .eq("course_id", courseId)
-    .eq("passed", true);
+  if (!modules || modules.length === 0) {
+    return false;
+  }
 
-  const passedModuleIds = new Set((passedAttempts || []).map((a) => a.module_id));
-  return modules.every((m) => passedModuleIds.has(m.id));
+  const passedModuleIds = new Set(
+    (passedAttempts || []).map((attempt) => attempt.module_id)
+  );
+
+  return modules.every((module) =>
+    passedModuleIds.has(module.id)
+  );
 }
