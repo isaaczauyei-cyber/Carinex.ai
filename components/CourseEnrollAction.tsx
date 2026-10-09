@@ -90,8 +90,7 @@ export default function CourseEnrollAction({
       return <div className="max-w-md rounded-2xl border border-amber-200 bg-amber-50 p-5">
         <h2 className="text-lg font-bold text-amber-950">Enrollment payments are temporarily unavailable</h2>
         <p className="mt-2 text-sm leading-6 text-amber-900">
-          Carinex is completing its secure live-payment setup. No payment will be requested right now.
-          Please check back soon; your course access will not be activated until a real payment is verified and your enrollment is approved.
+          Online payments are temporarily unavailable. Please check back soon
         </p>
       </div>;
     }
