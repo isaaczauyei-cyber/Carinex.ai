@@ -36,8 +36,11 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
 
   const courseOnlyPrice = Number(course.price_course_only || 0);
   const coursePlusGuidePrice = course.price_course_plus_guide == null ? null : Number(course.price_course_plus_guide);
-  const hasPaidPricing = course.is_in_house && courseOnlyPrice > 0;
-  const priceLine = hasPaidPricing
+  const isFreeCourse = course.is_free === true || (!course.is_in_house && String(course.price_display || "").trim().toLowerCase() === "free");
+  const hasPaidPricing = course.is_in_house && !isFreeCourse && courseOnlyPrice > 0;
+  const priceLine = isFreeCourse
+    ? "Free"
+    : hasPaidPricing
     ? coursePlusGuidePrice && coursePlusGuidePrice > 0
       ? `${formatNaira(courseOnlyPrice)} course / ${formatNaira(coursePlusGuidePrice)} with interview guide`
       : formatNaira(courseOnlyPrice)
@@ -79,6 +82,7 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
         <CourseEnrollAction
           courseId={course.id}
           isInHouse={course.is_in_house}
+          isFree={isFreeCourse}
           affiliateLink={course.affiliate_link}
           nurseId={nurseId}
           completionStatus={completion?.status || null}
