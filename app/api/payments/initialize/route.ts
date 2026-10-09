@@ -14,6 +14,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Sign in with an email address before purchasing." }, { status: 401 });
     }
 
+    // Fail closed: never send learners to Paystack while the deployment is in test mode.
+    const secret = process.env.PAYSTACK_SECRET_KEY;
+    const livePaymentsEnabled = process.env.PAYSTACK_LIVE_PAYMENTS_ENABLED === "true";
+    if (!livePaymentsEnabled || !secret || !secret.startsWith("sk_live_")) {
+      return NextResponse.json(
+        { error: "Online payments are temporarily unavailable while Carinex completes live payment activation." },
+        { status: 503 },
+      );
+    }
+
     const body = await req.json();
     const courseId = Number(body.courseId);
     if (!Number.isInteger(courseId) || courseId <= 0 || !isCoursePackage(body.packageType)) {
@@ -90,9 +100,6 @@ export async function POST(req: NextRequest) {
       await admin.from("payments").update({ status: "failed" }).eq("id", payment.id);
       throw detailError;
     }
-
-    const secret = process.env.PAYSTACK_SECRET_KEY;
-    if (!secret) throw new Error("Payment provider is not configured");
 
     const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || req.nextUrl.origin).replace(/\/$/, "");
     const response = await fetch("https://api.paystack.co/transaction/initialize", {
