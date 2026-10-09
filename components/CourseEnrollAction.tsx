@@ -6,6 +6,7 @@ import { formatNaira, type CoursePricing } from "@/lib/course-pricing";
 export default function CourseEnrollAction({
   courseId,
   isInHouse,
+  isFree,
   affiliateLink,
   nurseId,
   completionStatus,
@@ -14,6 +15,7 @@ export default function CourseEnrollAction({
 }: {
   courseId: number;
   isInHouse: boolean;
+  isFree: boolean;
   affiliateLink: string | null;
   nurseId: string | null;
   completionStatus: string | null;
@@ -27,7 +29,7 @@ export default function CourseEnrollAction({
   const livePaymentsEnabled = process.env.NEXT_PUBLIC_PAYSTACK_LIVE_PAYMENTS_ENABLED === "true";
   const linkPending = !isInHouse && (!affiliateLink || affiliateLink.startsWith("PENDING"));
 
-  const paidCourse = isInHouse && pricing.courseOnly > 0;
+  const paidCourse = isInHouse && !isFree && pricing.courseOnly > 0;
   const hasGuidePackage = Number(pricing.coursePlusGuide || 0) > 0;
   const selectedPrice = packageType === "course_only" ? pricing.courseOnly : Number(pricing.coursePlusGuide || 0);
 
@@ -64,32 +66,31 @@ export default function CourseEnrollAction({
     setSaving(true);
     setError("");
 
-    if (isInHouse) {
-      try {
+    try {
+      if (isInHouse) {
         const response = await fetch("/api/courses/free-enroll", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ courseId }),
         });
         const result = await response.json();
-        if (!response.ok) throw new Error(result.error || "Could not enrol in this course.");
-        window.location.assign(`/dashboard/learning/inhouse/${courseId}/start`);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Could not enrol in this course.");
-        setSaving(false);
+        if (!response.ok) throw new Error(result.error || "Unable to enroll in this course.");
+        window.location.href = `/dashboard/learning/inhouse/${courseId}/start`;
+        return;
       }
-      return;
-    }
 
-    const { createClient } = await import("@/lib/supabase/client");
-    const supabase = createClient();
-    const { error: enrollError } = await supabase.from("nurse_course_completions").insert({ nurse_id: nurseId, course_id: courseId, status: "in_progress" });
-    setSaving(false);
-    if (enrollError) {
-      setError("Could not enrol in this course. Please try again.");
-      return;
+      const { createClient } = await import("@/lib/supabase/client");
+      const supabase = createClient();
+      const { error: completionError } = await supabase
+        .from("nurse_course_completions")
+        .upsert({ nurse_id: nurseId, course_id: courseId, status: "in_progress" }, { onConflict: "nurse_id,course_id" });
+      if (completionError) throw completionError;
+      if (!linkPending && affiliateLink) window.open(affiliateLink, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Unable to enroll in this course.");
+    } finally {
+      setSaving(false);
     }
-    if (!linkPending && affiliateLink) window.open(affiliateLink, "_blank", "noopener,noreferrer");
   }
 
   if (paidCourse) {
@@ -145,7 +146,7 @@ export default function CourseEnrollAction({
   if (completionStatus === "completed") return <span className="inline-block rounded-full bg-carinex-emerald/10 px-6 py-3 text-sm font-semibold text-carinex-emerald">✓ Completed</span>;
   if (completionStatus) return <a href={isInHouse ? `/dashboard/learning/inhouse/${courseId}/start` : affiliateLink || "#"} target={isInHouse ? undefined : "_blank"} rel={isInHouse ? undefined : "noopener noreferrer"} className="inline-block rounded-full bg-carinex-emerald px-6 py-3 text-sm font-semibold text-white">Continue course →</a>;
   return <div>
+    {error && <p role="alert" className="mb-3 text-sm text-red-600">{error}</p>}
     <button onClick={handleFreeEnroll} disabled={saving || linkPending} className="rounded-full bg-carinex-navy px-6 py-3 text-sm font-semibold text-white disabled:opacity-60">{saving ? "Enrolling…" : linkPending ? "Course link coming soon" : isInHouse ? "Enroll (in-house)" : "Enroll via Coursera"}</button>
-    {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
   </div>;
 }
