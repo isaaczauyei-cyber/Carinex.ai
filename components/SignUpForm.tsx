@@ -69,32 +69,31 @@ export default function SignUpForm() {
 
   if (status === "success") {
   return (
-    <div
-      role="status"
-      className="flex flex-col items-center gap-4 rounded-xl border border-carinex-white/20 bg-carinex-white/10 p-6 text-center"
-    >
-      <h2 className="text-xl font-bold text-carinex-white">
+    <div className="mx-auto flex w-full max-w-md flex-col items-center gap-4 rounded-xl p-6 text-center">
+      <h2 className="text-2xl font-bold text-carinex-navy">
         Check your email
       </h2>
 
-      <p className="text-sm leading-6 text-carinex-white">
-        Your Carinex account has been created successfully.
-        We&apos;ve sent a confirmation link to your email address.
-        Please open your email and click the confirmation link
+      <p className="text-base leading-7 text-carinex-navy">
+        Your account has been created successfully!
+      </p>
+
+      <p className="text-base leading-7 text-carinex-navy">
+        We&apos;ve sent a confirmation email to the address you registered
+        with. Please check your inbox and click the confirmation link
         before logging in.
       </p>
 
       <button
         type="button"
         onClick={() => router.push("/login")}
-        className="mt-2 rounded-full bg-carinex-white px-5 py-2 text-sm font-semibold text-carinex-navy hover:bg-carinex-white/90"
+        className="mt-2 rounded-full bg-carinex-navy px-6 py-3 font-semibold text-white"
       >
         Go to login
       </button>
     </div>
   );
   }
-
   return (
     <form onSubmit={handleSubmit} className="mx-auto flex w-full max-w-md flex-col gap-3">
       <input
