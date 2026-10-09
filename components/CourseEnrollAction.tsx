@@ -6,6 +6,7 @@ import { formatNaira, type CoursePricing } from "@/lib/course-pricing";
 export default function CourseEnrollAction({
   courseId,
   isInHouse,
+  isFree,
   affiliateLink,
   nurseId,
   completionStatus,
@@ -14,6 +15,7 @@ export default function CourseEnrollAction({
 }: {
   courseId: number;
   isInHouse: boolean;
+  isFree: boolean;
   affiliateLink: string | null;
   nurseId: string | null;
   completionStatus: string | null;
@@ -27,7 +29,7 @@ export default function CourseEnrollAction({
   const livePaymentsEnabled = process.env.NEXT_PUBLIC_PAYSTACK_LIVE_PAYMENTS_ENABLED === "true";
   const linkPending = !isInHouse && (!affiliateLink || affiliateLink.startsWith("PENDING"));
 
-  const paidCourse = isInHouse && pricing.courseOnly > 0;
+  const paidCourse = isInHouse && !isFree && pricing.courseOnly > 0;
   const hasGuidePackage = Number(pricing.coursePlusGuide || 0) > 0;
   const selectedPrice = packageType === "course_only" ? pricing.courseOnly : Number(pricing.coursePlusGuide || 0);
 
