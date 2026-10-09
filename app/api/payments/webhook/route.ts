@@ -7,7 +7,11 @@ export const runtime = "nodejs";
 export async function POST(req: NextRequest) {
   const secret = process.env.PAYSTACK_SECRET_KEY;
   const signature = req.headers.get("x-paystack-signature");
-  if (!secret || !signature) return NextResponse.json({ error: "Webhook is not configured" }, { status: 500 });
+  // Do not let test-mode webhook events finalize production course payments.
+  if (process.env.PAYSTACK_LIVE_PAYMENTS_ENABLED !== "true" || !secret || !secret.startsWith("sk_live_")) {
+    return NextResponse.json({ error: "Live payment processing is disabled" }, { status: 503 });
+  }
+  if (!signature) return NextResponse.json({ error: "Webhook is not configured" }, { status: 500 });
 
   const rawBody = await req.text();
   const expected = crypto.createHmac("sha512", secret).update(rawBody).digest();
