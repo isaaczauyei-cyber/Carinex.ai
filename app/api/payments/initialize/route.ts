@@ -46,6 +46,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "This course is not available for in-house purchase." }, { status: 404 });
     }
 
+    if (course.is_free === true) {
+      return NextResponse.json({ error: "This course is free. You do not need to make a payment." }, { status: 400 });
+    }
+
     const amountNaira = getPackagePrice(
       {
         courseOnly: Number(course.price_course_only || 0),
