@@ -76,7 +76,8 @@ export default function ExternalCourseManager({ courses, specializations, syllab
       const id = selectedId === "new" ? Number(result.id) : selectedId;
       const updatedCourse: Course = { ...(selectedId === "new" ? { id } : rows.find((r) => r.id === id) || { id } as Course), ...draft, id, is_in_house: selectedId === "new" ? false : rows.find((r) => r.id === id)?.is_in_house || false, is_published: selectedId === "new" ? false : rows.find((r) => r.id === id)?.is_published };
       setRows((prev) => prev.some((r) => r.id === id) ? prev.map((r) => r.id === id ? updatedCourse : r) : [...prev, updatedCourse]);
-      if (items.length >= 0) {
+      // In-house courses use their own module/section/quiz editor; do not send them to the external syllabus API.
+      if (!updatedCourse.is_in_house && items.length >= 0) {
         const syllabusResponse = await fetch("/api/admin/course-content/syllabus", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ courseId: id, items: items.map((item, index) => ({ ...item, course_id: id, order_index: index + 1 })) }) });
         const syllabusResult = await syllabusResponse.json();
         if (!syllabusResponse.ok) throw new Error(syllabusResult.error || "Course saved, but syllabus could not be saved.");
