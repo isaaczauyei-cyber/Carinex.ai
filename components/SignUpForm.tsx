@@ -94,11 +94,6 @@ export default function SignUpForm() {
     </div>
   );
   }
-          Go to login
-        </button>
-      </div>
-    );
-  }
 
   return (
     <form onSubmit={handleSubmit} className="mx-auto flex w-full max-w-md flex-col gap-3">
