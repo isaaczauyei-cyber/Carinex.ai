@@ -23,6 +23,8 @@ export default function CourseEnrollAction({
   const [saving, setSaving] = useState(false);
   const [packageType, setPackageType] = useState<"course_only" | "course_plus_guide">("course_only");
   const [error, setError] = useState("");
+  // UI hint only; the API independently enforces live-mode safety.
+  const livePaymentsEnabled = process.env.NEXT_PUBLIC_PAYSTACK_LIVE_PAYMENTS_ENABLED === "true";
   const linkPending = !isInHouse && (!affiliateLink || affiliateLink.startsWith("PENDING"));
 
   const paidCourse = isInHouse && pricing.courseOnly > 0;
@@ -81,6 +83,16 @@ export default function CourseEnrollAction({
           : enrollmentStatus === "rejected"
             ? "Your enrolment is under review. Please contact Carinex support for an update."
             : "Your course access is currently unavailable. Please contact support."}
+      </div>;
+    }
+
+    if (!livePaymentsEnabled) {
+      return <div className="max-w-md rounded-2xl border border-amber-200 bg-amber-50 p-5">
+        <h2 className="text-lg font-bold text-amber-950">Enrollment payments are temporarily unavailable</h2>
+        <p className="mt-2 text-sm leading-6 text-amber-900">
+          Carinex is completing its secure live-payment setup. No payment will be requested right now.
+          Please check back soon; your course access will not be activated until a real payment is verified and your enrollment is approved.
+        </p>
       </div>;
     }
 
