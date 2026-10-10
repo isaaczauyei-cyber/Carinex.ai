@@ -14,12 +14,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Sign in with an email address before purchasing." }, { status: 401 });
     }
 
-    // Fail closed: never send learners to Paystack while the deployment is in test mode.
-    const secret = process.env.PAYSTACK_SECRET_KEY;
-    const livePaymentsEnabled = process.env.PAYSTACK_LIVE_PAYMENTS_ENABLED === "true";
-    if (!livePaymentsEnabled || !secret || !secret.startsWith("sk_live_")) {
+    // Fail closed: Flutterwave live payments stay disabled until explicitly enabled.
+    const secret = process.env.FLW_SECRET_KEY;
+    const livePaymentsEnabled = process.env.FLW_LIVE_PAYMENTS_ENABLED === "true";
+    if (!livePaymentsEnabled || !secret || !secret.startsWith("FLWSECK-") || secret.includes("TEST")) {
       return NextResponse.json(
-        { error: "Online payments are temporarily unavailable while Carinex completes live payment activation." },
+        { error: "Online payments are temporarily unavailable while Carinex completes Flutterwave live payment activation." },
         { status: 503 },
       );
     }
@@ -34,10 +34,10 @@ export async function POST(req: NextRequest) {
     const admin = createAdminClient();
 
     // Pricing is always read from the database on the server. The browser
-    // cannot choose the Paystack amount.
+    // cannot choose the Flutterwave amount.
     const { data: course, error: courseError } = await admin
       .from("courses")
-      .select("id, title, is_in_house, is_free, trial_enabled, price_course_only, price_course_plus_guide")
+      .select("id, title, is_in_house, is_free, price_course_only, price_course_plus_guide")
       .eq("id", courseId)
       .maybeSingle();
 
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "This course is not available for in-house purchase." }, { status: 404 });
     }
 
-    if (course.is_free === true && course.trial_enabled !== true) {
+    if (course.is_free === true) {
       return NextResponse.json({ error: "This course is free. You do not need to make a payment." }, { status: 400 });
     }
 
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
 
     const { data: prior } = await admin
       .from("course_enrollments")
-      .select("id, status, access_type, trial_expires_at")
+      .select("id, status")
       .eq("user_id", user.id)
       .eq("course_id", courseId)
       .in("status", ["pending_approval", "approved"])
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
         type: "course_purchase",
         amount: amountNaira,
         currency: "NGN",
-        paystack_ref: reference,
+        paystack_ref: reference, // Legacy database column; stores Carinex transaction references.
         status: "pending",
       })
       .select("id")
@@ -106,33 +106,33 @@ export async function POST(req: NextRequest) {
     }
 
     const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || req.nextUrl.origin).replace(/\/$/, "");
-    const response = await fetch("https://api.paystack.co/transaction/initialize", {
+    const response = await fetch("https://api.flutterwave.com/v3/payments", {
       method: "POST",
       headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        email: user.email,
-        amount: Math.round(amountNaira * 100),
+        tx_ref: reference,
+        amount: amountNaira,
         currency: "NGN",
-        reference,
-        callback_url: `${baseUrl}/payments/return?reference=${encodeURIComponent(reference)}`,
-        metadata: {
-          user_id: user.id,
-          course_id: courseId,
-          package_type: packageType,
-          course_title: course.title,
+        redirect_url: `${baseUrl}/api/payments/confirm`,
+        customer: { email: user.email, name: user.user_metadata?.full_name || user.email },
+        customizations: {
+          title: "Carinex Course Enrollment",
+          description: `Payment for ${course.title}`,
+          logo: `${baseUrl}/carinex-logo.png`,
         },
+        meta: { user_id: user.id, course_id: courseId, package_type: packageType, course_title: course.title },
       }),
       cache: "no-store",
     });
 
     const result = await response.json();
-    if (!response.ok || !result.status || !result.data?.authorization_url) {
+    if (!response.ok || result.status !== "success" || !result.data?.link) {
       await admin.from("payments").update({ status: "failed" }).eq("id", payment.id);
-      console.error("Paystack initialization failed", result.message);
+      console.error("Flutterwave initialization failed", result.message);
       return NextResponse.json({ error: "Unable to start payment. Please try again." }, { status: 502 });
     }
 
-    return NextResponse.json({ authorizationUrl: result.data.authorization_url, reference });
+    return NextResponse.json({ authorizationUrl: result.data.link, reference });
   } catch (error) {
     console.error("Payment initialization error", error);
     return NextResponse.json({ error: "Unable to start payment. Please try again." }, { status: 500 });
