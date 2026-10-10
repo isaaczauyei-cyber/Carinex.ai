@@ -142,12 +142,41 @@ export default function AdminJobForm({
           : null,
       };
 
-      const { error: jobError } = isEditing
-        ? await supabase.from("jobs").update(jobData).eq("id", jobId)
-        : await supabase.from("jobs").insert(jobData);
+      let savedJobId: string | number | undefined = jobId;
+      const wasLive = initialValues?.status === "live";
 
-      if (jobError) {
-        throw new Error(jobError.message);
+      if (isEditing) {
+        const { error: jobError } = await supabase
+          .from("jobs")
+          .update(jobData)
+          .eq("id", jobId);
+        if (jobError) throw new Error(jobError.message);
+      } else {
+        const { data: insertedJob, error: jobError } = await supabase
+          .from("jobs")
+          .insert(jobData)
+          .select("id")
+          .single();
+        if (jobError || !insertedJob) {
+          throw new Error(jobError?.message || "Could not create job.");
+        }
+        savedJobId = insertedJob.id;
+      }
+
+      // Notify eligible learners only when a job first becomes live.
+      // A notification failure must not undo a successfully saved job.
+      const becameLive = status === "live" && (!isEditing || !wasLive);
+      if (becameLive && savedJobId !== undefined) {
+        const notifyResponse = await fetch("/api/opportunities/notify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ jobId: savedJobId }),
+        });
+        if (!notifyResponse.ok) {
+          setError("Job saved and published, but opportunity emails could not all be sent. Check Vercel logs before retrying.");
+          router.refresh();
+          return;
+        }
       }
 
       router.push("/admin/jobs");
