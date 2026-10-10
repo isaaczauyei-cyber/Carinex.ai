@@ -8,7 +8,7 @@ import ExternalCourseManager from "@/components/ExternalCourseManager";
 export const dynamic = "force-dynamic";
 
 export default async function AdminCourseContentPage() {
-  await requireAdmin();
+  await requireAdmin(["course_content"]);
   const admin = createAdminClient();
   const [{ data: courses, error: coursesError }, { data: specializations, error: specsError }] = await Promise.all([
     admin.from("courses").select("*").order("title"),
