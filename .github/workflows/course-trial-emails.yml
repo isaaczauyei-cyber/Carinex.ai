@@ -1,0 +1,23 @@
+name: Carinex Course Trial Emails
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+jobs:
+  send-trial-emails:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check course trials
+        env:
+          SITE_URL: ${{ secrets.CARINEX_SITE_URL }}
+          CRON_SECRET: ${{ secrets.CARINEX_CRON_SECRET }}
+        run: |
+          set -eu
+
+          curl --fail-with-body --silent --show-error \
+            --max-time 60 \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${SITE_URL%/}/api/cron/course-trial-emails" 
