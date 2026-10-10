@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminInHouseCoursesPage() {
   const supabase = await requireAdmin();
   const { data: courses } = await supabase.from("courses")
-    .select("id, title, specialization_id, price_course_only, price_course_plus_guide, is_published, specializations(name)")
+    .select("id, title, specialization_id, price_course_only, price_course_plus_guide, is_published, trial_enabled, specializations(name)")
     .eq("is_in_house", true).order("title");
 
   return (
@@ -25,7 +25,7 @@ export default async function AdminInHouseCoursesPage() {
           const spec = c.specializations as unknown as { name: string } | null;
           return <Link key={c.id} href={`/admin/in-house-courses/${c.id}`} className="flex items-center justify-between px-5 py-4 hover:bg-carinex-navy/5">
             <div><p className="font-semibold text-carinex-navy">{c.title}</p>{spec?.name && <p className="text-sm text-carinex-navy/50">{spec.name}</p>}{Number(c.price_course_only || 0) > 0 && <p className="text-sm text-carinex-emerald">₦{Number(c.price_course_only).toLocaleString()} {Number(c.price_course_plus_guide || 0) > 0 ? `/ ₦${Number(c.price_course_plus_guide).toLocaleString()} + guide` : ""}</p>}</div>
-            <div className="flex shrink-0 items-center gap-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${c.is_published ? "bg-carinex-emerald/10 text-carinex-emerald" : "bg-amber-50 text-amber-700"}`}>{c.is_published ? "Published" : "Private"}</span><span className="text-carinex-emerald">Edit →</span></div>
+            <div className="flex shrink-0 items-center gap-3">{c.trial_enabled && <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">7-day trial</span>}<span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${c.is_published ? "bg-carinex-emerald/10 text-carinex-emerald" : "bg-amber-50 text-amber-700"}`}>{c.is_published ? "Published" : "Private"}</span><span className="text-carinex-emerald">Edit →</span></div>
           </Link>;
         })}
         {(!courses || courses.length === 0) && <p className="px-5 py-8 text-center text-sm text-carinex-navy/50">No in-house courses yet.</p>}
