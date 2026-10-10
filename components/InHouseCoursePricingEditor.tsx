@@ -6,7 +6,6 @@ import { createClient } from "@/lib/supabase/client";
 import { formatNaira } from "@/lib/course-pricing";
 
 export default function InHouseCoursePricingEditor({
-export default function InHouseCoursePricingEditor({
   courseId,
   initialCourseOnly,
   initialCoursePlusGuide,
@@ -22,6 +21,7 @@ export default function InHouseCoursePricingEditor({
   const [courseOnly, setCourseOnly] = useState(String(initialCourseOnly || ""));
   const [coursePlusGuide, setCoursePlusGuide] = useState(initialCoursePlusGuide == null ? "" : String(initialCoursePlusGuide));
   const [saving, setSaving] = useState(false);
+  void initialTrialEnabled;
 
   async function save() {
     const only = Number(courseOnly || 0);
