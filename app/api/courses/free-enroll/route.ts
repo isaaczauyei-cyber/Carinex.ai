@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
 
   const coursePrice = Number(course.price_course_only || 0);
   const guidePrice = course.price_course_plus_guide == null ? 0 : Number(course.price_course_plus_guide);
-  if (course.is_free !== true && (coursePrice > 0 || guidePrice > 0)) {
+  if (course.trial_enabled !== true && course.is_free !== true && (coursePrice > 0 || guidePrice > 0)) {
     return NextResponse.json({ error: "This course requires payment. Please use the course payment option." }, { status: 400 });
   }
 
