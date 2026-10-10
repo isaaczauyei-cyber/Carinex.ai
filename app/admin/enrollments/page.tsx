@@ -4,7 +4,7 @@ import EnrollmentReviewActions from "@/components/EnrollmentReviewActions";
 import AdminTabs from "@/components/AdminTabs";
 
 export default async function AdminEnrollmentsPage() {
-  const { adminClient } = await requireAdminWithService();
+  const { adminClient } = await requireAdminWithService(["financial"]);
   const { data: rows } = await adminClient.from("course_enrollments")
     .select("id, user_id, course_id, package_type, has_interview_guide, status, review_status, created_at, review_note, courses(title)")
     .order("created_at", { ascending: false });
