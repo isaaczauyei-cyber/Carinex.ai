@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendCourseEmail } from "@/lib/course-emails";
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
   const admin = createAdminClient();
   const [{ data: profile }, { data: course }] = await Promise.all([
     admin.from("nurse_profiles").select("id").eq("user_id", user.id).maybeSingle(),
-    admin.from("courses").select("id, is_in_house, is_published, is_free, price_course_only, price_course_plus_guide").eq("id", courseId).maybeSingle(),
+    admin.from("courses").select("id, title, is_in_house, is_published, is_free, trial_enabled, price_course_only, price_course_plus_guide").eq("id", courseId).maybeSingle(),
   ]);
 
   if (!profile) return NextResponse.json({ error: "Complete your nurse profile before enrolling." }, { status: 403 });
@@ -39,7 +40,7 @@ export async function POST(req: NextRequest) {
   // The existing access guard requires an approved enrollment record for course 23.
   const { data: existingEnrollment, error: lookupError } = await admin
     .from("course_enrollments")
-    .select("id, status")
+    .select("id, status, trial_expires_at, access_type")
     .eq("user_id", user.id)
     .eq("course_id", courseId)
     .order("created_at", { ascending: false })
@@ -49,44 +50,33 @@ export async function POST(req: NextRequest) {
   if (lookupError) return NextResponse.json({ error: "Could not verify your enrollment. Please try again." }, { status: 500 });
 
   if (!existingEnrollment) {
-    // course_enrollments.payment_id is NOT NULL. Free enrollment gets a linked
-    // zero-value payment record; it never calls Paystack or the paid finalizer.
-    const { data: freePayment, error: paymentError } = await admin
-      .from("payments")
-      .insert({
-        user_id: user.id,
-        type: "course_purchase",
-        amount: 0,
-        currency: "NGN",
-        paystack_ref: null,
-        status: "success",
-      })
-      .select("id")
-      .single();
-
-    if (paymentError || !freePayment) {
-      console.error("Free course payment record insert failed", paymentError);
-      return NextResponse.json({ error: "Could not create free course access. Please try again." }, { status: 500 });
-    }
-
-    const { error: enrollmentError } = await admin.from("course_enrollments").insert({
+    const now = new Date();
+    const trialEnabled = course.trial_enabled === true;
+    const trialExpiresAt = trialEnabled ? new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) : null;
+    const { data: createdEnrollment, error: enrollmentError } = await admin.from("course_enrollments").insert({
       user_id: user.id,
       course_id: courseId,
-      payment_id: freePayment.id,
       package_type: "course_only",
       has_interview_guide: false,
       status: "approved",
       review_status: "resolved",
-      review_note: "Automatically approved: free in-house course.",
-    });
+      review_note: trialEnabled ? "Automatically approved: 7-day course trial." : "Automatically approved: permanently free in-house course.",
+      access_type: trialEnabled ? "trial" : "free",
+      trial_started_at: trialEnabled ? now.toISOString() : null,
+      trial_expires_at: trialExpiresAt ? trialExpiresAt.toISOString() : null,
+    }).select("id").single();
+    if (!enrollmentError && trialEnabled && createdEnrollment) {
+      try { await sendCourseEmail(createdEnrollment.id, "trial_started"); }
+      catch (emailError) { console.error("Trial-start email failed", emailError); }
+    }
     if (enrollmentError) {
-      // Avoid leaving an orphaned zero-value payment if enrollment creation fails.
-      await admin.from("payments").delete().eq("id", freePayment.id);
       console.error("Free course enrollment insert failed", enrollmentError);
       return NextResponse.json({ error: "Could not create course access. Please try again." }, { status: 500 });
     }
   } else if (existingEnrollment.status !== "approved") {
     return NextResponse.json({ error: "An existing enrollment is awaiting review. Please contact support before trying again." }, { status: 409 });
+  } else if (existingEnrollment.access_type === "trial" && existingEnrollment.trial_expires_at && new Date(existingEnrollment.trial_expires_at) <= new Date()) {
+    return NextResponse.json({ error: "Your 7-day trial has expired. Purchase this course to regain access." }, { status: 403 });
   }
 
   const { error: completionError } = await admin.from("nurse_course_completions").upsert(
