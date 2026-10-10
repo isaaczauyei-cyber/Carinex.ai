@@ -3,40 +3,14 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function requireCourseApproval(userId: string, courseId: number) {
   const admin = createAdminClient();
-
-  const { data: course } = await admin
-    .from("courses")
-    .select("id, is_in_house, is_published, is_free, price_course_only")
-    .eq("id", courseId)
-    .maybeSingle();
-
-  if (!course || course.is_in_house !== true || course.is_published !== true) {
-    redirect("/dashboard/learning");
+  const [{ data: course }, { data: enrollment }] = await Promise.all([
+    admin.from("courses").select("id, is_in_house, trial_enabled").eq("id", courseId).maybeSingle(),
+    admin.from("course_enrollments").select("id, status, access_type, trial_expires_at").eq("user_id", userId).eq("course_id", courseId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+  ]);
+  if (!course?.is_in_house || !enrollment || enrollment.status !== "approved") {
+    redirect(`/courses/${courseId}?access=pending`);
   }
-
-  const { data: enrollment } = await admin
-    .from("course_enrollments")
-    .select("id, status, payment_id")
-    .eq("user_id", userId)
-    .eq("course_id", courseId)
-    .eq("status", "approved")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (!enrollment) redirect(`/courses/${courseId}?access=pending`);
-
-  const courseIsCurrentlyPaid = course.is_free !== true && Number(course.price_course_only || 0) > 0;
-  if (courseIsCurrentlyPaid) {
-    const { data: payment } = await admin
-      .from("payments")
-      .select("amount, status")
-      .eq("id", enrollment.payment_id)
-      .maybeSingle();
-
-    // Free enrollment is not a paid entitlement. Require a successful positive-value payment.
-    if (!payment || payment.status !== "success" || Number(payment.amount) <= 0) {
-      redirect(`/courses/${courseId}?access=payment_required`);
-    }
+  if (course.trial_enabled === true && enrollment.access_type === "trial" && enrollment.trial_expires_at && new Date(enrollment.trial_expires_at) <= new Date()) {
+    redirect(`/courses/${courseId}?access=trial-expired`);
   }
 }
