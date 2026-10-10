@@ -2,13 +2,11 @@ import { notFound } from "next/navigation";
 import { requireAdminWithService } from "@/lib/admin";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import AdminCourseReviewRow from "@/components/AdminCourseReviewRow";
-import AdminUserActions from "@/components/AdminUserActions";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminUserDetailPage({ params }: { params: { id: string } }) {
-  const { supabase, adminClient } = await requireAdminWithService();
+  const { supabase, adminClient } = await requireAdminWithService(["customer_experience"]);
 
   const { data: profile } = await supabase
     .from("nurse_profiles")
@@ -76,7 +74,7 @@ export default async function AdminUserDetailPage({ params }: { params: { id: st
           <h1 className="text-2xl font-bold tracking-tight text-carinex-navy">{userInfo?.full_name}</h1>
           <p className="mt-1 text-sm text-carinex-navy/60">{email}</p>
           {userInfo?.phone && <p className="text-sm text-carinex-navy/60">{userInfo.phone}</p>}
-          <div className="mt-4"><AdminUserActions userId={userInfo.id} terminated={terminated} /></div>
+
         </div>
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -153,16 +151,13 @@ export default async function AdminUserDetailPage({ params }: { params: { id: st
         {pendingCompletions.length > 0 && (
           <div className="mt-8">
             <h2 className="text-lg font-bold text-carinex-navy">Pending course reviews</h2>
-            <div className="mt-3 flex flex-col gap-3">
-              {pendingCompletions.map((c) => (
-                <AdminCourseReviewRow
-                  key={c.id}
-                  completionId={c.id}
-                  courseTitle={(c.courses as unknown as { title: string })?.title || "Course"}
-                  proofDocUrl={c.proof_doc_url}
-                />
-              ))}
-            </div>
+            <p className="mt-2 text-sm text-carinex-navy/60">{pendingCompletions.length} course completion item(s) awaiting review.</p>
+            <div className="mt-3 flex flex-col gap-2">{pendingCompletions.map((c) => (
+              <div key={c.id} className="rounded-lg border border-carinex-navy/10 p-3 text-sm">
+                <p className="font-semibold">{(c.courses as unknown as { title: string })?.title || "Course"}</p>
+                <a className="text-carinex-emerald underline" href={c.proof_doc_url} target="_blank" rel="noreferrer">View submitted proof</a>
+              </div>
+            ))}</div>
           </div>
         )}
 
