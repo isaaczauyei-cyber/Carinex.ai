@@ -7,7 +7,7 @@ import AdminCourseReviewRow from "@/components/AdminCourseReviewRow";
 export const dynamic = "force-dynamic";
 
 export default async function AdminCourseReviewsPage() {
-  const supabase = await requireAdmin();
+  const supabase = await requireAdmin(["general_admin"]);
 
   const { data: pending } = await supabase
     .from("nurse_course_completions")
