@@ -23,10 +23,9 @@ jobs:
           RESPONSE=$(curl \
             --silent \
             --show-error \
-            --location \
             --max-time 60 \
-            --write-out "\nHTTP_STATUS:%{http_code}" \
-            -H "Authorization: Bearer ${CRON_SECRET}" \
+            --write-out "\nHTTP_STATUS:%{http_code}\nFINAL_URL:%{url_effective}\n" \
+            --header "Authorization: Bearer ${CRON_SECRET}" \
             "${SITE_URL%/}/api/cron/course-trial-emails")
 
           printf '%s\n' "$RESPONSE"
