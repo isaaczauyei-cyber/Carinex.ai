@@ -16,6 +16,8 @@ type PdfViewerProps = {
 
 export default function PdfViewer({ fileUrl }: PdfViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const viewerRef = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [containerWidth, setContainerWidth] = useState(700);
   const [numPages, setNumPages] = useState(0);
   const [zoom, setZoom] = useState(1);
@@ -33,8 +35,29 @@ export default function PdfViewer({ fileUrl }: PdfViewerProps) {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    function syncFullscreen() {
+      setIsFullscreen(document.fullscreenElement === viewerRef.current);
+    }
+    document.addEventListener("fullscreenchange", syncFullscreen);
+    return () => document.removeEventListener("fullscreenchange", syncFullscreen);
+  }, []);
+
+  async function toggleFullscreen() {
+    if (!viewerRef.current) return;
+    try {
+      if (document.fullscreenElement === viewerRef.current) {
+        await document.exitFullscreen();
+      } else {
+        await viewerRef.current.requestFullscreen();
+      }
+    } catch {
+      setError("Fullscreen is not available in this browser.");
+    }
+  }
+
   return (
-    <div className="w-full overflow-hidden rounded-xl border border-[#E5DED2] bg-[#F3EFE7]">
+    <div ref={viewerRef} className={`w-full overflow-hidden rounded-xl border border-[#E5DED2] bg-[#F3EFE7] ${isFullscreen ? "h-[100dvh] rounded-none" : ""}`}>
       <div className="flex items-center justify-between gap-3 border-b border-[#E5DED2] bg-[#F8F5EF] px-4 py-3">
         <span className="text-sm font-medium">Course material</span>
 
@@ -51,10 +74,13 @@ export default function PdfViewer({ fileUrl }: PdfViewerProps) {
           <button onClick={() => setZoom(1)} className="rounded border px-2 py-1 text-sm">
             Reset
           </button>
+          <button onClick={() => void toggleFullscreen()} className="rounded border px-2 py-1 text-sm">
+            {isFullscreen ? "Exit full screen" : "Full screen"}
+          </button>
         </div>
       </div>
 
-     <div ref={containerRef} className="h-[70vh] overflow-auto bg-[#EAE4D9] p-4">
+     <div ref={containerRef} className={`${isFullscreen ? "h-[calc(100dvh-58px)]" : "h-[70vh]"} overflow-auto bg-[#EAE4D9] p-4`}>
         {error ? (
           <p className="text-center text-red-600">{error}</p>
         ) : (

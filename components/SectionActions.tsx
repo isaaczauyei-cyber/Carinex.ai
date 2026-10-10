@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 type Section = {
@@ -28,6 +29,7 @@ export default function SectionActions({
   initialProgress: Progress | null;
   nextHref: string;
 }) {
+  const router = useRouter();
   const [hasSaved, setHasSaved] = useState(
     initialProgress?.status === "completed"
   );
@@ -163,7 +165,7 @@ export default function SectionActions({
 
   async function upsertProgress(
     patch: Record<string, unknown>
-  ) {
+  ): Promise<boolean> {
     setSaving(true);
     setError("");
 
@@ -188,13 +190,20 @@ export default function SectionActions({
 
     if (err) {
       setError(err.message);
-      return;
+      return false;
     }
 
     setHasSaved(true);
+    return true;
   }
 
   async function submit() {
+    if (section.section_type === "course_material") {
+      const saved = await upsertProgress({});
+      if (saved) router.push(nextHref);
+      return;
+    }
+
     if (mode === "checklist") {
       await upsertProgress({
         submission_text: JSON.stringify(
@@ -459,11 +468,13 @@ export default function SectionActions({
       <div className="sticky bottom-0 flex items-center justify-between border-t border-carinex-navy/10 bg-white px-6 py-4">
         <button
           onClick={() => void submit()}
-          disabled={saving}
+          disabled={saving || (section.section_type === "course_material" && hasSaved)}
           className="rounded-full bg-carinex-navy px-6 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
         >
           {saving
             ? "Saving…"
+            : section.section_type === "course_material"
+            ? hasSaved ? "Completed" : "Mark as complete"
             : hasSaved
             ? "Save changes"
             : "Submit"}
@@ -589,16 +600,7 @@ function CourseMaterialMedia({
           className="w-full"
           src={url}
         />
-      ) : (
-        <a
-          href={url}
-          target="_blank"
-          rel="noreferrer"
-          className="font-semibold text-carinex-emerald hover:underline"
-        >
-          Open course PDF
-        </a>
-      )}
+      ) : null}
     </div>
   );
 }
