@@ -3,7 +3,7 @@ import { requireAdminWithService } from "@/lib/admin";
 
 const fields = [
   "title", "provider", "specialization_id", "track_type", "price_display",
-  "affiliate_link", "summary", "is_free", "description_long", "duration_display",
+  "affiliate_link", "summary", "is_free", "trial_enabled", "description_long", "duration_display",
   "level", "image_url",
 ] as const;
 
