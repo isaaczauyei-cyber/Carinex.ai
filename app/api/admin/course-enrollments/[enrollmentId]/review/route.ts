@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendCourseEmail } from "@/lib/course-emails";
 
 export async function POST(req: NextRequest, { params }: { params: { enrollmentId: string } }) {
   const supabase = await createClient();
@@ -16,5 +17,10 @@ export async function POST(req: NextRequest, { params }: { params: { enrollmentI
     : { status: body.action, review_status: body.action === "rejected" ? "pending_review" : "resolved", review_note: typeof body.note === "string" ? body.note.slice(0, 1000) : null, reviewed_by: user.id, reviewed_at: new Date().toISOString() };
   const { error } = await admin.from("course_enrollments").update(update).eq("id", params.enrollmentId);
   if (error) return NextResponse.json({ error: "Could not update enrolment" }, { status: 500 });
-  return NextResponse.json({ success: true });
+  let emailSent = false;
+  if (body.action === "approved" || body.action === "rejected") {
+    try { const result = await sendCourseEmail(params.enrollmentId, body.action === "approved" ? "enrollment_approved" : "enrollment_rejected"); emailSent = result.sent; }
+    catch (emailError) { console.error("Enrollment decision email failed", emailError); }
+  }
+  return NextResponse.json({ success: true, emailSent });
 }
