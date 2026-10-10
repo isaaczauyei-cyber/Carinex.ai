@@ -4,6 +4,67 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export const runtime = "nodejs";
 
+async function sendPaymentConfirmation(args: {
+  reference: string;
+  email: string;
+  firstName?: string;
+  courseTitle: string;
+  amountNaira: number;
+  createdAt?: string | null;
+}) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.error("Payment confirmation email skipped: RESEND_API_KEY is not configured.");
+    return;
+  }
+
+  const from = process.env.EMAIL_FROM || "Carinex <noreply@carinex.info>";
+  const date = args.createdAt
+    ? new Date(args.createdAt).toLocaleString("en-NG", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Lagos" })
+    : new Date().toLocaleString("en-NG", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Lagos" });
+  const amount = new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN" }).format(args.amountNaira);
+  const greeting = args.firstName ? `Hello ${args.firstName},` : "Hello,";
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      // Resend deduplicates retries for the same verified Paystack reference.
+      "Idempotency-Key": `carinex-payment-confirmation-${args.reference}`,
+    },
+    body: JSON.stringify({
+      from,
+      to: args.email,
+      subject: `Payment confirmed: ${args.courseTitle} | Carinex`,
+      text: `${greeting}
+
+We've successfully verified your payment for ${args.courseTitle}.
+
+Payment details
+Course: ${args.courseTitle}
+Amount paid: ${amount}
+Payment reference: ${args.reference}
+Payment date: ${date}
+
+Your payment is confirmed. If this course requires enrollment approval, your access will become available after that approval is completed.
+
+You can visit your Carinex dashboard here:
+https://carinex.info/dashboard/learning
+
+If you have questions, contact support@carinex.info.
+
+Best regards,
+Carinex Team`,
+      reply_to: "support@carinex.info",
+    }),
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    console.error("Payment confirmation email failed:", await response.text());
+  }
+}
+
 export async function POST(req: NextRequest) {
   const secret = process.env.PAYSTACK_SECRET_KEY;
   const signature = req.headers.get("x-paystack-signature");
@@ -51,6 +112,52 @@ export async function POST(req: NextRequest) {
       console.error("Payment finalization failed", error.message);
       return NextResponse.json({ error: "Could not finalize payment" }, { status: 500 });
     }
+
+    // Send a confirmation only after Paystack verification and database finalization succeed.
+    // The Resend idempotency key prevents duplicate messages for retried webhooks.
+    const { data: payment, error: paymentError } = await admin
+      .from("payments")
+      .select("id, user_id, amount, status, created_at")
+      .eq("paystack_ref", reference)
+      .maybeSingle();
+
+    if (paymentError) {
+      console.error("Could not load finalized payment for email:", paymentError.message);
+    } else if (payment?.status === "success" && payment.user_id) {
+      const [{ data: detail, error: detailError }, { data: authResult, error: authError }] = await Promise.all([
+        admin.from("course_payment_details").select("course_id, package_type").eq("payment_id", payment.id).maybeSingle(),
+        admin.auth.admin.getUserById(payment.user_id),
+      ]);
+
+      if (detailError || authError) {
+        console.error("Could not load payment confirmation details:", detailError?.message || authError?.message);
+      } else if (detail && authResult.user?.email) {
+        const { data: course, error: courseError } = await admin
+          .from("courses")
+          .select("title")
+          .eq("id", detail.course_id)
+          .maybeSingle();
+
+        if (courseError || !course?.title) {
+          console.error("Could not load course title for payment confirmation:", courseError?.message);
+        } else {
+          const fullName = typeof authResult.user.user_metadata?.full_name === "string"
+            ? authResult.user.user_metadata.full_name
+            : typeof authResult.user.user_metadata?.name === "string"
+              ? authResult.user.user_metadata.name
+              : "";
+          await sendPaymentConfirmation({
+            reference,
+            email: authResult.user.email,
+            firstName: fullName.trim().split(/\s+/)[0] || undefined,
+            courseTitle: course.title,
+            amountNaira: Number(payment.amount),
+            createdAt: payment.created_at,
+          });
+        }
+      }
+    }
+
     return NextResponse.json({ received: true });
   } catch (error) {
     console.error("Paystack webhook error", error);
