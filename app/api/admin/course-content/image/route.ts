@@ -3,7 +3,7 @@ import { requireAdminWithService } from "@/lib/admin";
 
 export async function POST(request: NextRequest) {
   try {
-    const { adminClient } = await requireAdminWithService();
+    const { adminClient } = await requireAdminWithService(["course_content"]);
     const form = await request.formData();
     const file = form.get("file");
     const courseId = String(form.get("courseId") || "new");
