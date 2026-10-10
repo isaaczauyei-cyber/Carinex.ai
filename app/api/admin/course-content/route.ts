@@ -3,7 +3,7 @@ import { requireAdminWithService } from "@/lib/admin";
 
 const fields = [
   "title", "provider", "specialization_id", "track_type", "price_display",
-  "affiliate_link", "summary", "is_free", "trial_enabled", "description_long", "duration_display",
+  "affiliate_link", "summary", "is_free", "description_long", "duration_display",
   "level", "image_url",
 ] as const;
 
@@ -27,7 +27,7 @@ function validate(input: Record<string, unknown>, isInHouse: boolean) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { adminClient } = await requireAdminWithService();
+    const { adminClient } = await requireAdminWithService(["course_content"]);
     const body = await request.json();
     const input = pickFields(body);
     const issue = validate(input, false);
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const { adminClient } = await requireAdminWithService();
+    const { adminClient } = await requireAdminWithService(["course_content"]);
     const body = await request.json();
     const id = Number(body.id);
     if (!Number.isInteger(id) || id <= 0) return NextResponse.json({ error: "Invalid course ID." }, { status: 400 });
