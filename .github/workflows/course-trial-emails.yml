@@ -2,7 +2,7 @@ name: Carinex Course Trial Emails
 
 on:
   schedule:
-    - cron: "0 * * * *"
+    - cron: "17 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -17,7 +17,18 @@ jobs:
         run: |
           set -eu
 
-          curl --fail-with-body --silent --show-error \
+          test -n "$SITE_URL"
+          test -n "$CRON_SECRET"
+
+          RESPONSE=$(curl \
+            --silent \
+            --show-error \
+            --location \
             --max-time 60 \
+            --write-out "\nHTTP_STATUS:%{http_code}" \
             -H "Authorization: Bearer ${CRON_SECRET}" \
-            "${SITE_URL%/}/api/cron/course-trial-emails" 
+            "${SITE_URL%/}/api/cron/course-trial-emails")
+
+          printf '%s\n' "$RESPONSE"
+
+          printf '%s\n' "$RESPONSE" | grep -q 'HTTP_STATUS:200'
