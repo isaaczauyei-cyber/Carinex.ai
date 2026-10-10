@@ -24,7 +24,7 @@ export default function PrivacyPage() {
               <li><strong className="text-carinex-navy">Professional information</strong> — your NMCN license status, years of clinical experience, clinical background, work experience, external certifications, and career goals, which you provide to build your profile and match you to specializations.</li>
               <li><strong className="text-carinex-navy">Course and verification data</strong> — courses you&apos;ve started or completed, quiz scores, exercise and assignment responses, and any certificate files or assignment files you upload for admin review.</li>
               <li><strong className="text-carinex-navy">Usage data</strong> — pages you visit and when you&apos;re active on Carinex, collected by us directly (not by a third-party analytics service) so we can improve the platform and track your progress.</li>
-              <li><strong className="text-carinex-navy">Payment information</strong> — if you purchase a paid course, your transaction is processed by Paystack . We do not store your card details ourselves.</li>
+              <li><strong className="text-carinex-navy">Payment information</strong> — if you purchase a paid course, your transaction is processed by Flutterwave . We do not store your card details ourselves.</li>
               <li><strong className="text-carinex-navy">Device information</strong> — browser type and IP address, for security purposes.</li>
             </ul>
           </div>
@@ -49,7 +49,7 @@ export default function PrivacyPage() {
             <ul className="mt-3 flex flex-col gap-2 leading-relaxed">
               <li><strong className="text-carinex-navy">Supabase</strong> — our database, authentication, and file storage infrastructure.</li>
               <li><strong className="text-carinex-navy">Resend</strong> — delivery of account and notification emails.</li>
-              <li><strong className="text-carinex-navy">Paystack</strong> — payment processing for paid courses. We never receive or store your full card details.</li>
+              <li><strong className="text-carinex-navy">Flutterwave</strong> — payment processing for paid courses. We never receive or store your full card details.</li>
             </ul>
             <p className="mt-3 leading-relaxed">
               If you apply to a job listed on Carinex, you&apos;ll be taken to the employer&apos;s own
