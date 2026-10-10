@@ -7,6 +7,8 @@ export default function CourseEnrollAction({
   courseId,
   isInHouse,
   isFree,
+  isTrial,
+  trialExpired,
   affiliateLink,
   nurseId,
   completionStatus,
@@ -16,6 +18,8 @@ export default function CourseEnrollAction({
   courseId: number;
   isInHouse: boolean;
   isFree: boolean;
+  isTrial: boolean;
+  trialExpired: boolean;
   affiliateLink: string | null;
   nurseId: string | null;
   completionStatus: string | null;
@@ -28,6 +32,7 @@ export default function CourseEnrollAction({
   // UI hint only; the API independently enforces live-mode safety.
   const livePaymentsEnabled = process.env.NEXT_PUBLIC_FLW_LIVE_PAYMENTS_ENABLED === "true";
   const linkPending = !isInHouse && (!affiliateLink || affiliateLink.startsWith("PENDING"));
+  const expiredTrial = isInHouse && isTrial && trialExpired;
 
   const paidCourse = isInHouse && !isFree && pricing.courseOnly > 0;
   const hasGuidePackage = Number(pricing.coursePlusGuide || 0) > 0;
