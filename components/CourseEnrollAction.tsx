@@ -4,6 +4,7 @@ import { useState } from "react";
 import { formatNaira, type CoursePricing } from "@/lib/course-pricing";
 
 export default function CourseEnrollAction({
+export default function CourseEnrollAction({
   courseId,
   isInHouse,
   isFree,
@@ -35,6 +36,25 @@ export default function CourseEnrollAction({
   const expiredTrial = isInHouse && isTrial && trialExpired;
 
   const paidCourse = isInHouse && !isFree && pricing.courseOnly > 0;
+  if (isInHouse && isTrial && trialExpired) {
+  return (
+    <div className="max-w-md rounded-xl border border-amber-200 bg-amber-50 p-4">
+      <h2 className="font-bold text-amber-950">Your 7-day trial has expired</h2>
+      <p className="mt-2 text-sm text-amber-900">
+        Purchase this course to regain access.
+      </p>
+      {paidCourse && (
+        <a
+          href="/courses"
+          className="mt-3 inline-block rounded-full bg-carinex-navy px-5 py-2.5 text-sm font-semibold text-white"
+        >
+          Browse courses
+        </a>
+      )}
+    </div>
+  );
+  }
+  
   const hasGuidePackage = Number(pricing.coursePlusGuide || 0) > 0;
   const selectedPrice = packageType === "course_only" ? pricing.courseOnly : Number(pricing.coursePlusGuide || 0);
 
