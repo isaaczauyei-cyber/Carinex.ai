@@ -4,6 +4,7 @@ import CourseSessionNavbar from "@/components/CourseSessionNavbar";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireCourseApproval } from "@/lib/course-access";
+import { sendCourseEmail } from "@/lib/course-emails";
 
 export default async function StartCoursePage({ params }: { params: { courseId: string } }) {
   const supabase = await createClient(); const { data: { user } } = await supabase.auth.getUser(); if (!user) redirect("/login");
@@ -30,5 +31,7 @@ export default async function StartCoursePage({ params }: { params: { courseId: 
 
   const { data: existing } = await admin.from("nurse_course_completions").select("id").eq("nurse_id", profile.id).eq("course_id", courseId).maybeSingle();
   if (existing) await admin.from("nurse_course_completions").update({ status: "completed", completed_at: new Date().toISOString() }).eq("id", existing.id); else await admin.from("nurse_course_completions").insert({ nurse_id: profile.id, course_id: courseId, status: "completed", completed_at: new Date().toISOString() });
+  const { data: completedEnrollment } = await admin.from("course_enrollments").select("id").eq("user_id", user.id).eq("course_id", courseId).eq("status", "approved").order("created_at", { ascending: false }).limit(1).maybeSingle();
+  if (completedEnrollment?.id) { try { await sendCourseEmail(completedEnrollment.id, "course_completed"); } catch (emailError) { console.error("Course completion email failed", emailError); } }
   return <main><CourseSessionNavbar courseId={courseId} nurseId={profile.id} /><section className="mx-auto max-w-2xl px-6 py-24 text-center"><div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-carinex-emerald/10 text-4xl">✓</div><h1 className="mt-5 text-3xl font-bold text-carinex-navy">Course complete! 🎉</h1><p className="mt-3 text-carinex-navy/70">You completed {course.title}. Your matched opportunities can now appear in Opportunity Intelligence.</p><Link href="/dashboard/opportunities" className="mt-7 inline-block rounded-full bg-carinex-emerald px-6 py-3 text-sm font-semibold text-white">View opportunities</Link></section></main>;
 }
