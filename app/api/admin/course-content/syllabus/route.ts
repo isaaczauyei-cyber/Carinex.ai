@@ -3,7 +3,7 @@ import { requireAdminWithService } from "@/lib/admin";
 
 export async function PUT(request: NextRequest) {
   try {
-    const { adminClient } = await requireAdminWithService();
+    const { adminClient } = await requireAdminWithService(["course_content"]);
     const body = await request.json();
     const courseId = Number(body.courseId);
     const items = body.items;
