@@ -49,9 +49,30 @@ export async function POST(req: NextRequest) {
   if (lookupError) return NextResponse.json({ error: "Could not verify your enrollment. Please try again." }, { status: 500 });
 
   if (!existingEnrollment) {
+    // course_enrollments.payment_id is NOT NULL. Free enrollment gets a linked
+    // zero-value payment record; it never calls Paystack or the paid finalizer.
+    const { data: freePayment, error: paymentError } = await admin
+      .from("payments")
+      .insert({
+        user_id: user.id,
+        type: "course_purchase",
+        amount: 0,
+        currency: "NGN",
+        paystack_ref: null,
+        status: "success",
+      })
+      .select("id")
+      .single();
+
+    if (paymentError || !freePayment) {
+      console.error("Free course payment record insert failed", paymentError);
+      return NextResponse.json({ error: "Could not create free course access. Please try again." }, { status: 500 });
+    }
+
     const { error: enrollmentError } = await admin.from("course_enrollments").insert({
       user_id: user.id,
       course_id: courseId,
+      payment_id: freePayment.id,
       package_type: "course_only",
       has_interview_guide: false,
       status: "approved",
@@ -59,6 +80,8 @@ export async function POST(req: NextRequest) {
       review_note: "Automatically approved: free in-house course.",
     });
     if (enrollmentError) {
+      // Avoid leaving an orphaned zero-value payment if enrollment creation fails.
+      await admin.from("payments").delete().eq("id", freePayment.id);
       console.error("Free course enrollment insert failed", enrollmentError);
       return NextResponse.json({ error: "Could not create course access. Please try again." }, { status: 500 });
     }
