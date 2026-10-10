@@ -75,10 +75,10 @@ export async function POST(request: Request) {
       );
     }
 
-    const sender = process.env.EMAIL_FROM;
-    const adminEmail = process.env.ADMIN_NOTIFY_EMAIL;
+    const sender = process.env.EMAIL_FROM || "Carinex <noreply@carinex.info>";
+    const adminEmail = process.env.ADMIN_NOTIFY_EMAIL || "support@carinex.info";
 
-    if (!process.env.RESEND_API_KEY || !sender || !adminEmail) {
+    if (!process.env.RESEND_API_KEY) {
       console.error("Email environment variables are missing.");
       return NextResponse.json({ success: true });
     }
@@ -96,6 +96,7 @@ export async function POST(request: Request) {
     const customerSent = await sendEmail({
       from: sender,
       to: email.trim(),
+      reply_to: "support@carinex.info",
       subject: "We received your message | Carinex",
       text: `Hello ${name.trim()},
 
@@ -110,7 +111,7 @@ Thank you for choosing Carinex.
 
 Best regards,
 Carinex Support Team
-support@support.carinex.info`,
+support@carinex.info`,
     });
 
     return NextResponse.json({
