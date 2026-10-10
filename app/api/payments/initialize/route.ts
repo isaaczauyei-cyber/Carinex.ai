@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     // cannot choose the Paystack amount.
     const { data: course, error: courseError } = await admin
       .from("courses")
-      .select("id, title, is_in_house, is_free, price_course_only, price_course_plus_guide")
+      .select("id, title, is_in_house, is_free, trial_enabled, price_course_only, price_course_plus_guide")
       .eq("id", courseId)
       .maybeSingle();
 
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "This course is not available for in-house purchase." }, { status: 404 });
     }
 
-    if (course.is_free === true) {
+    if (course.is_free === true && course.trial_enabled !== true) {
       return NextResponse.json({ error: "This course is free. You do not need to make a payment." }, { status: 400 });
     }
 
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
 
     const { data: prior } = await admin
       .from("course_enrollments")
-      .select("id, status")
+      .select("id, status, access_type, trial_expires_at")
       .eq("user_id", user.id)
       .eq("course_id", courseId)
       .in("status", ["pending_approval", "approved"])
