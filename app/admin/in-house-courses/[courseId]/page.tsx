@@ -15,7 +15,7 @@ export default async function AdminCourseModulesPage({ params }: { params: { cou
 
   const { data: course } = await supabase
     .from("courses")
-    .select("id, title, price_course_only, price_course_plus_guide, is_published")
+    .select("id, title, price_course_only, price_course_plus_guide, is_published, trial_enabled")
     .eq("id", courseId)
     .maybeSingle();
 
@@ -39,6 +39,7 @@ export default async function AdminCourseModulesPage({ params }: { params: { cou
         courseId={courseId}
         initialCourseOnly={Number(course?.price_course_only || 0)}
         initialCoursePlusGuide={course?.price_course_plus_guide == null ? null : Number(course.price_course_plus_guide)}
+        initialTrialEnabled={Boolean(course?.trial_enabled)}
       />
     </div>
 
