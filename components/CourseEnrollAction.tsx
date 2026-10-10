@@ -7,8 +7,6 @@ export default function CourseEnrollAction({
   courseId,
   isInHouse,
   isFree,
-  isTrial = false,
-  trialExpired = false,
   affiliateLink,
   nurseId,
   completionStatus,
@@ -18,8 +16,6 @@ export default function CourseEnrollAction({
   courseId: number;
   isInHouse: boolean;
   isFree: boolean;
-  isTrial?: boolean;
-  trialExpired?: boolean;
   affiliateLink: string | null;
   nurseId: string | null;
   completionStatus: string | null;
@@ -30,10 +26,10 @@ export default function CourseEnrollAction({
   const [packageType, setPackageType] = useState<"course_only" | "course_plus_guide">("course_only");
   const [error, setError] = useState("");
   // UI hint only; the API independently enforces live-mode safety.
-  const livePaymentsEnabled = process.env.NEXT_PUBLIC_PAYSTACK_LIVE_PAYMENTS_ENABLED === "true";
+  const livePaymentsEnabled = process.env.NEXT_PUBLIC_FLW_LIVE_PAYMENTS_ENABLED === "true";
   const linkPending = !isInHouse && (!affiliateLink || affiliateLink.startsWith("PENDING"));
 
-  const paidCourse = isInHouse && ((!isTrial && !isFree) || (isTrial && trialExpired)) && pricing.courseOnly > 0;
+  const paidCourse = isInHouse && !isFree && pricing.courseOnly > 0;
   const hasGuidePackage = Number(pricing.coursePlusGuide || 0) > 0;
   const selectedPrice = packageType === "course_only" ? pricing.courseOnly : Number(pricing.coursePlusGuide || 0);
 
@@ -98,7 +94,7 @@ export default function CourseEnrollAction({
   }
 
   if (paidCourse) {
-    if (enrollmentStatus === "approved" && !trialExpired) {
+    if (enrollmentStatus === "approved") {
       return <a href={`/dashboard/learning/inhouse/${courseId}/start`} className="inline-block rounded-full bg-carinex-emerald px-6 py-3 text-sm font-semibold text-white">Continue course →</a>;
     }
 
@@ -141,9 +137,9 @@ export default function CourseEnrollAction({
 
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
       <button onClick={beginPayment} disabled={saving || selectedPrice <= 0} className="mt-4 rounded-full bg-carinex-navy px-6 py-3 text-sm font-semibold text-white disabled:opacity-60">
-        {saving ? "Connecting to Paystack…" : `Pay ${formatNaira(selectedPrice)}`}
+        {saving ? "Connecting to Flutterwave…" : `Pay ${formatNaira(selectedPrice)}`}
       </button>
-      <p className="mt-2 text-xs text-carinex-navy/50">Secure payment via Paystack. Access is granted after manual approval.</p>
+      <p className="mt-2 text-xs text-carinex-navy/50">Secure payment via Flutterwave. Access is granted after manual approval.</p>
     </div>;
   }
 
@@ -151,6 +147,6 @@ export default function CourseEnrollAction({
   if (completionStatus) return <a href={isInHouse ? `/dashboard/learning/inhouse/${courseId}/start` : affiliateLink || "#"} target={isInHouse ? undefined : "_blank"} rel={isInHouse ? undefined : "noopener noreferrer"} className="inline-block rounded-full bg-carinex-emerald px-6 py-3 text-sm font-semibold text-white">Continue course →</a>;
   return <div>
     {error && <p role="alert" className="mb-3 text-sm text-red-600">{error}</p>}
-    <button onClick={handleFreeEnroll} disabled={saving || linkPending} className="rounded-full bg-carinex-navy px-6 py-3 text-sm font-semibold text-white disabled:opacity-60">{saving ? "Enrolling…" : linkPending ? "Course link coming soon" : isTrial ? "Start 7-day free trial" : isInHouse ? "Enroll (in-house)" : "Enroll via Coursera"}</button>
+    <button onClick={handleFreeEnroll} disabled={saving || linkPending} className="rounded-full bg-carinex-navy px-6 py-3 text-sm font-semibold text-white disabled:opacity-60">{saving ? "Enrolling…" : linkPending ? "Course link coming soon" : isInHouse ? "Enroll (in-house)" : "Enroll via Coursera"}</button>
   </div>;
 }

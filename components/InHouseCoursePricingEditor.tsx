@@ -9,26 +9,23 @@ export default function InHouseCoursePricingEditor({
   courseId,
   initialCourseOnly,
   initialCoursePlusGuide,
-  initialTrialEnabled = false,
 }: {
   courseId: number;
   initialCourseOnly: number;
   initialCoursePlusGuide: number | null;
-  initialTrialEnabled?: boolean;
 }) {
   const supabase = createClient();
   const router = useRouter();
   const [courseOnly, setCourseOnly] = useState(String(initialCourseOnly || ""));
   const [coursePlusGuide, setCoursePlusGuide] = useState(initialCoursePlusGuide == null ? "" : String(initialCoursePlusGuide));
-  const [trialEnabled, setTrialEnabled] = useState(initialTrialEnabled);
   const [saving, setSaving] = useState(false);
 
   async function save() {
     const only = Number(courseOnly || 0);
     const guide = coursePlusGuide.trim() === "" ? null : Number(coursePlusGuide);
 
-    if (!Number.isFinite(only) || only < 0 || (trialEnabled && only <= 0) || (guide !== null && (!Number.isFinite(guide) || guide < 0))) {
-      alert(trialEnabled && only <= 0 ? "A trial course must have a positive course-only price after the trial." : "Enter valid prices in naira.");
+    if (!Number.isFinite(only) || only < 0 || (guide !== null && (!Number.isFinite(guide) || guide < 0))) {
+      alert("Enter valid prices in naira.");
       return;
     }
     if (only === 0 && guide !== null && guide > 0) {
@@ -53,8 +50,7 @@ export default function InHouseCoursePricingEditor({
       price_course_only: only,
       price_course_plus_guide: guide && guide > 0 ? guide : null,
       price_display: display,
-      is_free: only <= 0 && !trialEnabled,
-      trial_enabled: trialEnabled,
+      is_free: only <= 0,
     }).eq("id", courseId);
 
     setSaving(false);
@@ -63,15 +59,14 @@ export default function InHouseCoursePricingEditor({
       return;
     }
 
-    alert("Pricing saved. The public course page and Paystack checkout now use these prices.");
+    alert("Pricing saved. The public course page and Flutterwave checkout now use these prices.");
     router.refresh();
   }
 
   return <div className="rounded-xl border border-carinex-emerald/20 bg-carinex-emerald/5 p-5">
     <div>
-      <p className="font-bold text-carinex-navy">Course pricing and trial</p>
-      <p className="mt-1 text-sm text-carinex-navy/60">Set package prices in naira. When trial mode is enabled, these are the prices after the learner’s individual 7-day trial.</p>
-      <label className="mt-3 flex items-center gap-2 text-sm font-semibold text-carinex-navy"><input type="checkbox" checked={trialEnabled} onChange={e => setTrialEnabled(e.target.checked)} className="h-4 w-4" /> Enable 7-day free trial for new enrollments</label>
+      <p className="font-bold text-carinex-navy">Course pricing</p>
+      <p className="mt-1 text-sm text-carinex-navy/60">Set prices in naira. These values drive both the public page and the server-side Flutterwave amount.</p>
     </div>
 
     <div className="mt-4 grid gap-4 sm:grid-cols-2">
