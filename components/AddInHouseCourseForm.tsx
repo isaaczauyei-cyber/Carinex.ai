@@ -24,9 +24,9 @@ export default function AddInHouseCourseForm({ specializations }: { specializati
     event.preventDefault();
     if (!title.trim()) { alert("Please enter a course title."); return; }
 
-    const only = isFree ? 0 : Number(courseOnly || 0);
-    const guide = isFree || coursePlusGuide.trim() === "" ? null : Number(coursePlusGuide);
-    if (!Number.isFinite(only) || only < 0 || (!isFree && only <= 0)) { alert("Enter a valid course-only price."); return; }
+    const only = isFree && !trialEnabled ? 0 : Number(courseOnly || 0);
+    const guide = (isFree && !trialEnabled) || coursePlusGuide.trim() === "" ? null : Number(coursePlusGuide);
+    if (!Number.isFinite(only) || only < 0 || ((!isFree || trialEnabled) && only <= 0)) { alert("Enter a valid course-only price."); return; }
     if (guide !== null && (!Number.isFinite(guide) || guide < only)) { alert("The course + guide price must be at least the course-only price."); return; }
 
     setSaving(true);
@@ -47,7 +47,7 @@ export default function AddInHouseCourseForm({ specializations }: { specializati
       affiliate_link: "",
       summary: summary.trim() || null,
       is_free: only <= 0,
-      trial_enabled: isFree && trialEnabled,
+      trial_enabled: trialEnabled,
       is_in_house: true,
       is_published: false,
     }).select("id").single();
@@ -68,8 +68,8 @@ export default function AddInHouseCourseForm({ specializations }: { specializati
     <label className="flex items-center gap-3 text-sm font-medium text-carinex-navy"><input type="checkbox" checked={isFree} onChange={e => { setIsFree(e.target.checked); if (!e.target.checked) setTrialEnabled(false); }} className="h-4 w-4" /> Free course</label>
     {isFree && <div className="rounded-lg border border-carinex-navy/10 p-4"><label className="flex items-start gap-3 text-sm font-medium text-carinex-navy"><input type="checkbox" checked={trialEnabled} onChange={e => setTrialEnabled(e.target.checked)} className="mt-1 h-4 w-4" /><span>Offer a 7-day free trial <span className="mt-1 block text-xs font-normal text-carinex-navy/60">If unchecked, this course stays permanently free. If checked, each learner gets seven days from their own enrollment time.</span></span></label></div>}
 
-    {!isFree && <div className="rounded-lg bg-carinex-navy/5 p-4">
-      <p className="text-sm font-semibold text-carinex-navy">Pricing (NGN)</p>
+    {(!isFree || trialEnabled) && <div className="rounded-lg bg-carinex-navy/5 p-4">
+      <p className="text-sm font-semibold text-carinex-navy">{trialEnabled ? "Price after the 7-day trial (NGN)" : "Pricing (NGN)"}</p>
       <label className="mt-3 block text-sm text-carinex-navy">Course only<input type="number" min="1" step="1" value={courseOnly} onChange={e => setCourseOnly(e.target.value)} placeholder="20000" className={input} /></label>
       <label className="mt-3 block text-sm text-carinex-navy">Course + interview guide (optional)<input type="number" min="1" step="1" value={coursePlusGuide} onChange={e => setCoursePlusGuide(e.target.value)} placeholder="25000" className={input} /></label>
       <p className="mt-2 text-xs text-carinex-navy/50">The saved prices will appear on the public page and be used by Paystack checkout.</p>
