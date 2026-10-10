@@ -6,13 +6,16 @@ import { createClient } from "@/lib/supabase/client";
 import { formatNaira } from "@/lib/course-pricing";
 
 export default function InHouseCoursePricingEditor({
+export default function InHouseCoursePricingEditor({
   courseId,
   initialCourseOnly,
   initialCoursePlusGuide,
+  initialTrialEnabled,
 }: {
   courseId: number;
   initialCourseOnly: number;
   initialCoursePlusGuide: number | null;
+  initialTrialEnabled: boolean;
 }) {
   const supabase = createClient();
   const router = useRouter();
