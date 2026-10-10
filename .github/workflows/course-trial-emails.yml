@@ -1,33 +1,25 @@
 name: Carinex Course Trial Emails
 
 on:
-  schedule:
-    - cron: "17 * * * *"
   workflow_dispatch:
 
 jobs:
-  send-trial-emails:
+  diagnose-redirect:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Check course trials
+      - name: Inspect production URL redirect
         env:
           SITE_URL: ${{ secrets.CARINEX_SITE_URL }}
-          CRON_SECRET: ${{ secrets.CARINEX_CRON_SECRET }}
         run: |
           set -eu
 
-          test -n "$SITE_URL"
-          test -n "$CRON_SECRET"
+          echo "Checking configured production URL..."
 
-          RESPONSE=$(curl \
-            --silent \
-            --show-error \
-            --max-time 60 \
-            --write-out "\nHTTP_STATUS:%{http_code}\nFINAL_URL:%{url_effective}\n" \
-            --header "Authorization: Bearer ${CRON_SECRET}" \
-            "${SITE_URL%/}/api/cron/course-trial-emails")
+          curl --silent --show-error \
+            --max-time 30 \
+            --output /dev/null \
+            --dump-header /tmp/headers.txt \
+            "${SITE_URL%/}/api/cron/course-trial-emails"
 
-          printf '%s\n' "$RESPONSE"
-
-          printf '%s\n' "$RESPONSE" | grep -q 'HTTP_STATUS:200'
+          echo "Response headers:"
+          grep -iE '^(HTTP/|location:)' /tmp/headers.txt || true
