@@ -20,12 +20,22 @@ export default function LoginForm() {
     setErrorMessage("");
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data: signInData, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
       setStatus("error");
       setErrorMessage(error.message);
       return;
+    }
+
+    // Send the welcome email once, on the first login after email confirmation.
+    // Email delivery failure must not prevent the user from signing in.
+    if (signInData.user?.email_confirmed_at) {
+      try {
+        await fetch("/api/email/welcome", { method: "POST" });
+      } catch (welcomeEmailError) {
+        console.error("Could not request welcome email:", welcomeEmailError);
+      }
     }
 
     const { data: profile } = await supabase
