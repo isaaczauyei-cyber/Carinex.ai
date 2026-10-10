@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import CourseEnrollAction from "@/components/CourseEnrollAction";
 import RichText from "@/components/RichText";
 import { formatNaira } from "@/lib/course-pricing";
@@ -29,19 +28,8 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
       const { data: existing } = await supabase.from("nurse_course_completions").select("id, status").eq("nurse_id", profile.id).eq("course_id", courseId).maybeSingle();
       completion = existing;
       if (course.is_in_house) {
-        const admin = createAdminClient();
-        const { data: enrollment } = await admin.from("course_enrollments")
-          .select("id, status, payment_id")
-          .eq("user_id", user.id).eq("course_id", courseId)
-          .order("created_at", { ascending: false }).limit(1).maybeSingle();
-
+        const { data: enrollment } = await supabase.from("course_enrollments").select("status").eq("user_id", user.id).eq("course_id", courseId).order("created_at", { ascending: false }).limit(1).maybeSingle();
         enrollmentStatus = enrollment?.status || null;
-        const courseIsCurrentlyPaid = course.is_free !== true && Number(course.price_course_only || 0) > 0;
-        if (enrollment && enrollment.status === "approved" && courseIsCurrentlyPaid) {
-          const { data: payment } = await admin.from("payments").select("amount, status").eq("id", enrollment.payment_id).maybeSingle();
-          // A previous free enrollment does not grant access after this course becomes paid.
-          if (!payment || payment.status !== "success" || Number(payment.amount) <= 0) enrollmentStatus = null;
-        }
       }
     }
   }
@@ -51,7 +39,7 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
   const isFreeCourse = course.is_free === true || (!course.is_in_house && String(course.price_display || "").trim().toLowerCase() === "free");
   const hasPaidPricing = course.is_in_house && !isFreeCourse && courseOnlyPrice > 0;
   const priceLine = isFreeCourse
-    ? "Free"
+    ? (course.is_in_house && course.trial_enabled === true ? "7-day free trial" : "Free")
     : hasPaidPricing
     ? coursePlusGuidePrice && coursePlusGuidePrice > 0
       ? `${formatNaira(courseOnlyPrice)} course / ${formatNaira(coursePlusGuidePrice)} with interview guide`
