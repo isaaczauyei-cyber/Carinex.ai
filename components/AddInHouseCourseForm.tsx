@@ -17,6 +17,7 @@ export default function AddInHouseCourseForm({ specializations }: { specializati
   const [courseOnly, setCourseOnly] = useState("");
   const [coursePlusGuide, setCoursePlusGuide] = useState("");
   const [isFree, setIsFree] = useState(true);
+  const [trialEnabled, setTrialEnabled] = useState(false);
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -46,6 +47,7 @@ export default function AddInHouseCourseForm({ specializations }: { specializati
       affiliate_link: "",
       summary: summary.trim() || null,
       is_free: only <= 0,
+      trial_enabled: isFree && trialEnabled,
       is_in_house: true,
       is_published: false,
     }).select("id").single();
@@ -63,7 +65,8 @@ export default function AddInHouseCourseForm({ specializations }: { specializati
     <div><label className="text-sm font-semibold text-carinex-navy">Specialization</label><select value={specializationId} onChange={e => setSpecializationId(e.target.value)} className={`${input} bg-white`}><option value="">No specialization</option>{specializations.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>
     <div><label className="text-sm font-semibold text-carinex-navy">Summary</label><textarea value={summary} onChange={e => setSummary(e.target.value)} rows={4} className={input} /></div>
 
-    <label className="flex items-center gap-3 text-sm font-medium text-carinex-navy"><input type="checkbox" checked={isFree} onChange={e => setIsFree(e.target.checked)} className="h-4 w-4" /> Free course</label>
+    <label className="flex items-center gap-3 text-sm font-medium text-carinex-navy"><input type="checkbox" checked={isFree} onChange={e => { setIsFree(e.target.checked); if (!e.target.checked) setTrialEnabled(false); }} className="h-4 w-4" /> Free course</label>
+    {isFree && <div className="rounded-lg border border-carinex-navy/10 p-4"><label className="flex items-start gap-3 text-sm font-medium text-carinex-navy"><input type="checkbox" checked={trialEnabled} onChange={e => setTrialEnabled(e.target.checked)} className="mt-1 h-4 w-4" /><span>Offer a 7-day free trial <span className="mt-1 block text-xs font-normal text-carinex-navy/60">If unchecked, this course stays permanently free. If checked, each learner gets seven days from their own enrollment time.</span></span></label></div>}
 
     {!isFree && <div className="rounded-lg bg-carinex-navy/5 p-4">
       <p className="text-sm font-semibold text-carinex-navy">Pricing (NGN)</p>
