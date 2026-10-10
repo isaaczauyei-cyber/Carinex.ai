@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 
-type EventType = "trial_started" | "trial_2_days_left" | "trial_1_day_left" | "trial_expired" | "enrollment_approved" | "enrollment_rejected" | "course_completed";
+type EventType = "trial_started" | "trial_2_days_left" | "trial_1_day_left" | "trial_expired" | "enrollment_approved" | "enrollment_rejected" | "course_completed" | "payment_confirmed";
 
 export async function sendCourseEmail(enrollmentId: string, eventType: EventType) {
   const admin = createAdminClient();
@@ -23,6 +23,7 @@ export async function sendCourseEmail(enrollmentId: string, eventType: EventType
     trial_expired: { subject: `Your free trial has ended | Carinex`, text: `Hello,\n\nYour 7-day free trial for ${title} has expired. Your course progress has been preserved, but trial access is now closed. Purchase the course to regain access.\n\nCarinex Support` },
     enrollment_approved: { subject: `Your course enrollment is approved | Carinex`, text: `Hello,\n\nYour enrollment for ${title} has been approved. You can continue from your Carinex learning dashboard.\n\nCarinex Support` },
     enrollment_rejected: { subject: `Update on your course enrollment | Carinex`, text: `Hello,\n\nUnfortunately, your enrollment for ${title} was not approved. Please contact support if you need clarification.\n\nCarinex Support` },
+    payment_confirmed: { subject: `Payment confirmed | Carinex`, text: `Hello,\n\nYour payment for ${title} has been verified successfully. Your enrollment is now awaiting any required approval. You can check your learning dashboard for updates.\n\nCarinex Support` },
     course_completed: { subject: `Congratulations on completing ${title} | Carinex`, text: `Congratulations!\n\nYou have completed ${title}. Thank you for learning with Carinex.\n\nCarinex Support` },
   };
   if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM) throw new Error("RESEND_API_KEY or EMAIL_FROM is missing");
