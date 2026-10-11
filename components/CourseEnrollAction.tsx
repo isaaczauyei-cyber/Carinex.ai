@@ -153,7 +153,7 @@ export default function CourseEnrollAction({
     return (
       <div className="max-w-md rounded-xl border border-amber-200 bg-amber-50 p-5">
         <h2 className="font-bold text-amber-950">
-          Your 7-day trial has expired
+          Your 3-day trial has expired
         </h2>
 
         <p className="mt-2 text-sm text-amber-900">
@@ -358,11 +358,11 @@ export default function CourseEnrollAction({
           disabled={saving}
           className="rounded-full bg-carinex-navy px-6 py-3 text-sm font-semibold text-white disabled:opacity-60"
         >
-          {saving ? "Enrolling…" : "Start 7-day free trial"}
+          {saving ? "Enrolling…" : "Start 3-day free trial"}
         </button>
 
         <p className="mt-2 text-sm text-carinex-navy/60">
-          Try this course free for 7 days.
+          Try this course free for 3 days.
         </p>
       </div>
     );

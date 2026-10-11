@@ -21,7 +21,29 @@ export default function InHouseCoursePricingEditor({
   const [courseOnly, setCourseOnly] = useState(String(initialCourseOnly || ""));
   const [coursePlusGuide, setCoursePlusGuide] = useState(initialCoursePlusGuide == null ? "" : String(initialCoursePlusGuide));
   const [saving, setSaving] = useState(false);
-  void initialTrialEnabled;
+  const [trialEnabled, setTrialEnabled] = useState(initialTrialEnabled);
+  const [savingTrial, setSavingTrial] = useState(false);
+
+  async function saveTrialSetting() {
+    setSavingTrial(true);
+    try {
+      const response = await fetch(`/api/admin/in-house-courses/${courseId}/trial`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: trialEnabled }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || "Could not save trial settings.");
+      alert(trialEnabled
+        ? "The 3-day free trial is enabled for this course."
+        : "The free trial is disabled for new learners. Existing trials keep their original expiry date.");
+      router.refresh();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Could not save trial settings.");
+    } finally {
+      setSavingTrial(false);
+    }
+  }
 
   async function save() {
     const only = Number(courseOnly || 0);
@@ -86,5 +108,17 @@ export default function InHouseCoursePricingEditor({
     <button type="button" onClick={save} disabled={saving} className="mt-4 rounded-full bg-carinex-navy px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
       {saving ? "Saving pricing…" : "Save pricing"}
     </button>
+
+    <div className="mt-6 border-t border-carinex-emerald/20 pt-5">
+      <p className="font-bold text-carinex-navy">Free trial settings</p>
+      <p className="mt-1 text-sm text-carinex-navy/60">Control the trial for this course only. Enabled trials last 3 days. Turning this off blocks new trials but does not cancel trials already started.</p>
+      <label className="mt-4 flex items-start gap-3 text-sm font-semibold text-carinex-navy">
+        <input type="checkbox" checked={trialEnabled} onChange={(event) => setTrialEnabled(event.target.checked)} className="mt-0.5 h-4 w-4" />
+        <span>Enable 3-day free trial for this course</span>
+      </label>
+      <button type="button" onClick={saveTrialSetting} disabled={savingTrial} className="mt-4 rounded-full bg-carinex-emerald px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50">
+        {savingTrial ? "Saving trial setting…" : "Save trial setting"}
+      </button>
+    </div>
   </div>;
 }
