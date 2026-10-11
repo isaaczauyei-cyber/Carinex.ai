@@ -17,6 +17,23 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
   const { data: syllabus } = await supabase.from("course_syllabus_items").select("*").eq("course_id", courseId).order("order_index");
   const { data: { user } } = await supabase.auth.getUser();
 
+  // Check actual learner-facing content so a legacy completion record created
+  // for an empty in-house course does not make the course appear completed.
+  let hasLearnerContent = true;
+  if (course.is_in_house) {
+    const { data: modules } = await supabase.from("course_modules").select("id").eq("course_id", courseId);
+    const moduleIds = (modules || []).map((module) => module.id);
+    if (moduleIds.length === 0) {
+      hasLearnerContent = false;
+    } else {
+      const [{ data: sections }, { data: questions }] = await Promise.all([
+        supabase.from("module_sections").select("id").in("module_id", moduleIds),
+        supabase.from("assessment_questions").select("id").in("module_id", moduleIds),
+      ]);
+      hasLearnerContent = Boolean((sections?.length || 0) + (questions?.length || 0));
+    }
+  }
+
   let nurseId: string | null = null;
   let completion: { id: string; status: string } | null = null;
   let enrollmentStatus: string | null = null;
@@ -91,7 +108,7 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
           trialExpired={trialExpired}
           affiliateLink={course.affiliate_link}
           nurseId={nurseId}
-          completionStatus={completion?.status || null}
+          completionStatus={course.is_in_house && !hasLearnerContent ? null : completion?.status || null}
           enrollmentStatus={enrollmentStatus}
           pricing={{ courseOnly: courseOnlyPrice, coursePlusGuide: coursePlusGuidePrice }}
         />
