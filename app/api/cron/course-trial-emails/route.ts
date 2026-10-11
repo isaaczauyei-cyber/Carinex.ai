@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
   const { data: rows, error } = await admin
     .from("course_enrollments")
     .select(
-      "id,trial_started_at,trial_expires_at,status,access_type,courses!inner(trial_enabled)"
+      "id,trial_started_at,trial_expires_at,status,access_type"
     )
     .eq("status", "approved")
     .eq("access_type", "trial")
@@ -53,12 +53,6 @@ export async function GET(req: NextRequest) {
   let failed = 0;
 
   for (const row of rows || []) {
-    const course: any = Array.isArray((row as any).courses)
-      ? (row as any).courses[0]
-      : (row as any).courses;
-
-    if (course?.trial_enabled !== true) continue;
-
     const expires = new Date(row.trial_expires_at!).getTime();
 
     if (!Number.isFinite(expires)) {
