@@ -29,6 +29,12 @@ export default async function StartCoursePage({ params }: { params: { courseId: 
   const next = ordered.find((item) => !item.done && item.required) || ordered.find((item) => !item.done);
   if (next) redirect(next.type === "section" ? `/dashboard/learning/inhouse/${courseId}/section/${next.id}` : `/dashboard/learning/inhouse/${courseId}/quiz/${next.moduleId}`);
 
+  // Never treat an empty/unconfigured course as completed. A course must have
+  // at least one learner-facing section or quiz before completion can be recorded.
+  if (ordered.length === 0) {
+    return <main><CourseSessionNavbar courseId={courseId} nurseId={profile.id} /><section className="mx-auto max-w-2xl px-6 py-24 text-center"><div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-amber-100 text-3xl">i</div><h1 className="mt-5 text-3xl font-bold text-carinex-navy">Course content is being prepared</h1><p className="mt-3 text-carinex-navy/70">{course.title} does not have any lessons or quizzes available yet. It will not be marked complete until course content is added.</p><Link href={`/courses/${courseId}`} className="mt-7 inline-block rounded-full bg-carinex-emerald px-6 py-3 text-sm font-semibold text-white">Back to course details</Link></section></main>;
+  }
+
   const { data: existing } = await admin.from("nurse_course_completions").select("id").eq("nurse_id", profile.id).eq("course_id", courseId).maybeSingle();
   if (existing) await admin.from("nurse_course_completions").update({ status: "completed", completed_at: new Date().toISOString() }).eq("id", existing.id); else await admin.from("nurse_course_completions").insert({ nurse_id: profile.id, course_id: courseId, status: "completed", completed_at: new Date().toISOString() });
   const { data: completedEnrollment } = await admin.from("course_enrollments").select("id").eq("user_id", user.id).eq("course_id", courseId).eq("status", "approved").order("created_at", { ascending: false }).limit(1).maybeSingle();
