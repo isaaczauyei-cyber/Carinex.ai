@@ -38,7 +38,7 @@ export default function CourseTracker({
 }) {
   return (
     <a
-      href={course.is_in_house ? `/dashboard/learning/inhouse/${course.id}/start` : `/courses/${course.id}`}
+      href={`/courses/${course.id}`}
       className="block overflow-hidden rounded-xl border border-carinex-navy/10 transition hover:border-carinex-emerald/40 hover:shadow-sm"
     >
       {course.image_url ? (
