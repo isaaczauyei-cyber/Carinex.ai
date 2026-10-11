@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
   if (!existingEnrollment) {
     const now = new Date();
     const trialEnabled = course.trial_enabled === true;
-    const trialExpiresAt = trialEnabled ? new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) : null;
+    const trialExpiresAt = trialEnabled ? new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000) : null;
     const { data: createdEnrollment, error: enrollmentError } = await admin.from("course_enrollments").insert({
       user_id: user.id,
       course_id: courseId,
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
       has_interview_guide: false,
       status: "approved",
       review_status: "resolved",
-      review_note: trialEnabled ? "Automatically approved: 7-day course trial." : "Automatically approved: permanently free in-house course.",
+      review_note: trialEnabled ? "Automatically approved: 3-day course trial." : "Automatically approved: permanently free in-house course.",
       access_type: trialEnabled ? "trial" : "free",
       trial_started_at: trialEnabled ? now.toISOString() : null,
       trial_expires_at: trialExpiresAt ? trialExpiresAt.toISOString() : null,
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
   } else if (existingEnrollment.status !== "approved") {
     return NextResponse.json({ error: "An existing enrollment is awaiting review. Please contact support before trying again." }, { status: 409 });
   } else if (existingEnrollment.access_type === "trial" && existingEnrollment.trial_expires_at && new Date(existingEnrollment.trial_expires_at) <= new Date()) {
-    return NextResponse.json({ error: "Your 7-day trial has expired. Purchase this course to regain access." }, { status: 403 });
+    return NextResponse.json({ error: "Your 3-day trial has expired. Purchase this course to regain access." }, { status: 403 });
   }
 
   const { error: completionError } = await admin.from("nurse_course_completions").upsert(
