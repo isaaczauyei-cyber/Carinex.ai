@@ -60,8 +60,8 @@ export async function sendCourseEmail(enrollmentId: string, eventType: EventType
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://carinex.info").replace(/\/$/, "");
   const messages: Record<EventType, { subject: string; text: string }> = {
     trial_started: {
-      subject: "Your 7-day course trial has started | Carinex",
-      text: `Hello,\n\nYour 7-day free trial for ${title} has started. Your access is scheduled to expire on ${expiry} (Nigeria time).\n\nContinue learning here: ${siteUrl}/dashboard/learning\n\nTo keep access after the trial, purchase your chosen course package before it expires. Your trial will not automatically charge you.\n\nCarinex Support`,
+      subject: "Your 3-day course trial has started | Carinex",
+      text: `Hello,\n\nYour 3-day free trial for ${title} has started. Your access is scheduled to expire on ${expiry} (Nigeria time).\n\nContinue learning here: ${siteUrl}/dashboard/learning\n\nTo keep access after the trial, purchase your chosen course package before it expires. Your trial will not automatically charge you.\n\nCarinex Support`,
     },
     trial_2_days_left: {
       subject: `2 days left in your ${title} trial | Carinex`,
@@ -73,7 +73,7 @@ export async function sendCourseEmail(enrollmentId: string, eventType: EventType
     },
     trial_expired: {
       subject: `Your free trial has ended | Carinex`,
-      text: `Hello,\n\nYour 7-day free trial for ${title} has expired. Your course progress has been preserved, but trial access is now closed. Purchase the course to regain access.\n\nCarinex Support`,
+      text: `Hello,\n\nYour 3-day free trial for ${title} has expired. Your course progress has been preserved, but trial access is now closed. Purchase the course to regain access.\n\nCarinex Support`,
     },
     enrollment_approved: {
       subject: `Your course enrollment is approved | Carinex`,
