@@ -3,6 +3,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/server";
 import CourseEnrollAction from "@/components/CourseEnrollAction";
+import ExternalCertificateSubmission from "@/components/ExternalCertificateSubmission";
 import RichText from "@/components/RichText";
 import { formatNaira } from "@/lib/course-pricing";
 
@@ -17,23 +18,6 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
   const { data: syllabus } = await supabase.from("course_syllabus_items").select("*").eq("course_id", courseId).order("order_index");
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Check actual learner-facing content so a legacy completion record created
-  // for an empty in-house course does not make the course appear completed.
-  let hasLearnerContent = true;
-  if (course.is_in_house) {
-    const { data: modules } = await supabase.from("course_modules").select("id").eq("course_id", courseId);
-    const moduleIds = (modules || []).map((module) => module.id);
-    if (moduleIds.length === 0) {
-      hasLearnerContent = false;
-    } else {
-      const [{ data: sections }, { data: questions }] = await Promise.all([
-        supabase.from("module_sections").select("id").in("module_id", moduleIds),
-        supabase.from("assessment_questions").select("id").in("module_id", moduleIds),
-      ]);
-      hasLearnerContent = Boolean((sections?.length || 0) + (questions?.length || 0));
-    }
-  }
-
   let nurseId: string | null = null;
   let completion: { id: string; status: string } | null = null;
   let enrollmentStatus: string | null = null;
@@ -44,6 +28,17 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
     const { data: profile } = await supabase.from("nurse_profiles").select("id").eq("user_id", user.id).maybeSingle();
     if (profile) {
       nurseId = profile.id;
+      // Opening a course directly enrolls the learner in its specialization.
+      // Upsert makes this safe to repeat for an already-enrolled learner.
+      if (course.specialization_id) {
+        const { error: specializationError } = await supabase
+          .from("nurse_specializations")
+          .upsert(
+            { nurse_id: profile.id, specialization_id: course.specialization_id },
+            { onConflict: "nurse_id,specialization_id", ignoreDuplicates: true }
+          );
+        if (specializationError) console.error("Automatic specialization enrollment failed", specializationError.message);
+      }
       const { data: existing } = await supabase.from("nurse_course_completions").select("id, status").eq("nurse_id", profile.id).eq("course_id", courseId).maybeSingle();
       completion = existing;
       if (course.is_in_house) {
@@ -100,18 +95,32 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
       </div>}
 
       <div className="mt-10">
-        <CourseEnrollAction
-          courseId={course.id}
-          isInHouse={course.is_in_house}
-          isFree={isFreeCourse}
-          isTrial={course.is_in_house && (course.trial_enabled === true || existingAccessType === "trial")}
-          trialExpired={trialExpired}
-          affiliateLink={course.affiliate_link}
-          nurseId={nurseId}
-          completionStatus={course.is_in_house && !hasLearnerContent ? null : completion?.status || null}
-          enrollmentStatus={enrollmentStatus}
-          pricing={{ courseOnly: courseOnlyPrice, coursePlusGuide: coursePlusGuidePrice }}
-        />
+        {!course.is_in_house && nurseId && completion?.status === "in_progress" ? (
+          <ExternalCertificateSubmission
+            courseId={course.id}
+            nurseId={nurseId}
+            courseTitle={course.title}
+            affiliateLink={course.affiliate_link}
+          />
+        ) : completion?.status === "verification_pending" ? (
+          <div className="rounded-xl border border-sky-200 bg-sky-50 p-5">
+            <h2 className="font-bold text-sky-900">Certificate awaiting review</h2>
+            <p className="mt-2 text-sm text-sky-800">Your certificate has been submitted. We’ll update your course status after review.</p>
+          </div>
+        ) : (
+          <CourseEnrollAction
+            courseId={course.id}
+            isInHouse={course.is_in_house}
+            isFree={isFreeCourse}
+            isTrial={course.is_in_house && (course.trial_enabled === true || existingAccessType === "trial")}
+            trialExpired={trialExpired}
+            affiliateLink={course.affiliate_link}
+            nurseId={nurseId}
+            completionStatus={completion?.status || null}
+            enrollmentStatus={enrollmentStatus}
+            pricing={{ courseOnly: courseOnlyPrice, coursePlusGuide: coursePlusGuidePrice }}
+          />
+        )}
       </div>
     </section>
     <Footer />
