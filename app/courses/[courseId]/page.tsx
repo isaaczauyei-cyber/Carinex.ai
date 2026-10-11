@@ -21,6 +21,7 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
   let completion: { id: string; status: string } | null = null;
   let enrollmentStatus: string | null = null;
   let trialExpired = false;
+  let existingAccessType: string | null = null;
 
   if (user) {
     const { data: profile } = await supabase.from("nurse_profiles").select("id").eq("user_id", user.id).maybeSingle();
@@ -31,6 +32,7 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
       if (course.is_in_house) {
         const { data: enrollment } = await supabase.from("course_enrollments").select("status, access_type, trial_expires_at").eq("user_id", user.id).eq("course_id", courseId).order("created_at", { ascending: false }).limit(1).maybeSingle();
         enrollmentStatus = enrollment?.status || null;
+        existingAccessType = enrollment?.access_type || null;
         trialExpired = enrollment?.access_type === "trial" && Boolean(enrollment?.trial_expires_at) && new Date(enrollment!.trial_expires_at) <= new Date();
       }
     }
@@ -41,7 +43,7 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
   const isFreeCourse = course.is_free === true || (!course.is_in_house && String(course.price_display || "").trim().toLowerCase() === "free");
   const hasPaidPricing = course.is_in_house && !isFreeCourse && courseOnlyPrice > 0;
   const priceLine = isFreeCourse
-    ? (course.is_in_house && course.trial_enabled === true ? "7-day free trial" : "Free")
+    ? (course.is_in_house && course.trial_enabled === true ? "3-day free trial" : "Free")
     : hasPaidPricing
     ? coursePlusGuidePrice && coursePlusGuidePrice > 0
       ? `${formatNaira(courseOnlyPrice)} course / ${formatNaira(coursePlusGuidePrice)} with interview guide`
@@ -85,7 +87,7 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
           courseId={course.id}
           isInHouse={course.is_in_house}
           isFree={isFreeCourse}
-          isTrial={course.is_in_house && course.trial_enabled === true}
+          isTrial={course.is_in_house && (course.trial_enabled === true || existingAccessType === "trial")}
           trialExpired={trialExpired}
           affiliateLink={course.affiliate_link}
           nurseId={nurseId}
