@@ -200,6 +200,19 @@ export default function CourseEnrollAction({
     );
   }
 
+  // Any approved in-house enrollment (including an active trial) should let
+  // the learner continue, rather than offering a second trial enrollment.
+  if (isInHouse && enrollmentStatus === "approved") {
+    return (
+      <a
+        href={`/dashboard/learning/inhouse/${courseId}/start`}
+        className="inline-block rounded-full bg-carinex-emerald px-6 py-3 text-sm font-semibold text-white"
+      >
+        Continue course →
+      </a>
+    );
+  }
+
   // Show the payment/enrollment status for paid courses.
   if (
     paidCourse &&
@@ -216,6 +229,34 @@ export default function CourseEnrollAction({
           : enrollmentStatus === "rejected"
             ? "Your enrolment is under review. Please contact Carinex support for an update."
             : "Your course access is currently unavailable. Please contact support."}
+      </div>
+    );
+  }
+
+  // Explicitly show the trial button before paid checkout for paid courses
+  // whose per-course free trial is enabled. Existing enrollment states above
+  // still take precedence, so enrolled learners see Continue rather than Start.
+  if (isInHouse && isTrial && !trialExpired) {
+    return (
+      <div>
+        {error && (
+          <p role="alert" className="mb-3 text-sm text-red-600">
+            {error}
+          </p>
+        )}
+
+        <button
+          type="button"
+          onClick={handleFreeEnroll}
+          disabled={saving}
+          className="rounded-full bg-carinex-navy px-6 py-3 text-sm font-semibold text-white disabled:opacity-60"
+        >
+          {saving ? "Enrolling…" : "Start 3-day free trial"}
+        </button>
+
+        <p className="mt-2 text-sm text-carinex-navy/60">
+          Try this course free for 3 days. You can purchase it after your trial expires.
+        </p>
       </div>
     );
   }
@@ -339,32 +380,6 @@ export default function CourseEnrollAction({
       >
         Continue course →
       </a>
-    );
-  }
-
-  // Explicitly show the trial button for every eligible in-house trial course.
-  if (isInHouse && isTrial && !trialExpired) {
-    return (
-      <div>
-        {error && (
-          <p role="alert" className="mb-3 text-sm text-red-600">
-            {error}
-          </p>
-        )}
-
-        <button
-          type="button"
-          onClick={handleFreeEnroll}
-          disabled={saving}
-          className="rounded-full bg-carinex-navy px-6 py-3 text-sm font-semibold text-white disabled:opacity-60"
-        >
-          {saving ? "Enrolling…" : "Start 3-day free trial"}
-        </button>
-
-        <p className="mt-2 text-sm text-carinex-navy/60">
-          Try this course free for 3 days.
-        </p>
-      </div>
     );
   }
 
