@@ -3,6 +3,19 @@
 import { useState } from "react";
 import { formatNaira, type CoursePricing } from "@/lib/course-pricing";
 
+type CourseEnrollActionProps = {
+  courseId: number;
+  isInHouse: boolean;
+  isFree: boolean;
+  isTrial: boolean;
+  trialExpired: boolean;
+  affiliateLink: string | null;
+  nurseId: string | null;
+  completionStatus: string | null;
+  enrollmentStatus: string | null;
+  pricing: CoursePricing;
+};
+
 export default function CourseEnrollAction({
   courseId,
   isInHouse,
@@ -14,25 +27,14 @@ export default function CourseEnrollAction({
   completionStatus,
   enrollmentStatus,
   pricing,
-}: {
-  courseId: number;
-  isInHouse: boolean;
-  isFree: boolean;
-  isTrial: boolean;
-  trialExpired: boolean;
-  affiliateLink: string | null;
-  nurseId: string | null;
-  completionStatus: string | null;
-  enrollmentStatus: string | null;
-  pricing: CoursePricing;
-}) {
+}: CourseEnrollActionProps) {
   const [saving, setSaving] = useState(false);
   const [packageType, setPackageType] = useState<
     "course_only" | "course_plus_guide"
   >("course_only");
   const [error, setError] = useState("");
 
-  // UI hint only; the API independently enforces payment safety.
+  // This controls the UI only. The server must independently enforce payment safety.
   const livePaymentsEnabled =
     process.env.NEXT_PUBLIC_FLW_LIVE_PAYMENTS_ENABLED === "true";
 
@@ -63,14 +65,18 @@ export default function CourseEnrollAction({
         body: JSON.stringify({ courseId, packageType }),
       });
 
-      const result = await response.json();
+      const result = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(result.error || "Unable to start payment.");
+        throw new Error(
+          result.error || "Unable to start payment. Please try again."
+        );
       }
 
       if (!result.authorizationUrl) {
-        throw new Error("The payment provider did not return a checkout link.");
+        throw new Error(
+          "The payment provider did not return a checkout link."
+        );
       }
 
       window.location.assign(result.authorizationUrl);
@@ -99,7 +105,7 @@ export default function CourseEnrollAction({
           body: JSON.stringify({ courseId }),
         });
 
-        const result = await response.json();
+        const result = await response.json().catch(() => ({}));
 
         if (!response.ok) {
           throw new Error(
@@ -126,7 +132,9 @@ export default function CourseEnrollAction({
           { onConflict: "nurse_id,course_id" }
         );
 
-      if (completionError) throw completionError;
+      if (completionError) {
+        throw completionError;
+      }
 
       if (!linkPending && affiliateLink) {
         window.open(affiliateLink, "_blank", "noopener,noreferrer");
@@ -140,7 +148,7 @@ export default function CourseEnrollAction({
     }
   }
 
-  // Handle expired trials before showing normal enrollment options.
+  // Handle expired trials before other enrollment options.
   if (isInHouse && isTrial && trialExpired) {
     return (
       <div className="max-w-md rounded-xl border border-amber-200 bg-amber-50 p-5">
@@ -180,34 +188,40 @@ export default function CourseEnrollAction({
     );
   }
 
-  if (paidCourse) {
-    if (enrollmentStatus === "approved") {
-      return (
-        <a
-          href={`/dashboard/learning/inhouse/${courseId}/start`}
-          className="inline-block rounded-full bg-carinex-emerald px-6 py-3 text-sm font-semibold text-white"
-        >
-          Continue course →
-        </a>
-      );
-    }
+  // Approved paid-course learners can continue.
+  if (paidCourse && enrollmentStatus === "approved") {
+    return (
+      <a
+        href={`/dashboard/learning/inhouse/${courseId}/start`}
+        className="inline-block rounded-full bg-carinex-emerald px-6 py-3 text-sm font-semibold text-white"
+      >
+        Continue course →
+      </a>
+    );
+  }
 
-    if (
+  // Show the payment/enrollment status for paid courses.
+  if (
+    paidCourse &&
+    (
       enrollmentStatus === "pending_approval" ||
       enrollmentStatus === "rejected" ||
       enrollmentStatus === "revoked"
-    ) {
-      return (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          {enrollmentStatus === "pending_approval"
-            ? "Payment received. Your enrolment is awaiting admin approval. Course access will open after approval."
-            : enrollmentStatus === "rejected"
-              ? "Your enrolment is under review. Please contact Carinex support for an update."
-              : "Your course access is currently unavailable. Please contact support."}
-        </div>
-      );
-    }
+    )
+  ) {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        {enrollmentStatus === "pending_approval"
+          ? "Payment received. Your enrolment is awaiting admin approval. Course access will open after approval."
+          : enrollmentStatus === "rejected"
+            ? "Your enrolment is under review. Please contact Carinex support for an update."
+            : "Your course access is currently unavailable. Please contact support."}
+      </div>
+    );
+  }
 
+  // Paid-course checkout.
+  if (paidCourse) {
     if (!livePaymentsEnabled) {
       return (
         <div className="max-w-md rounded-2xl border border-amber-200 bg-amber-50 p-5">
@@ -300,6 +314,7 @@ export default function CourseEnrollAction({
     );
   }
 
+  // Completed external courses.
   if (completionStatus === "completed") {
     return (
       <span className="inline-block rounded-full bg-carinex-emerald/10 px-6 py-3 text-sm font-semibold text-carinex-emerald">
@@ -308,6 +323,8 @@ export default function CourseEnrollAction({
     );
   }
 
+  // Existing learners can continue, except when the trial has expired
+  // (handled above).
   if (completionStatus) {
     return (
       <a
@@ -325,6 +342,33 @@ export default function CourseEnrollAction({
     );
   }
 
+  // Explicitly show the trial button for every eligible in-house trial course.
+  if (isInHouse && isTrial && !trialExpired) {
+    return (
+      <div>
+        {error && (
+          <p role="alert" className="mb-3 text-sm text-red-600">
+            {error}
+          </p>
+        )}
+
+        <button
+          type="button"
+          onClick={handleFreeEnroll}
+          disabled={saving}
+          className="rounded-full bg-carinex-navy px-6 py-3 text-sm font-semibold text-white disabled:opacity-60"
+        >
+          {saving ? "Enrolling…" : "Start 7-day free trial"}
+        </button>
+
+        <p className="mt-2 text-sm text-carinex-navy/60">
+          Try this course free for 7 days.
+        </p>
+      </div>
+    );
+  }
+
+  // Regular free courses and external courses.
   return (
     <div>
       {error && (
@@ -336,7 +380,7 @@ export default function CourseEnrollAction({
       <button
         type="button"
         onClick={handleFreeEnroll}
-        disabled={saving || linkPending || (isInHouse && isTrial && trialExpired)}
+        disabled={saving || linkPending}
         className="rounded-full bg-carinex-navy px-6 py-3 text-sm font-semibold text-white disabled:opacity-60"
       >
         {saving
@@ -344,9 +388,7 @@ export default function CourseEnrollAction({
           : linkPending
             ? "Course link coming soon"
             : isInHouse
-              ? isTrial
-                ? "Start 7-day free trial"
-                : "Enroll (in-house)"
+              ? "Enroll (in-house)"
               : "Enroll via Coursera"}
       </button>
     </div>
