@@ -3,7 +3,6 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { createClient } from "@/lib/supabase/server";
 import CourseEnrollAction from "@/components/CourseEnrollAction";
-import ExternalCertificateSubmission from "@/components/ExternalCertificateSubmission";
 import RichText from "@/components/RichText";
 import { formatNaira } from "@/lib/course-pricing";
 
@@ -28,17 +27,6 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
     const { data: profile } = await supabase.from("nurse_profiles").select("id").eq("user_id", user.id).maybeSingle();
     if (profile) {
       nurseId = profile.id;
-      // Opening a course directly enrolls the learner in its specialization.
-      // Upsert makes this safe to repeat for an already-enrolled learner.
-      if (course.specialization_id) {
-        const { error: specializationError } = await supabase
-          .from("nurse_specializations")
-          .upsert(
-            { nurse_id: profile.id, specialization_id: course.specialization_id },
-            { onConflict: "nurse_id,specialization_id", ignoreDuplicates: true }
-          );
-        if (specializationError) console.error("Automatic specialization enrollment failed", specializationError.message);
-      }
       const { data: existing } = await supabase.from("nurse_course_completions").select("id, status").eq("nurse_id", profile.id).eq("course_id", courseId).maybeSingle();
       completion = existing;
       if (course.is_in_house) {
@@ -84,6 +72,17 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
         {descriptionText ? <RichText text={descriptionText} /> : <p className="text-carinex-navy/50">No description available yet.</p>}
       </div>
 
+      {Array.isArray((course as any).skills_gained) && (course as any).skills_gained.length > 0 && (
+        <section className="mt-8" aria-labelledby="skills-gained-heading">
+          <h2 id="skills-gained-heading" className="text-lg font-bold text-carinex-navy">Skills you’ll gain</h2>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {((course as any).skills_gained as string[]).map((skill, index) => (
+              <span key={`${skill}-${index}`} className="rounded-full border border-carinex-emerald/20 bg-carinex-emerald/10 px-3 py-1.5 text-sm font-medium text-carinex-emerald">{skill}</span>
+            ))}
+          </div>
+        </section>
+      )}
+
       {syllabus && syllabus.length > 0 && <div className="mt-10">
         <h2 className="text-lg font-bold text-carinex-navy">Syllabus</h2>
         <div className="mt-4 flex flex-col gap-3">
@@ -95,32 +94,18 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
       </div>}
 
       <div className="mt-10">
-        {!course.is_in_house && nurseId && completion?.status === "in_progress" ? (
-          <ExternalCertificateSubmission
-            courseId={course.id}
-            nurseId={nurseId}
-            courseTitle={course.title}
-            affiliateLink={course.affiliate_link}
-          />
-        ) : completion?.status === "verification_pending" ? (
-          <div className="rounded-xl border border-sky-200 bg-sky-50 p-5">
-            <h2 className="font-bold text-sky-900">Certificate awaiting review</h2>
-            <p className="mt-2 text-sm text-sky-800">Your certificate has been submitted. We’ll update your course status after review.</p>
-          </div>
-        ) : (
-          <CourseEnrollAction
-            courseId={course.id}
-            isInHouse={course.is_in_house}
-            isFree={isFreeCourse}
-            isTrial={course.is_in_house && (course.trial_enabled === true || existingAccessType === "trial")}
-            trialExpired={trialExpired}
-            affiliateLink={course.affiliate_link}
-            nurseId={nurseId}
-            completionStatus={completion?.status || null}
-            enrollmentStatus={enrollmentStatus}
-            pricing={{ courseOnly: courseOnlyPrice, coursePlusGuide: coursePlusGuidePrice }}
-          />
-        )}
+        <CourseEnrollAction
+          courseId={course.id}
+          isInHouse={course.is_in_house}
+          isFree={isFreeCourse}
+          isTrial={course.is_in_house && (course.trial_enabled === true || existingAccessType === "trial")}
+          trialExpired={trialExpired}
+          affiliateLink={course.affiliate_link}
+          nurseId={nurseId}
+          completionStatus={completion?.status || null}
+          enrollmentStatus={enrollmentStatus}
+          pricing={{ courseOnly: courseOnlyPrice, coursePlusGuide: coursePlusGuidePrice }}
+        />
       </div>
     </section>
     <Footer />
