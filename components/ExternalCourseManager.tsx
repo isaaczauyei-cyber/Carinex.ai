@@ -16,6 +16,7 @@ type Course = {
   description_long: string | null;
   duration_display: string | null;
   level: string | null;
+  skills_gained: string[] | null;
   image_url: string | null;
   is_in_house: boolean | null;
   is_published?: boolean | null;
@@ -24,7 +25,7 @@ type Specialization = { id: number; name: string; track_type: string | null };
 type SyllabusItem = { id?: number | string; course_id: number; order_index: number; title: string; description: string | null };
 type Draft = Omit<Course, "id" | "is_in_house" | "is_published">;
 
-const emptyDraft: Draft = { title: "", provider: "", specialization_id: null, track_type: "global", price_display: "", affiliate_link: "", summary: "", is_free: false, description_long: "", duration_display: "", level: "", image_url: "" };
+const emptyDraft: Draft = { title: "", provider: "", specialization_id: null, track_type: "global", price_display: "", affiliate_link: "", summary: "", is_free: false, description_long: "", duration_display: "", level: "", skills_gained: [], image_url: "" };
 const inputClass = "w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm text-carinex-navy focus:border-carinex-emerald focus:outline-none";
 
 function toDraft(course: Course): Draft {
@@ -111,6 +112,7 @@ export default function ExternalCourseManager({ courses, specializations, syllab
         <label className="flex flex-col gap-1 text-xs font-semibold text-carinex-navy/70">Specialization *<select className={inputClass} value={draft.specialization_id ?? ""} onChange={(e) => set("specialization_id", e.target.value ? Number(e.target.value) : null)}><option value="">Select specialization</option>{specializations.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
         <label className="flex flex-col gap-1 text-xs font-semibold text-carinex-navy/70">Track *<select className={inputClass} value={draft.track_type || "national"} onChange={(e) => set("track_type", e.target.value)}><option value="national">National</option><option value="global">Global</option></select></label>
         {field("Price display", "price_display", "text", "Free or $49")}{field("Duration", "duration_display", "text", "e.g. 6 weeks")}{field("Level", "level", "text", "Beginner / Intermediate")}
+        <label className="sm:col-span-2 flex flex-col gap-1 text-xs font-semibold text-carinex-navy/70">Skills you'll gain <span className="font-normal text-carinex-navy/50">Enter one skill per line; learners see each as a pill.</span><textarea className={inputClass} rows={4} value={(draft.skills_gained || []).join("\n")} onChange={(e) => set("skills_gained", e.target.value.split("\n").map((x) => x.trim()).filter(Boolean))} placeholder="Patient assessment\nClinical documentation\nTelehealth communication" /></label>
         <div className="flex flex-col gap-2"><span className="text-xs font-semibold text-carinex-navy/70">Course image</span><div className="flex flex-wrap items-center gap-3"><button type="button" disabled={uploadingImage} onClick={() => imageInputRef.current?.click()} className="rounded-full border border-carinex-navy/20 px-4 py-2 text-sm font-semibold text-carinex-navy disabled:opacity-50">{uploadingImage ? "Uploading…" : "Upload image"}</button><input ref={imageInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) void uploadCourseImage(file); e.currentTarget.value = ""; }} />{draft.image_url && <span className="text-xs text-carinex-navy/50">Image uploaded ✓</span>}</div>{draft.image_url && <img src={draft.image_url} alt="Course preview" className="h-24 w-full max-w-xs rounded-lg border border-carinex-navy/10 object-cover" />}</div>
         {!isInHouse && <div className="sm:col-span-2">{field("External course / affiliate URL *", "affiliate_link", "url", "https://...")}</div>}
         <label className="flex items-center gap-2 text-sm text-carinex-navy"><input type="checkbox" checked={!!draft.is_free} onChange={(e) => set("is_free", e.target.checked)} />This course is free</label>

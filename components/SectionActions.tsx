@@ -16,7 +16,7 @@ type Progress = {
   submission_file_url?: string | null;
 };
 
-const modes = ["table", "freeform", "checklist", "text", "file"];
+const modes = ["none", "table", "freeform", "checklist", "text", "file"];
 
 export default function SectionActions({
   nurseId,
@@ -198,9 +198,9 @@ export default function SectionActions({
   }
 
   async function submit() {
-    if (section.section_type === "course_material") {
-      const saved = await upsertProgress({});
-      if (saved) router.push(nextHref);
+    if (section.section_type === "course_material" || mode === "none") {
+      const saved = await upsertProgress({ submission_text: null, submission_file_url: null });
+      if (saved && section.section_type === "course_material") router.push(nextHref);
       return;
     }
 
@@ -468,12 +468,12 @@ export default function SectionActions({
       <div className="sticky bottom-0 flex items-center justify-between border-t border-carinex-navy/10 bg-white px-6 py-4">
         <button
           onClick={() => void submit()}
-          disabled={saving || (section.section_type === "course_material" && hasSaved)}
+          disabled={saving || ((section.section_type === "course_material" || mode === "none") && hasSaved)}
           className="rounded-full bg-carinex-navy px-6 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
         >
           {saving
             ? "Saving…"
-            : section.section_type === "course_material"
+            : (section.section_type === "course_material" || mode === "none")
             ? hasSaved ? "Completed" : "Mark as complete"
             : hasSaved
             ? "Save changes"
@@ -501,31 +501,25 @@ function getMode(section: Section): string {
   }
 
   if (section.section_type === "exercise") {
-    return c.mode === "checklist"
-      ? "checklist"
-      : "text";
+    if (c.mode === "checklist") return "checklist";
+    if (c.mode === "text") return "text";
+    return "none";
   }
 
-  if (
-    section.section_type === "practical_assignment"
-  ) {
-    return c.submission_type === "file"
-      ? "file"
-      : "text";
+  if (section.section_type === "practical_assignment") {
+    if (c.submission_type === "file") return "file";
+    if (c.submission_type === "text") return "text";
+    return "none";
   }
 
-  if (
-    section.section_type === "career_application"
-  ) {
-    return String(c.input_mode || "file");
+  if (section.section_type === "career_application") {
+    return String(c.input_mode || "none");
   }
 
-  if (
-    section.section_type === "training_activity"
-  ) {
-    return c.activity_format === "table"
-      ? "table"
-      : "freeform";
+  if (section.section_type === "training_activity") {
+    if (c.activity_format === "table") return "table";
+    if (c.activity_format === "freeform") return "freeform";
+    return "none";
   }
 
   return "none";

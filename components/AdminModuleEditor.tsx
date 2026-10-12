@@ -468,7 +468,7 @@ function SectionEditor({
             ? config.activity_format === "table" ? "table" : config.activity_format === "freeform" ? "freeform" : null
             : null;
 
-  const selectedMode = (config.input_mode as string) || legacyMode || "freeform";
+  const selectedMode = (config.input_mode as string) || legacyMode || "none";
   const interactiveSection = ["exercise", "practical_assignment", "career_application"].includes(section.section_type);
 
   function setInputMode(mode: string) {
@@ -548,6 +548,7 @@ function SectionEditor({
               <p className="text-sm font-semibold text-carinex-navy">Learner response format</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {[
+                  ["none", "No response — mark complete"],
                   ["table", "Tabular"],
                   ["freeform", "Freeform"],
                   ["checklist", "Checklist"],

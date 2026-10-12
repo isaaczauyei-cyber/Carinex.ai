@@ -24,15 +24,18 @@ export default function CertificationEditor({ nurseId }: { nurseId: string }) {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase
-      .from("nurse_certifications")
-      .select("*")
-      .eq("nurse_id", nurseId)
-      .order("issue_date", { ascending: false })
-      .then(({ data }) => {
-        setItems(data || []);
-        setLoading(false);
-      });
+    async function loadItems() {
+      const { data } = await supabase.from("nurse_certifications").select("*").eq("nurse_id", nurseId).order("issue_date", { ascending: false });
+      const resolved = await Promise.all((data || []).map(async (item) => {
+        const marker = typeof item.credential_url === "string" ? item.credential_url : "";
+        if (!marker.startsWith("storage:course-certificates/")) return item;
+        const path = marker.slice("storage:course-certificates/".length);
+        const { data: signed } = await supabase.storage.from("course-certificates").createSignedUrl(path, 3600);
+        return { ...item, credential_url: signed?.signedUrl || null };
+      }));
+      setItems(resolved as Certification[]); setLoading(false);
+    }
+    void loadItems();
   }, [nurseId]);
 
   async function handleAdd(e: React.FormEvent) {
