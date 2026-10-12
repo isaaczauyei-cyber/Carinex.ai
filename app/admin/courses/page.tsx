@@ -1,4 +1,5 @@
 import { requireAdmin } from "@/lib/admin";
+import { createAdminClient } from "@/lib/supabase/admin";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import AdminTabs from "@/components/AdminTabs";
@@ -7,11 +8,12 @@ import AdminCourseReviewRow from "@/components/AdminCourseReviewRow";
 export const dynamic = "force-dynamic";
 
 export default async function AdminCourseReviewsPage() {
-  const supabase = await requireAdmin(["general_admin"]);
+  await requireAdmin(["general_admin", "course_content"]);
+  const admin = createAdminClient();
 
-  const { data: pending } = await supabase
+  const { data: pending, error: pendingError } = await admin
     .from("nurse_course_completions")
-    .select("id, proof_doc_url, courses(title), nurse_profiles(nurse_code, users(full_name))")
+    .select("id, proof_doc_url, status, nurse_id, course_id, courses(title), nurse_profiles(nurse_code, users(full_name))")
     .eq("status", "verification_pending")
     .order("id");
 
@@ -26,6 +28,8 @@ export default async function AdminCourseReviewsPage() {
         </p>
 
         <AdminTabs />
+
+        {pendingError && <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">Could not load pending certificates: {pendingError.message}</p>}
 
         <div className="mt-8 flex flex-col gap-4">
           {(pending || []).map((c) => {
