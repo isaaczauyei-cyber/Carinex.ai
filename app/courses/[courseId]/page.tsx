@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import CourseEnrollAction from "@/components/CourseEnrollAction";
 import RichText from "@/components/RichText";
 import { formatNaira } from "@/lib/course-pricing";
+import ExternalCertificateSubmission from "@/components/ExternalCertificateSubmission";
 
 export default async function CourseDetailPage({ params }: { params: { courseId: string } }) {
   const supabase = await createClient();
@@ -18,7 +19,7 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
   const { data: { user } } = await supabase.auth.getUser();
 
   let nurseId: string | null = null;
-  let completion: { id: string; status: string } | null = null;
+  let completion: { id: string; status: string; proof_doc_url?: string | null } | null = null;
   let enrollmentStatus: string | null = null;
   let trialExpired = false;
   let existingAccessType: string | null = null;
@@ -27,7 +28,7 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
     const { data: profile } = await supabase.from("nurse_profiles").select("id").eq("user_id", user.id).maybeSingle();
     if (profile) {
       nurseId = profile.id;
-      const { data: existing } = await supabase.from("nurse_course_completions").select("id, status").eq("nurse_id", profile.id).eq("course_id", courseId).maybeSingle();
+      const { data: existing } = await supabase.from("nurse_course_completions").select("id, status, proof_doc_url").eq("nurse_id", profile.id).eq("course_id", courseId).maybeSingle();
       completion = existing;
       if (course.is_in_house) {
         const { data: enrollment } = await supabase.from("course_enrollments").select("status, access_type, trial_expires_at").eq("user_id", user.id).eq("course_id", courseId).order("created_at", { ascending: false }).limit(1).maybeSingle();
@@ -72,17 +73,6 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
         {descriptionText ? <RichText text={descriptionText} /> : <p className="text-carinex-navy/50">No description available yet.</p>}
       </div>
 
-      {Array.isArray((course as any).skills_gained) && (course as any).skills_gained.length > 0 && (
-        <section className="mt-8" aria-labelledby="skills-gained-heading">
-          <h2 id="skills-gained-heading" className="text-lg font-bold text-carinex-navy">Skills you’ll gain</h2>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {((course as any).skills_gained as string[]).map((skill, index) => (
-              <span key={`${skill}-${index}`} className="rounded-full border border-carinex-emerald/20 bg-carinex-emerald/10 px-3 py-1.5 text-sm font-medium text-carinex-emerald">{skill}</span>
-            ))}
-          </div>
-        </section>
-      )}
-
       {syllabus && syllabus.length > 0 && <div className="mt-10">
         <h2 className="text-lg font-bold text-carinex-navy">Syllabus</h2>
         <div className="mt-4 flex flex-col gap-3">
@@ -92,6 +82,17 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
           </div>)}
         </div>
       </div>}
+
+      {!course.is_in_house && user && nurseId && completion && completion.status !== "completed" && (
+        <div className="mt-8">
+          <ExternalCertificateSubmission
+            courseId={courseId}
+            courseTitle={course.title}
+            initialStatus={completion.status}
+            existingProofPath={completion.proof_doc_url || null}
+          />
+        </div>
+      )}
 
       <div className="mt-10">
         <CourseEnrollAction
