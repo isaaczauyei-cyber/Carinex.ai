@@ -8,16 +8,6 @@ export async function GET(req: NextRequest) {
   const expected = process.env.CRON_SECRET;
   const received = req.headers.get("authorization");
 
-  console.info("Cron authentication diagnostic", {
-    secretConfigured: Boolean(expected),
-    authorizationHeaderPresent: Boolean(received),
-    bearerPrefixPresent: received?.startsWith("Bearer ") ?? false,
-    secretLength: expected?.length ?? 0,
-    receivedLength: received?.startsWith("Bearer ")
-      ? received.length - 7
-      : null,
-  });
-
   if (!expected || received !== `Bearer ${expected}`) {
     console.error("Course trial cron authentication failed");
 
@@ -61,6 +51,12 @@ export async function GET(req: NextRequest) {
       continue;
     }
 
+    // Derive reminders from each enrollment's actual expiry timestamp rather
+    // than a hard-coded 3-day start date. This keeps existing trials correct
+    // and makes new 3-day trials receive reminders at 2 days left, 1 day left,
+    // and expiry. If the hourly cron misses a window, send only the most
+    // relevant currently-due event (expiry takes priority).
+    const DAY_MS = 24 * 60 * 60 * 1000;
     const due:
       | "trial_2_days_left"
       | "trial_1_day_left"
@@ -68,9 +64,9 @@ export async function GET(req: NextRequest) {
       | null =
       now >= expires
         ? "trial_expired"
-        : now >= expires - 86400000
+        : now >= expires - DAY_MS
           ? "trial_1_day_left"
-          : now >= expires - 2 * 86400000
+          : now >= expires - 2 * DAY_MS
             ? "trial_2_days_left"
             : null;
 
