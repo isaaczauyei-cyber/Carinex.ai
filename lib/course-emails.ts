@@ -107,26 +107,59 @@ export async function sendCourseEmail(enrollmentId: string, eventType: EventType
     throw new Error(`Could not reserve course email event: ${reserveError.message}`);
   }
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-      "Idempotency-Key": `course-${enrollmentId}-${eventType}`,
-    },
-    body: JSON.stringify({
-      from: process.env.EMAIL_FROM,
-      to,
-      subject: messages[eventType].subject,
-      text: messages[eventType].text,
-      reply_to: process.env.SUPPORT_EMAIL || "support@carinex.info",
-    }),
-  });
+  const eventReservation = admin
+    .from("course_email_events")
+    .delete()
+    .eq("enrollment_id", enrollmentId)
+    .eq("event_type", eventType);
 
-  if (!response.ok) {
-    const detail = await response.text();
-    await admin.from("course_email_events").delete().eq("enrollment_id", enrollmentId).eq("event_type", eventType);
-    throw new Error(`Resend rejected course email: ${detail}`);
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+        // Resend deduplicates retries if a network timeout happens after it
+        // has accepted the email but before this app receives the response.
+        "Idempotency-Key": `course-${enrollmentId}-${eventType}`,
+      },
+      body: JSON.stringify({
+        from: process.env.EMAIL_FROM,
+        to,
+        subject: messages[eventType].subject,
+        text: messages[eventType].text,
+        reply_to: process.env.SUPPORT_EMAIL || "support@carinex.info",
+      }),
+    });
+
+    if (!response.ok) {
+      const detail = await response.text();
+      const { error: cleanupError } = await eventReservation;
+      if (cleanupError) {
+        console.error("Could not release failed course email reservation", {
+          enrollmentId,
+          eventType,
+          cleanupError,
+        });
+      }
+      throw new Error(`Resend rejected course email: ${detail}`);
+    }
+
+    return { sent: true };
+  } catch (error) {
+    // Release the reservation on transport errors too, so the next hourly
+    // cron run can retry. Resend's idempotency key prevents duplicate delivery
+    // if the provider accepted a request before the connection failed.
+    if (!(error instanceof Error) || !error.message.startsWith("Resend rejected course email:")) {
+      const { error: cleanupError } = await eventReservation;
+      if (cleanupError) {
+        console.error("Could not release course email reservation after send error", {
+          enrollmentId,
+          eventType,
+          cleanupError,
+        });
+      }
+    }
+    throw error;
   }
-  return { sent: true };
 }
