@@ -4,7 +4,7 @@ import { requireAdminWithService } from "@/lib/admin";
 const fields = [
   "title", "provider", "specialization_id", "track_type", "price_display",
   "affiliate_link", "summary", "is_free", "description_long", "duration_display",
-  "level", "image_url",
+  "level", "image_url", "skills_gained",
 ] as const;
 
 function pickFields(input: Record<string, unknown>) {
