@@ -5,30 +5,25 @@ import { createClient } from "@/lib/supabase/server";
 import CourseEnrollAction from "@/components/CourseEnrollAction";
 import RichText from "@/components/RichText";
 import { formatNaira } from "@/lib/course-pricing";
-import ExternalCertificateSubmission from "@/components/ExternalCertificateSubmission";
 
 export default async function CourseDetailPage({ params }: { params: { courseId: string } }) {
   const supabase = await createClient();
   const courseId = Number(params.courseId);
-
   const { data: course } = await supabase.from("courses").select("*").eq("id", courseId).maybeSingle();
   if (!course) notFound();
   if (course.is_in_house && course.is_published !== true) notFound();
-
   const { data: syllabus } = await supabase.from("course_syllabus_items").select("*").eq("course_id", courseId).order("order_index");
   const { data: { user } } = await supabase.auth.getUser();
-
   let nurseId: string | null = null;
-  let completion: { id: string; status: string; proof_doc_url?: string | null } | null = null;
+  let completion: { id: string; status: string } | null = null;
   let enrollmentStatus: string | null = null;
   let trialExpired = false;
   let existingAccessType: string | null = null;
-
   if (user) {
     const { data: profile } = await supabase.from("nurse_profiles").select("id").eq("user_id", user.id).maybeSingle();
     if (profile) {
       nurseId = profile.id;
-      const { data: existing } = await supabase.from("nurse_course_completions").select("id, status, proof_doc_url").eq("nurse_id", profile.id).eq("course_id", courseId).maybeSingle();
+      const { data: existing } = await supabase.from("nurse_course_completions").select("id, status").eq("nurse_id", profile.id).eq("course_id", courseId).maybeSingle();
       completion = existing;
       if (course.is_in_house) {
         const { data: enrollment } = await supabase.from("course_enrollments").select("status, access_type, trial_expires_at").eq("user_id", user.id).eq("course_id", courseId).order("created_at", { ascending: false }).limit(1).maybeSingle();
@@ -38,7 +33,6 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
       }
     }
   }
-
   const courseOnlyPrice = Number(course.price_course_only || 0);
   const coursePlusGuidePrice = course.price_course_plus_guide == null ? null : Number(course.price_course_plus_guide);
   const isFreeCourse = course.is_free === true || (!course.is_in_house && String(course.price_display || "").trim().toLowerCase() === "free");
@@ -46,69 +40,58 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
   const priceLine = isFreeCourse
     ? (course.is_in_house && course.trial_enabled === true ? "3-day free trial" : "Free")
     : hasPaidPricing
-    ? coursePlusGuidePrice && coursePlusGuidePrice > 0
-      ? `${formatNaira(courseOnlyPrice)} course / ${formatNaira(coursePlusGuidePrice)} with interview guide`
-      : formatNaira(courseOnlyPrice)
-    : course.price_display || "";
-
+      ? coursePlusGuidePrice && coursePlusGuidePrice > 0
+        ? `${formatNaira(courseOnlyPrice)} course / ${formatNaira(coursePlusGuidePrice)} with interview guide`
+        : formatNaira(courseOnlyPrice)
+      : course.price_display || "";
   const descriptionText = course.description_long || course.summary || "";
 
-  return <main>
+  return <main className="min-h-screen bg-[#F4F7F8] text-carinex-navy">
     <Navbar />
-    <div className="relative h-56 w-full overflow-hidden bg-gradient-to-br from-carinex-navy to-carinex-emerald">
-      {course.image_url && <img src={course.image_url} alt={course.title} className="absolute inset-0 h-full w-full object-cover opacity-35" />}
-    </div>
-
-    <section className="mx-auto max-w-2xl px-6 py-12">
-      <div className="flex flex-wrap items-center gap-2">
-        {course.is_in_house && <span className="rounded-full bg-carinex-navy/5 px-3 py-1 text-xs font-semibold text-carinex-navy/60">Carinex Original</span>}
-        {course.duration_display && <span className="rounded-full bg-carinex-navy/5 px-3 py-1 text-xs text-carinex-navy/70">⏱ {course.duration_display}</span>}
-        {course.level && <span className="rounded-full bg-carinex-navy/5 px-3 py-1 text-xs text-carinex-navy/70">🎯 {course.level}</span>}
-      </div>
-
-      <h1 className="mt-4 text-3xl font-bold tracking-tight text-carinex-navy">{course.title}</h1>
-      <p className="mt-1 text-carinex-navy/60">{course.provider}{priceLine ? ` · ${priceLine}` : ""}</p>
-
-      <div className="mt-8">
-        {descriptionText ? <RichText text={descriptionText} /> : <p className="text-carinex-navy/50">No description available yet.</p>}
-      </div>
-
-      {syllabus && syllabus.length > 0 && <div className="mt-10">
-        <h2 className="text-lg font-bold text-carinex-navy">Syllabus</h2>
-        <div className="mt-4 flex flex-col gap-3">
-          {syllabus.map((item, i) => <div key={item.id} className="rounded-lg border border-carinex-navy/10 p-4">
-            <p className="font-semibold text-carinex-navy">{i + 1}. {item.title}</p>
-            {item.description && <div className="mt-1"><RichText text={item.description} /></div>}
-          </div>)}
+    <section className="relative overflow-hidden bg-gradient-to-br from-carinex-navy via-[#123B46] to-carinex-emerald text-white">
+      {course.image_url && <img src={course.image_url} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover opacity-20" />}
+      <div className="absolute inset-0 bg-gradient-to-r from-carinex-navy/70 via-carinex-navy/35 to-transparent" />
+      <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-8 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[minmax(0,1fr)_280px] lg:px-8 lg:py-16">
+        <div className="max-w-3xl">
+          <a href="/dashboard/learning" className="inline-flex items-center gap-2 text-sm font-medium text-white/75 transition hover:text-white">← Back to Learning Hub</a>
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            {course.is_in_house && <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold">Carinex Original</span>}
+            {course.duration_display && <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs">◷ {course.duration_display}</span>}
+            {course.level && <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs">◎ {course.level}</span>}
+          </div>
+          <h1 className="mt-5 max-w-3xl text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl lg:text-5xl">{course.title}</h1>
+          <p className="mt-4 text-base font-medium text-white/80 sm:text-lg">{course.provider}</p>
+          {course.summary && descriptionText !== course.summary && <p className="mt-4 max-w-2xl text-sm leading-7 text-white/80 sm:text-base">{course.summary}</p>}
         </div>
-      </div>}
-
-      {!course.is_in_house && user && nurseId && completion && completion.status !== "completed" && (
-        <div className="mt-8">
-          <ExternalCertificateSubmission
-            courseId={courseId}
-            courseTitle={course.title}
-            initialStatus={completion.status}
-            existingProofPath={completion.proof_doc_url || null}
-          />
-        </div>
-      )}
-
-      <div className="mt-10">
-        <CourseEnrollAction
-          courseId={course.id}
-          isInHouse={course.is_in_house}
-          isFree={isFreeCourse}
-          isTrial={course.is_in_house && (course.trial_enabled === true || existingAccessType === "trial")}
-          trialExpired={trialExpired}
-          affiliateLink={course.affiliate_link}
-          nurseId={nurseId}
-          completionStatus={completion?.status || null}
-          enrollmentStatus={enrollmentStatus}
-          pricing={{ courseOnly: courseOnlyPrice, coursePlusGuide: coursePlusGuidePrice }}
-        />
+        <div className="hidden lg:block"><div className="overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-3 shadow-xl backdrop-blur-sm">
+          {course.image_url ? <img src={course.image_url} alt={course.title} className="h-40 w-full rounded-xl object-cover" /> : <div className="flex h-40 items-center justify-center rounded-xl bg-white/10 text-5xl" aria-hidden="true">✦</div>}
+          <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-white/65">Course overview</p><p className="mt-1 line-clamp-2 text-sm font-semibold">{course.title}</p>
+        </div></div>
       </div>
     </section>
+    <div className="mx-auto grid max-w-7xl grid-cols-1 items-start gap-8 px-4 py-8 sm:px-6 sm:py-10 lg:grid-cols-[minmax(0,1fr)_340px] lg:px-8">
+      <div className="min-w-0 space-y-8">
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+          <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-lg text-carinex-emerald" aria-hidden="true">▤</span><div><p className="text-xs font-bold uppercase tracking-[0.14em] text-carinex-emerald">ABOUT THIS COURSE</p><h2 className="mt-1 text-xl font-bold sm:text-2xl">Course overview</h2></div></div>
+          <div className="mt-5">{descriptionText ? <RichText text={descriptionText} /> : <p className="text-sm leading-6 text-slate-500">Course description will be available soon.</p>}</div>
+        </section>
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+          <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-lg text-carinex-emerald" aria-hidden="true">☷</span><div><p className="text-xs font-bold uppercase tracking-[0.14em] text-carinex-emerald">COURSE CONTENT</p><h2 className="mt-1 text-xl font-bold sm:text-2xl">Syllabus</h2></div></div>
+          {syllabus && syllabus.length > 0 ? <div className="mt-5 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">{syllabus.map((item, i) => <div key={item.id} className="flex gap-4 p-4 sm:p-5"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm font-bold text-slate-600">{String(i + 1).padStart(2, "0")}</div><div className="min-w-0 flex-1"><h3 className="font-semibold">{item.title}</h3>{item.description && <div className="mt-2"><RichText text={item.description} /></div>}</div></div>)}</div> : <p className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-500">The course outline has not been added yet.</p>}
+        </section>
+      </div>
+      <aside className="min-w-0 lg:sticky lg:top-6"><div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="bg-gradient-to-br from-carinex-navy to-carinex-emerald px-5 py-4 text-white"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/75">ENROLMENT</p><p className="mt-1 text-2xl font-extrabold">{priceLine || "Course access"}</p><p className="mt-1 text-xs text-white/75">{isFreeCourse ? "Start learning at no course cost" : "Review the available access options below"}</p></div>
+        <div className="p-5"><div className="mb-5 space-y-3 text-sm text-slate-600">
+          {course.provider && <div className="flex items-start gap-3"><span className="text-carinex-emerald" aria-hidden="true">✓</span><span>Provided by <strong className="font-semibold text-carinex-navy">{course.provider}</strong></span></div>}
+          {course.duration_display && <div className="flex items-start gap-3"><span className="text-carinex-emerald" aria-hidden="true">✓</span><span>{course.duration_display} estimated duration</span></div>}
+          {course.level && <div className="flex items-start gap-3"><span className="text-carinex-emerald" aria-hidden="true">✓</span><span>{course.level} level</span></div>}
+          {course.is_in_house && <div className="flex items-start gap-3"><span className="text-carinex-emerald" aria-hidden="true">✓</span><span>Learn directly on Carinex</span></div>}
+        </div>
+        <CourseEnrollAction courseId={course.id} isInHouse={course.is_in_house} isFree={isFreeCourse} isTrial={course.is_in_house && (course.trial_enabled === true || existingAccessType === "trial")} trialExpired={trialExpired} affiliateLink={course.affiliate_link} nurseId={nurseId} completionStatus={completion?.status || null} enrollmentStatus={enrollmentStatus} pricing={{ courseOnly: courseOnlyPrice, coursePlusGuide: coursePlusGuidePrice }} />
+        <p className="mt-4 text-center text-xs leading-5 text-slate-500">Your course progress is connected to your Carinex account.</p></div>
+      </div></aside>
+    </div>
     <Footer />
   </main>;
 }
