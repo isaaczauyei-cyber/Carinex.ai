@@ -94,6 +94,9 @@ export default async function LearningHubPage() {
     (completions || []).map((completion) => [completion.course_id, completion as Completion])
   );
 
+  const trackNational = profile.track_national ?? false;
+  const trackGlobal = profile.track_global ?? false;
+
   function dedupeCourses(courses: CourseRow[]): CourseRow[] {
     const byTitle = new Map<string, CourseRow>();
     for (const course of courses) {
@@ -103,8 +106,8 @@ export default async function LearningHubPage() {
         continue;
       }
       const prefersThis =
-        (course.track_type === "national" && (profile.track_national ?? false)) ||
-        (course.track_type === "global" && (profile.track_global ?? false));
+        (course.track_type === "national" && trackNational) ||
+        (course.track_type === "global" && trackGlobal);
       if (prefersThis) byTitle.set(course.title, course);
     }
     return Array.from(byTitle.values());
@@ -127,30 +130,29 @@ export default async function LearningHubPage() {
   ]).size;
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#F2F7F5] via-[#F7F9FC] to-[#EAF3F0] text-carinex-navy">
+    <main className="min-h-screen bg-[#F6F8FB] text-carinex-navy">
       <Navbar />
-      <section className="relative overflow-hidden border-b border-white/10 bg-gradient-to-br from-carinex-navy via-[#123B46] to-carinex-emerald text-white">
-        <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-white/10 blur-3xl" />
-        <div className="relative mx-auto max-w-7xl px-4 py-9 sm:px-6 lg:px-8 lg:py-12">
+      <section className="border-b border-slate-200 bg-white">
+        <div className="mx-auto max-w-7xl px-4 py-9 sm:px-6 lg:px-8 lg:py-12">
           <div className="max-w-3xl">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-200">CARINEX LEARNING</p>
-            <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">Your learning hub</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/80 sm:text-base">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-carinex-emerald">CARINEX LEARNING</p>
+            <h1 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">Your learning hub</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
               Pick up where you left off, keep track of your progress, and build the skills that move your nursing career forward.
             </p>
           </div>
           <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="flex items-center gap-4 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm sm:p-5">
+            <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-xl text-carinex-emerald" aria-hidden="true">▤</div>
-              <div><p className="text-2xl font-bold text-white">{uniqueCourseCount}</p><p className="mt-0.5 text-xs font-medium text-white/75">Courses in your hub</p></div>
+              <div><p className="text-2xl font-bold text-slate-900">{uniqueCourseCount}</p><p className="mt-0.5 text-xs font-medium text-slate-500">Courses in your hub</p></div>
             </div>
-            <div className="flex items-center gap-4 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm sm:p-5">
+            <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-xl text-blue-700" aria-hidden="true">◷</div>
-              <div><p className="text-2xl font-bold text-white">{inProgressTotal}</p><p className="mt-0.5 text-xs font-medium text-white/75">In progress / under review</p></div>
+              <div><p className="text-2xl font-bold text-slate-900">{inProgressTotal}</p><p className="mt-0.5 text-xs font-medium text-slate-500">In progress / under review</p></div>
             </div>
-            <div className="flex items-center gap-4 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm sm:p-5">
+            <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-xl text-carinex-emerald" aria-hidden="true">✓</div>
-              <div><p className="text-2xl font-bold text-white">{completedTotal}</p><p className="mt-0.5 text-xs font-medium text-white/75">Courses completed</p></div>
+              <div><p className="text-2xl font-bold text-slate-900">{completedTotal}</p><p className="mt-0.5 text-xs font-medium text-slate-500">Courses completed</p></div>
             </div>
           </div>
         </div>
