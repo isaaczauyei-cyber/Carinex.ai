@@ -162,134 +162,49 @@ export default async function PathwayDetailPage({ params }: { params: { slug: st
           ))}
         </div>
 
-        <div className="mt-10 flex flex-col gap-8">
-          <div>
-            <h2 className="text-lg font-bold text-carinex-navy">What it is</h2>
-            <p className="mt-2 text-carinex-navy/70">{spec.whatItIs}</p>
+        <div className="mt-10 rounded-3xl border border-carinex-navy/10 bg-gradient-to-br from-white via-white to-emerald-50/50 p-4 shadow-sm sm:p-6">
+          <div className="mb-5 rounded-2xl bg-gradient-to-r from-carinex-navy to-carinex-emerald p-5 text-white sm:p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">Specialization guide</p>
+            <h2 className="mt-2 text-xl font-bold sm:text-2xl">Explore this pathway at your own pace</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/80">Open any section to read more. The details are organized into short panels so you can focus on the information you need.</p>
           </div>
 
-          <div>
-            <h2 className="text-lg font-bold text-carinex-navy">Why it matters</h2>
-            <p className="mt-2 text-carinex-navy/70">{spec.whyItMatters}</p>
-          </div>
+          <div className="flex flex-col gap-3">
+            <details open className="group overflow-hidden rounded-2xl border border-carinex-emerald/20 bg-white shadow-sm">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 sm:p-5 [&::-webkit-details-marker]:hidden">
+                <span className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-lg text-carinex-emerald">01</span><span><span className="block font-bold text-carinex-navy">What it is</span><span className="mt-0.5 block text-xs text-carinex-navy/55">Understand the role and specialization</span></span></span>
+                <span className="text-xl text-carinex-emerald transition-transform group-open:rotate-180" aria-hidden="true">⌄</span>
+              </summary>
+              <div className="border-t border-carinex-navy/5 px-4 pb-5 pt-4 text-sm leading-7 text-carinex-navy/75 sm:px-5">{spec.whatItIs}</div>
+            </details>
 
-          <div>
-            <h2 className="text-lg font-bold text-carinex-navy">Day to day</h2>
-            <ul className="mt-2 flex flex-col gap-1.5">
-              {spec.dayToDay.map((item, i) => (
-                <li key={i} className="text-carinex-navy/70">· {item}</li>
-              ))}
-            </ul>
-          </div>
+            <details className="group overflow-hidden rounded-2xl border border-carinex-navy/10 bg-white shadow-sm">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 sm:p-5 [&::-webkit-details-marker]:hidden"><span className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-lg text-carinex-emerald">02</span><span><span className="block font-bold text-carinex-navy">Why it matters</span><span className="mt-0.5 block text-xs text-carinex-navy/55">The value and impact of this work</span></span></span><span className="text-xl text-carinex-emerald transition-transform group-open:rotate-180" aria-hidden="true">⌄</span></summary>
+              <div className="border-t border-carinex-navy/5 px-4 pb-5 pt-4 text-sm leading-7 text-carinex-navy/75 sm:px-5">{spec.whyItMatters}</div>
+            </details>
 
-          <div className="rounded-2xl border border-carinex-navy/10 bg-carinex-navy/5 p-6">
-            <h2 className="text-lg font-bold text-carinex-navy">Eligibility</h2>
-            <div className="mt-3 flex flex-col gap-4">
-              <div>
-                <p className="text-sm font-semibold text-carinex-navy">National track</p>
-                <ul className="mt-1 flex flex-col gap-1">
-                  {spec.eligibilityNational.map((item, i) => (
-                    <li key={i} className="text-sm text-carinex-navy/70">· {item}</li>
-                  ))}
-                </ul>
+            <details className="group overflow-hidden rounded-2xl border border-carinex-navy/10 bg-white shadow-sm">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 sm:p-5 [&::-webkit-details-marker]:hidden"><span className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-lg text-carinex-emerald">03</span><span><span className="block font-bold text-carinex-navy">Day to day</span><span className="mt-0.5 block text-xs text-carinex-navy/55">Typical responsibilities and tasks</span></span></span><span className="text-xl text-carinex-emerald transition-transform group-open:rotate-180" aria-hidden="true">⌄</span></summary>
+              <ul className="flex flex-col gap-2 border-t border-carinex-navy/5 px-4 pb-5 pt-4 sm:px-5">{spec.dayToDay.map((item, i) => <li key={i} className="flex gap-2 text-sm leading-6 text-carinex-navy/75"><span className="mt-0.5 text-carinex-emerald">✓</span><span>{item}</span></li>)}</ul>
+            </details>
+
+            <details className="group overflow-hidden rounded-2xl border border-carinex-navy/10 bg-white shadow-sm">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 sm:p-5 [&::-webkit-details-marker]:hidden"><span className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-lg text-carinex-emerald">04</span><span><span className="block font-bold text-carinex-navy">Eligibility requirements</span><span className="mt-0.5 block text-xs text-carinex-navy/55">Compare national and global tracks</span></span></span><span className="text-xl text-carinex-emerald transition-transform group-open:rotate-180" aria-hidden="true">⌄</span></summary>
+              <div className="grid gap-4 border-t border-carinex-navy/5 px-4 pb-5 pt-4 sm:grid-cols-2 sm:px-5">
+                <div className="rounded-xl bg-slate-50 p-4"><p className="font-semibold text-carinex-navy">National track</p><ul className="mt-2 flex flex-col gap-2">{spec.eligibilityNational.map((item, i) => <li key={i} className="text-sm leading-6 text-carinex-navy/70">• {item}</li>)}</ul></div>
+                <div className="rounded-xl bg-emerald-50/60 p-4"><p className="font-semibold text-carinex-navy">Global track</p><ul className="mt-2 flex flex-col gap-2">{spec.eligibilityGlobal.map((item, i) => <li key={i} className="text-sm leading-6 text-carinex-navy/70">• {item}</li>)}</ul></div>
               </div>
-              <div>
-                <p className="text-sm font-semibold text-carinex-navy">Global track</p>
-                <ul className="mt-1 flex flex-col gap-1">
-                  {spec.eligibilityGlobal.map((item, i) => (
-                    <li key={i} className="text-sm text-carinex-navy/70">· {item}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
+            </details>
 
-          {extras?.globalCaveat && (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
-              <h2 className="text-lg font-bold text-amber-900">Global track — read before applying abroad</h2>
-              <p className="mt-2 text-sm leading-relaxed text-amber-900/80">{extras.globalCaveat}</p>
-            </div>
-          )}
+            {extras?.globalCaveat && <details className="group overflow-hidden rounded-2xl border border-amber-200 bg-amber-50/70 shadow-sm"><summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 sm:p-5 [&::-webkit-details-marker]:hidden"><span><span className="block font-bold text-amber-950">Global track — read before applying abroad</span><span className="mt-0.5 block text-xs text-amber-900/70">Important international considerations</span></span><span className="text-xl text-amber-800 transition-transform group-open:rotate-180" aria-hidden="true">⌄</span></summary><p className="border-t border-amber-200 px-4 pb-5 pt-4 text-sm leading-7 text-amber-950/80 sm:px-5">{extras.globalCaveat}</p></details>}
 
-          {spec.certifications.length > 0 && (
-            <div>
-              <h2 className="text-lg font-bold text-carinex-navy">Certifications</h2>
-              <div className="mt-3 flex flex-col gap-3">
-                {spec.certifications.map((c) => (
-                  <div key={c.name} className="rounded-lg border border-carinex-navy/10 p-4">
-                    <p className="font-semibold text-carinex-navy">{c.name} · {c.body}</p>
-                    <p className="mt-1 text-sm text-carinex-navy/60">{c.note}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+            {spec.certifications.length > 0 && <details className="group overflow-hidden rounded-2xl border border-carinex-navy/10 bg-white shadow-sm"><summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 sm:p-5 [&::-webkit-details-marker]:hidden"><span className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-lg text-carinex-emerald">05</span><span><span className="block font-bold text-carinex-navy">Certifications</span><span className="mt-0.5 block text-xs text-carinex-navy/55">Credentials that may support your pathway</span></span></span><span className="text-xl text-carinex-emerald transition-transform group-open:rotate-180" aria-hidden="true">⌄</span></summary><div className="grid gap-3 border-t border-carinex-navy/5 px-4 pb-5 pt-4 sm:px-5">{spec.certifications.map((c) => <div key={c.name} className="rounded-xl border border-carinex-navy/10 p-4"><p className="font-semibold text-carinex-navy">{c.name} · {c.body}</p><p className="mt-1 text-sm leading-6 text-carinex-navy/60">{c.note}</p></div>)}</div></details>}
 
-          <div className="rounded-2xl border border-carinex-navy/10 p-6">
-            <h2 className="text-lg font-bold text-carinex-navy">Salary</h2>
-            <div className="mt-3 flex flex-col gap-3 text-sm text-carinex-navy/70">
-              <p><span className="font-semibold text-carinex-navy">Nigeria: </span>{spec.salaryNational}</p>
-              <p><span className="font-semibold text-carinex-navy">Global, realistic entry: </span>{spec.salaryGlobalRealistic}</p>
-              <p><span className="font-semibold text-carinex-navy">Global, experienced: </span>{spec.salaryGlobalAspirational}</p>
-            </div>
-          </div>
+            <details className="group overflow-hidden rounded-2xl border border-carinex-navy/10 bg-white shadow-sm"><summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 sm:p-5 [&::-webkit-details-marker]:hidden"><span className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-lg text-carinex-emerald">06</span><span><span className="block font-bold text-carinex-navy">Salary expectations</span><span className="mt-0.5 block text-xs text-carinex-navy/55">Compare national and global ranges</span></span></span><span className="text-xl text-carinex-emerald transition-transform group-open:rotate-180" aria-hidden="true">⌄</span></summary><div className="grid gap-3 border-t border-carinex-navy/5 px-4 pb-5 pt-4 sm:grid-cols-3 sm:px-5"><div className="rounded-xl bg-slate-50 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-carinex-navy/50">Nigeria</p><p className="mt-2 text-sm leading-6 text-carinex-navy/75">{spec.salaryNational}</p></div><div className="rounded-xl bg-slate-50 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-carinex-navy/50">Global · entry</p><p className="mt-2 text-sm leading-6 text-carinex-navy/75">{spec.salaryGlobalRealistic}</p></div><div className="rounded-xl bg-slate-50 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-carinex-navy/50">Global · experienced</p><p className="mt-2 text-sm leading-6 text-carinex-navy/75">{spec.salaryGlobalAspirational}</p></div></div></details>
 
-          {(spec.employersNational.length > 0 || spec.employersGlobal.length > 0) && (
-            <div>
-              <h2 className="text-lg font-bold text-carinex-navy">Where you can work</h2>
-              {spec.employersNational.length > 0 && (
-                <div className="mt-3">
-                  <p className="text-sm font-semibold text-carinex-navy">Nigeria</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {spec.employersNational.map((e) => (
-                      <span key={e} className="rounded-full bg-carinex-navy/5 px-3 py-1 text-xs text-carinex-navy/70">{e}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {spec.employersGlobal.length > 0 && (
-                <div className="mt-4">
-                  <p className="text-sm font-semibold text-carinex-navy">Global</p>
-                  <div className="mt-2 flex flex-col gap-2">
-                    {spec.employersGlobal.map((e) => (
-                      <div key={e.name} className="rounded-lg border border-carinex-navy/10 p-3">
-                        <p className="text-sm font-semibold text-carinex-navy">{e.name}</p>
-                        <p className="mt-0.5 text-sm text-carinex-navy/60">{e.note}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+            {(spec.employersNational.length > 0 || spec.employersGlobal.length > 0) && <details className="group overflow-hidden rounded-2xl border border-carinex-navy/10 bg-white shadow-sm"><summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 sm:p-5 [&::-webkit-details-marker]:hidden"><span className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-lg text-carinex-emerald">07</span><span><span className="block font-bold text-carinex-navy">Where you can work</span><span className="mt-0.5 block text-xs text-carinex-navy/55">Potential employers and work settings</span></span></span><span className="text-xl text-carinex-emerald transition-transform group-open:rotate-180" aria-hidden="true">⌄</span></summary><div className="border-t border-carinex-navy/5 px-4 pb-5 pt-4 sm:px-5">{spec.employersNational.length > 0 && <div><p className="text-sm font-semibold text-carinex-navy">Nigeria</p><div className="mt-2 flex flex-wrap gap-2">{spec.employersNational.map((e) => <span key={e} className="rounded-full bg-carinex-navy/5 px-3 py-1.5 text-xs text-carinex-navy/70">{e}</span>)}</div></div>}{spec.employersGlobal.length > 0 && <div className="mt-5"><p className="text-sm font-semibold text-carinex-navy">Global</p><div className="mt-2 grid gap-3 sm:grid-cols-2">{spec.employersGlobal.map((e) => <div key={e.name} className="rounded-xl border border-carinex-navy/10 p-3"><p className="text-sm font-semibold text-carinex-navy">{e.name}</p><p className="mt-1 text-sm leading-6 text-carinex-navy/60">{e.note}</p></div>)}</div></div>}</div></details>}
 
-          <div>
-            <h2 className="text-lg font-bold text-carinex-navy">Course pathway</h2>
-
-            {courses.length === 0 ? (
-              spec.coursePathway.length > 0 ? (
-                <div className="mt-4 flex flex-col gap-2">
-                  {spec.coursePathway.map((c, i) => (
-                    <div key={i} className="rounded-xl border border-carinex-navy/10 p-4 text-sm text-carinex-navy/70">
-                      {c}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="mt-3 text-sm text-carinex-navy/50">Courses for this specialization are coming soon.</p>
-              )
-            ) : nurseProfileId ? (
-              <div className="mt-4 flex flex-col gap-3">
-                {courses.map((course) => (
-                  <CourseTracker
-                    key={course.id}
-                    nurseId={nurseProfileId}
-                    course={course as never}
-                    completion={completionByCourseId.get(course.id) || null}
-                  />
-                ))}
-              </div>
-            ) : null}
+            <details className="group overflow-hidden rounded-2xl border border-carinex-emerald/20 bg-white shadow-sm"><summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-4 sm:p-5 [&::-webkit-details-marker]:hidden"><span className="flex min-w-0 items-center gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-lg text-carinex-emerald">08</span><span><span className="block font-bold text-carinex-navy">Course pathway</span><span className="mt-0.5 block text-xs text-carinex-navy/55">Explore the learning roadmap and courses</span></span></span><span className="text-xl text-carinex-emerald transition-transform group-open:rotate-180" aria-hidden="true">⌄</span></summary><div className="border-t border-carinex-navy/5 px-4 pb-5 pt-4 sm:px-5">{courses.length === 0 ? (spec.coursePathway.length > 0 ? <div className="flex flex-col gap-2">{spec.coursePathway.map((c, i) => <div key={i} className="rounded-xl border border-carinex-navy/10 bg-slate-50 p-4 text-sm leading-6 text-carinex-navy/70">{c}</div>)}</div> : <p className="text-sm text-carinex-navy/50">Courses for this specialization are coming soon.</p>) : nurseProfileId ? <div className="flex flex-col gap-3">{courses.map((course) => <CourseTracker key={course.id} nurseId={nurseProfileId} course={course as never} completion={completionByCourseId.get(course.id) || null} />)}</div> : null}</div></details>
           </div>
         </div>
 
