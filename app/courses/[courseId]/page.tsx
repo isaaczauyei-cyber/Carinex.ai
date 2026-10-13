@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import CourseEnrollAction from "@/components/CourseEnrollAction";
 import RichText from "@/components/RichText";
 import { formatNaira } from "@/lib/course-pricing";
+import ExternalCertificateSubmission from "@/components/ExternalCertificateSubmission";
 
 export default async function CourseDetailPage({ params }: { params: { courseId: string } }) {
   const supabase = await createClient();
@@ -15,7 +16,7 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
   const { data: syllabus } = await supabase.from("course_syllabus_items").select("*").eq("course_id", courseId).order("order_index");
   const { data: { user } } = await supabase.auth.getUser();
   let nurseId: string | null = null;
-  let completion: { id: string; status: string } | null = null;
+  let completion: { id: string; status: string; proof_doc_url?: string | null } | null = null;
   let enrollmentStatus: string | null = null;
   let trialExpired = false;
   let existingAccessType: string | null = null;
@@ -23,7 +24,7 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
     const { data: profile } = await supabase.from("nurse_profiles").select("id").eq("user_id", user.id).maybeSingle();
     if (profile) {
       nurseId = profile.id;
-      const { data: existing } = await supabase.from("nurse_course_completions").select("id, status").eq("nurse_id", profile.id).eq("course_id", courseId).maybeSingle();
+      const { data: existing } = await supabase.from("nurse_course_completions").select("id, status, proof_doc_url").eq("nurse_id", profile.id).eq("course_id", courseId).maybeSingle();
       completion = existing;
       if (course.is_in_house) {
         const { data: enrollment } = await supabase.from("course_enrollments").select("status, access_type, trial_expires_at").eq("user_id", user.id).eq("course_id", courseId).order("created_at", { ascending: false }).limit(1).maybeSingle();
@@ -48,10 +49,8 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
 
   return <main className="min-h-screen bg-[#F4F7F8] text-carinex-navy">
     <Navbar />
-    <section className="relative overflow-hidden bg-gradient-to-br from-carinex-navy via-[#123B46] to-carinex-emerald text-white">
-      {course.image_url && <img src={course.image_url} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover opacity-20" />}
-      <div className="absolute inset-0 bg-gradient-to-r from-carinex-navy/70 via-carinex-navy/35 to-transparent" />
-      <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-8 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[minmax(0,1fr)_280px] lg:px-8 lg:py-16">
+    <section className="bg-gradient-to-br from-carinex-navy via-[#123B46] to-carinex-emerald text-white">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-8 px-4 py-8 sm:px-6 sm:py-12 md:grid-cols-[minmax(0,1fr)_minmax(220px,320px)] lg:gap-12 lg:px-8 lg:py-16">
         <div className="max-w-3xl">
           <a href="/dashboard/learning" className="inline-flex items-center gap-2 text-sm font-medium text-white/75 transition hover:text-white">← Back to Learning Hub</a>
           <div className="mt-6 flex flex-wrap items-center gap-2">
@@ -63,9 +62,9 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
           <p className="mt-4 text-base font-medium text-white/80 sm:text-lg">{course.provider}</p>
           {course.summary && descriptionText !== course.summary && <p className="mt-4 max-w-2xl text-sm leading-7 text-white/80 sm:text-base">{course.summary}</p>}
         </div>
-        <div className="hidden lg:block"><div className="overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-3 shadow-xl backdrop-blur-sm">
-          {course.image_url ? <img src={course.image_url} alt={course.title} className="h-40 w-full rounded-xl object-cover" /> : <div className="flex h-40 items-center justify-center rounded-xl bg-white/10 text-5xl" aria-hidden="true">✦</div>}
-          <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-white/65">Course overview</p><p className="mt-1 line-clamp-2 text-sm font-semibold">{course.title}</p>
+        <div className="w-full max-w-md md:justify-self-end"><div className="overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-3 shadow-xl backdrop-blur-sm">
+          {course.image_url ? <img src={course.image_url} alt={course.title} className="h-44 w-full rounded-xl object-cover sm:h-52 md:h-44" /> : <div className="flex h-44 items-center justify-center rounded-xl bg-white/10 text-5xl" aria-hidden="true">✦</div>}
+          <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-white/65">Course overview</p><p className="mt-1 text-sm font-semibold">{course.title}</p>
         </div></div>
       </div>
     </section>
@@ -89,7 +88,9 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
           {course.is_in_house && <div className="flex items-start gap-3"><span className="text-carinex-emerald" aria-hidden="true">✓</span><span>Learn directly on Carinex</span></div>}
         </div>
         <CourseEnrollAction courseId={course.id} isInHouse={course.is_in_house} isFree={isFreeCourse} isTrial={course.is_in_house && (course.trial_enabled === true || existingAccessType === "trial")} trialExpired={trialExpired} affiliateLink={course.affiliate_link} nurseId={nurseId} completionStatus={completion?.status || null} enrollmentStatus={enrollmentStatus} pricing={{ courseOnly: courseOnlyPrice, coursePlusGuide: coursePlusGuidePrice }} />
-        <p className="mt-4 text-center text-xs leading-5 text-slate-500">Your course progress is connected to your Carinex account.</p></div>
+        {!course.is_in_house && user && nurseId && completion && completion.status !== "completed" && <div className="mt-6 border-t border-slate-200 pt-6"><ExternalCertificateSubmission courseId={courseId} courseTitle={course.title} initialStatus={completion.status} existingProofPath={completion.proof_doc_url || null} /></div>}
+        {!course.is_in_house && <p className="mt-4 text-center text-xs leading-5 text-slate-500">Carinex does not automatically receive progress from external providers. After completing the course, return here and submit your certificate for review.</p>}
+        {course.is_in_house && <p className="mt-4 text-center text-xs leading-5 text-slate-500">Your in-house course access and progress are managed through your Carinex account.</p>}</div>
       </div></aside>
     </div>
     <Footer />
