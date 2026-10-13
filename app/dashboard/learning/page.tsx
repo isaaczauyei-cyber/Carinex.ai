@@ -94,6 +94,10 @@ export default async function LearningHubPage() {
     (completions || []).map((completion) => [completion.course_id, completion as Completion])
   );
 
+  // Keep track preferences safe when a profile row is unavailable.
+  const trackNational = profile?.track_national ?? false;
+  const trackGlobal = profile?.track_global ?? false;
+
   function dedupeCourses(courses: CourseRow[]): CourseRow[] {
     const byTitle = new Map<string, CourseRow>();
     for (const course of courses) {
@@ -103,8 +107,8 @@ export default async function LearningHubPage() {
         continue;
       }
       const prefersThis =
-        (course.track_type === "national" && (profile.track_national ?? false)) ||
-        (course.track_type === "global" && (profile.track_global ?? false));
+        (course.track_type === "national" && trackNational) ||
+        (course.track_type === "global" && trackGlobal);
       if (prefersThis) byTitle.set(course.title, course);
     }
     return Array.from(byTitle.values());
