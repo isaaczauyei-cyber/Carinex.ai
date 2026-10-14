@@ -64,16 +64,27 @@ export async function POST(req: NextRequest) {
 
     const { data: prior } = await admin
       .from("course_enrollments")
-      .select("id, status")
+      .select("id, status, access_type, trial_expires_at")
       .eq("user_id", user.id)
       .eq("course_id", courseId)
       .in("status", ["pending_approval", "approved"])
+      .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
-    if (prior) {
+    // Trial access is temporary, not a paid entitlement. It must not block
+    // checkout after expiry (or when a learner chooses to purchase early).
+    // Keep blocking duplicate paid/approved access and duplicate pending payments.
+    if (prior?.status === "pending_approval") {
       return NextResponse.json(
-        { error: prior.status === "approved" ? "You already have access to this course." : "Your payment is already awaiting admin approval." },
+        { error: "Your payment is already awaiting admin approval." },
+        { status: 409 },
+      );
+    }
+
+    if (prior?.status === "approved" && prior.access_type !== "trial") {
+      return NextResponse.json(
+        { error: "You already have paid or permanent access to this course." },
         { status: 409 },
       );
     }
