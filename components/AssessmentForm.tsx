@@ -70,14 +70,26 @@ export default function AssessmentForm({
   async function handleSubmit() {
     setSaving(true);
     const supabase = createClient();
-    await supabase
-      .from("nurse_profiles")
-      .update({ license_status: licenseStatus, career_goal: careerGoal, clinical_background: background })
-      .eq("id", nurseId);
-    await supabase
+    const profileResponse = await fetch("/api/nurse-profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ license_status: licenseStatus, career_goal: careerGoal, clinical_background: background }),
+    });
+    const profileResult = await profileResponse.json().catch(() => ({}));
+    if (!profileResponse.ok) {
+      setSaving(false);
+      alert(profileResult.error || "Could not save your assessment. Please try again.");
+      return;
+    }
+    const { error: userUpdateError } = await supabase
       .from("users")
       .update({ years_experience: yearsExperience })
       .eq("id", (await supabase.auth.getUser()).data.user?.id);
+    if (userUpdateError) {
+      setSaving(false);
+      alert("Your profile was saved, but years of experience could not be saved.");
+      return;
+    }
 
     setSaving(false);
     const rec = getRecommendation({ yearsExperience, clinicalBackground: background, licenseStatus, careerGoal, workStyle });

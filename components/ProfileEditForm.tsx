@@ -79,15 +79,16 @@ export default function ProfileEditForm({
       return;
     }
 
-    const { error: profileError } = await supabase
-      .from("nurse_profiles")
-      .update({ bio, track_national: trackNational, track_global: trackGlobal })
-      .eq("id", nurseId);
+    const profileResponse = await fetch("/api/nurse-profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bio, track_national: trackNational, track_global: trackGlobal }),
+    });
+    const profileResult = await profileResponse.json().catch(() => ({}));
 
-    if (profileError) {
-      console.error(profileError);
+    if (!profileResponse.ok) {
       setStatus("idle");
-      alert(`Save failed: ${profileError.message}`);
+      alert(`Save failed: ${profileResult.error || "Could not save profile."}`);
       return;
     }
 

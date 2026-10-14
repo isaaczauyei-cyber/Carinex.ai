@@ -58,21 +58,23 @@ export default function OnboardingForm({
       return false;
     }
 
-    const { error: profileError } = await supabase
-      .from("nurse_profiles")
-      .update({
+    const profileResponse = await fetch("/api/nurse-profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         license_status: licenseStatus || null,
         career_goal: careerGoal || null,
         availability: availability || null,
         clinical_background: background,
         onboarding_completed: true,
-      })
-      .eq("id", nurseId);
+      }),
+    });
+    const profileResult = await profileResponse.json().catch(() => ({}));
 
     setSaving(false);
 
-    if (profileError) {
-      setError(profileError.message);
+    if (!profileResponse.ok) {
+      setError(profileResult.error || "Could not save your profile. Please try again.");
       return false;
     }
 

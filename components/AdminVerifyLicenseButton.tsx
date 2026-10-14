@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 
 export default function AdminVerifyLicenseButton({
   nurseProfileId,
@@ -16,15 +15,17 @@ export default function AdminVerifyLicenseButton({
 
   async function toggle() {
     setSaving(true);
-    const supabase = createClient();
-    await supabase
-      .from("nurse_profiles")
-      .update({
-        license_verified: !verified,
-        license_verified_at: !verified ? new Date().toISOString() : null,
-      })
-      .eq("id", nurseProfileId);
+    const response = await fetch("/api/admin/nurse-profile/verify", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nurseProfileId, verified: !verified }),
+    });
+    const result = await response.json().catch(() => ({}));
     setSaving(false);
+    if (!response.ok) {
+      alert(result.error || "Could not update license verification.");
+      return;
+    }
     router.refresh();
   }
 

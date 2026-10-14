@@ -21,19 +21,13 @@ export default function SelectPathwayButton({ slug }: { slug: string }) {
       return;
     }
 
-    let { data: profile } = await supabase
-      .from("nurse_profiles")
-      .select("id")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (!profile) {
-      const { data: created } = await supabase
-        .from("nurse_profiles")
-        .insert({ user_id: user.id })
-        .select()
-        .single();
-      profile = created;
+    const profileResponse = await fetch("/api/nurse-profile", { method: "POST" });
+    const profileResult = await profileResponse.json().catch(() => ({}));
+    const profile = profileResult.profile as { id: string } | undefined;
+    if (!profileResponse.ok || !profile) {
+      setLoading(false);
+      alert(profileResult.error || "Could not set up your nurse profile. Please try again.");
+      return;
     }
 
     const { data: spec } = await supabase
