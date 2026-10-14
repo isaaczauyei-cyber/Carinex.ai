@@ -339,78 +339,87 @@ export default function SectionActions({
       )}
 
       {mode === "table" && (
-        <div className="mx-auto w-full max-w-4xl overflow-hidden px-2 pb-6 sm:px-6">
-          <div className="w-full overflow-hidden rounded-lg border border-carinex-navy/20">
-            <table className="w-full table-fixed border-collapse text-[11px] sm:text-sm">
+        <div className="mx-auto w-full max-w-5xl px-3 pb-6 sm:px-6">
+          {/* Mobile: render each criterion as a readable card instead of squeezing
+              every column into the phone viewport. */}
+          <div className="flex flex-col gap-4 sm:hidden">
+            {rowLabels.map((label, rIdx) => (
+              <section
+                key={`mobile-${rIdx}`}
+                className="overflow-hidden rounded-xl border border-carinex-navy/15 bg-white shadow-sm"
+              >
+                <h3 className="border-b border-carinex-navy/10 bg-carinex-navy/[0.04] px-4 py-3 text-sm font-bold leading-snug text-carinex-navy break-words">
+                  {label}
+                </h3>
+                <div className="flex flex-col gap-4 p-3">
+                  {(rows[rIdx] || []).map((cell, cIdx) => {
+                    const fixed = isAdminCell(rIdx, cIdx);
+                    const columnLabel = columns[cIdx + 1] || `Response ${cIdx + 1}`;
+                    return (
+                      <div key={`mobile-${rIdx}-${cIdx}`} className="min-w-0">
+                        <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-carinex-navy/65">
+                          {columnLabel}
+                        </p>
+                        {fixed ? (
+                          <div className="w-full rounded-lg bg-slate-50 px-3 py-3 text-sm leading-6 text-carinex-navy whitespace-pre-wrap break-words">
+                            {cell}
+                          </div>
+                        ) : (
+                          <textarea
+                            value={cell}
+                            onChange={(e) => updateCell(rIdx, cIdx, e.target.value)}
+                            rows={4}
+                            className="block min-h-[104px] w-full resize-y rounded-lg border border-carinex-navy/20 bg-white px-3 py-3 text-base leading-6 text-carinex-navy placeholder:text-carinex-navy/40 focus:border-carinex-emerald focus:outline-none focus:ring-2 focus:ring-carinex-emerald/15"
+                            placeholder={`Enter ${columnLabel.toLowerCase()}…`}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+          </div>
+
+          {/* Tablet/desktop: preserve the familiar table layout. */}
+          <div className="hidden overflow-x-auto rounded-lg border border-carinex-navy/20 sm:block">
+            <table className="w-full min-w-[640px] border-collapse text-sm">
               <thead>
                 <tr>
                   {columns.map((col, index) => (
                     <th
                       key={`${col}-${index}`}
-                      className="border border-carinex-navy/20 bg-carinex-navy/[0.03] p-2 text-left font-semibold text-carinex-navy sm:p-3"
+                      className="border border-carinex-navy/20 bg-carinex-navy/[0.03] p-3 text-left font-semibold text-carinex-navy"
                     >
-                      <div className="whitespace-normal break-words">
-                        {col}
-                      </div>
+                      <div className="whitespace-normal break-words">{col}</div>
                     </th>
                   ))}
                 </tr>
               </thead>
-
               <tbody>
                 {rowLabels.map((label, rIdx) => (
                   <tr key={rIdx}>
-                    <td className="border border-carinex-navy/20 p-2 align-top font-medium text-carinex-navy sm:p-3">
-                      <div className="whitespace-normal break-words">
-                        {label}
-                      </div>
+                    <td className="border border-carinex-navy/20 p-3 align-top font-medium text-carinex-navy">
+                      <div className="whitespace-normal break-words">{label}</div>
                     </td>
-
-                    {(rows[rIdx] || []).map(
-                      (cell, cIdx) => {
-                        const fixed = isAdminCell(
-                          rIdx,
-                          cIdx
-                        );
-
-                        return (
-                          <td
-                            key={cIdx}
-                            className="border border-carinex-navy/20 p-1.5 align-top sm:p-2"
-                          >
-                            {fixed ? (
-                              /*
-                               * ADMIN-FILLED CELL
-                               *
-                               * Learner cannot edit this.
-                               */
-                              <div className="w-full whitespace-normal break-words leading-relaxed text-carinex-navy">
-                                {cell}
-                              </div>
-                            ) : (
-                              /*
-                               * EMPTY ADMIN CELL
-                               *
-                               * Learner can enter their response.
-                               */
-                              <textarea
-                                value={cell}
-                                onChange={(e) =>
-                                  updateCell(
-                                    rIdx,
-                                    cIdx,
-                                    e.target.value
-                                  )
-                                }
-                                rows={3}
-                                className="block w-full resize-y rounded border border-carinex-navy/20 bg-white px-2 py-2 text-[11px] text-carinex-navy placeholder:text-carinex-navy/40 focus:border-carinex-emerald focus:outline-none sm:text-sm"
-                                placeholder="Your response"
-                              />
-                            )}
-                          </td>
-                        );
-                      }
-                    )}
+                    {(rows[rIdx] || []).map((cell, cIdx) => {
+                      const fixed = isAdminCell(rIdx, cIdx);
+                      return (
+                        <td key={cIdx} className="border border-carinex-navy/20 p-2 align-top">
+                          {fixed ? (
+                            <div className="w-full whitespace-pre-wrap break-words leading-relaxed text-carinex-navy">{cell}</div>
+                          ) : (
+                            <textarea
+                              value={cell}
+                              onChange={(e) => updateCell(rIdx, cIdx, e.target.value)}
+                              rows={4}
+                              className="block min-h-[100px] w-full resize-y rounded border border-carinex-navy/20 bg-white px-3 py-2 text-sm leading-6 text-carinex-navy placeholder:text-carinex-navy/40 focus:border-carinex-emerald focus:outline-none"
+                              placeholder="Your response"
+                            />
+                          )}
+                        </td>
+                      );
+                    })}
                   </tr>
                 ))}
               </tbody>
