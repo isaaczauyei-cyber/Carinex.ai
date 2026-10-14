@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import OnboardingForm from "@/components/OnboardingForm";
 
 export default async function OnboardingPage() {
@@ -23,11 +24,19 @@ export default async function OnboardingPage() {
     .maybeSingle();
 
   if (!profile) {
-    const { data: created } = await supabase
+    // The user is authenticated above; derive ownership from the verified session.
+    // Profile creation uses the server-only service-role client because direct INSERT
+    // is intentionally revoked from browser-authenticated users.
+    const admin = createAdminClient();
+    const { data: created, error: createError } = await admin
       .from("nurse_profiles")
       .insert({ user_id: user.id })
       .select()
       .single();
+    if (createError) {
+      // Avoid silently rendering a form with a null profile after a failed insert.
+      throw new Error("Could not create your nurse profile. Please try again.");
+    }
     profile = created;
   }
 
