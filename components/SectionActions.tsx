@@ -296,6 +296,18 @@ export default function SectionActions({
     });
   }
 
+  const responseBlocks = Array.isArray(section.config.response_blocks) ? section.config.response_blocks as any[] : [];
+
+  if (responseBlocks.length > 0) {
+    return <MultiFunctionSubmission
+      nurseId={nurseId}
+      section={section}
+      blocks={responseBlocks}
+      initialProgress={initialProgress}
+      nextHref={nextHref}
+    />;
+  }
+
   return (
     <div>
       {section.section_type === "course_material" &&
@@ -339,57 +351,20 @@ export default function SectionActions({
       )}
 
       {mode === "table" && (
-        <div className="mx-auto w-full max-w-5xl px-3 pb-6 sm:px-6">
-          {/* Mobile: render each criterion as a readable card instead of squeezing
-              every column into the phone viewport. */}
-          <div className="flex flex-col gap-4 sm:hidden">
-            {rowLabels.map((label, rIdx) => (
-              <section
-                key={`mobile-${rIdx}`}
-                className="overflow-hidden rounded-xl border border-carinex-navy/15 bg-white shadow-sm"
-              >
-                <h3 className="border-b border-carinex-navy/10 bg-carinex-navy/[0.04] px-4 py-3 text-sm font-bold leading-snug text-carinex-navy break-words">
-                  {label}
-                </h3>
-                <div className="flex flex-col gap-4 p-3">
-                  {(rows[rIdx] || []).map((cell, cIdx) => {
-                    const fixed = isAdminCell(rIdx, cIdx);
-                    const columnLabel = columns[cIdx + 1] || `Response ${cIdx + 1}`;
-                    return (
-                      <div key={`mobile-${rIdx}-${cIdx}`} className="min-w-0">
-                        <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-carinex-navy/65">
-                          {columnLabel}
-                        </p>
-                        {fixed ? (
-                          <div className="w-full rounded-lg bg-slate-50 px-3 py-3 text-sm leading-6 text-carinex-navy whitespace-pre-wrap break-words">
-                            {cell}
-                          </div>
-                        ) : (
-                          <textarea
-                            value={cell}
-                            onChange={(e) => updateCell(rIdx, cIdx, e.target.value)}
-                            rows={4}
-                            className="block min-h-[104px] w-full resize-y rounded-lg border border-carinex-navy/20 bg-white px-3 py-3 text-base leading-6 text-carinex-navy placeholder:text-carinex-navy/40 focus:border-carinex-emerald focus:outline-none focus:ring-2 focus:ring-carinex-emerald/15"
-                            placeholder={`Enter ${columnLabel.toLowerCase()}…`}
-                          />
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
-          </div>
-
-          {/* Tablet/desktop: preserve the familiar table layout. */}
-          <div className="hidden overflow-x-auto rounded-lg border border-carinex-navy/20 sm:block">
-            <table className="w-full min-w-[640px] border-collapse text-sm">
+        <div className="mx-auto w-full max-w-5xl px-2 pb-6 sm:px-6">
+          {/* Keep the same tabular layout on every screen size.
+              On narrow screens, learners can scroll horizontally rather than
+              having the table converted into stacked cards or squeezed. */}
+          <div className="w-full overflow-x-auto rounded-lg border border-carinex-navy/20">
+            <table className="w-full min-w-[900px] table-auto border-collapse text-sm">
               <thead>
                 <tr>
                   {columns.map((col, index) => (
                     <th
                       key={`${col}-${index}`}
-                      className="border border-carinex-navy/20 bg-carinex-navy/[0.03] p-3 text-left font-semibold text-carinex-navy"
+                      className={`border border-carinex-navy/20 bg-carinex-navy/[0.03] p-3 text-left font-semibold text-carinex-navy ${
+                        index === 0 ? "min-w-[170px]" : "min-w-[190px]"
+                      }`}
                     >
                       <div className="whitespace-normal break-words">{col}</div>
                     </th>
@@ -399,22 +374,28 @@ export default function SectionActions({
               <tbody>
                 {rowLabels.map((label, rIdx) => (
                   <tr key={rIdx}>
-                    <td className="border border-carinex-navy/20 p-3 align-top font-medium text-carinex-navy">
+                    <td className="min-w-[170px] border border-carinex-navy/20 p-3 align-top font-medium text-carinex-navy">
                       <div className="whitespace-normal break-words">{label}</div>
                     </td>
                     {(rows[rIdx] || []).map((cell, cIdx) => {
                       const fixed = isAdminCell(rIdx, cIdx);
+                      const columnLabel = columns[cIdx + 1] || `Response ${cIdx + 1}`;
                       return (
-                        <td key={cIdx} className="border border-carinex-navy/20 p-2 align-top">
+                        <td
+                          key={cIdx}
+                          className="min-w-[190px] border border-carinex-navy/20 p-2 align-top"
+                        >
                           {fixed ? (
-                            <div className="w-full whitespace-pre-wrap break-words leading-relaxed text-carinex-navy">{cell}</div>
+                            <div className="w-full whitespace-pre-wrap break-words leading-relaxed text-carinex-navy">
+                              {cell}
+                            </div>
                           ) : (
                             <textarea
                               value={cell}
                               onChange={(e) => updateCell(rIdx, cIdx, e.target.value)}
                               rows={4}
                               className="block min-h-[100px] w-full resize-y rounded border border-carinex-navy/20 bg-white px-3 py-2 text-sm leading-6 text-carinex-navy placeholder:text-carinex-navy/40 focus:border-carinex-emerald focus:outline-none"
-                              placeholder="Your response"
+                              placeholder={`Enter ${columnLabel.toLowerCase()}…`}
                             />
                           )}
                         </td>
@@ -425,6 +406,9 @@ export default function SectionActions({
               </tbody>
             </table>
           </div>
+          <p className="mt-2 text-xs text-carinex-navy/60 sm:hidden">
+            Swipe left or right to view all table columns.
+          </p>
         </div>
       )}
 
@@ -499,6 +483,124 @@ export default function SectionActions({
       </div>
     </div>
   );
+}
+
+type ResponseBlock = {
+  id: string;
+  type: "instructions" | "text" | "table" | "checklist" | "file";
+  title?: string;
+  content?: string;
+  prompt?: string;
+  required?: boolean;
+  items?: string[];
+  columns?: string[];
+  row_labels?: string[];
+  table_rows?: string[][];
+};
+
+function MultiFunctionSubmission({
+  nurseId,
+  section,
+  blocks,
+  initialProgress,
+  nextHref,
+}: {
+  nurseId: string;
+  section: Section;
+  blocks: ResponseBlock[];
+  initialProgress: Progress | null;
+  nextHref: string;
+}) {
+  const [answers, setAnswers] = useState<Record<string, any>>(() => {
+    try {
+      const parsed = initialProgress?.submission_text ? JSON.parse(initialProgress.submission_text) : {};
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+    } catch { return {}; }
+  });
+  const [files, setFiles] = useState<Record<string, File>>({});
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [saved, setSaved] = useState(initialProgress?.status === "completed");
+
+  function updateAnswer(id: string, value: any) {
+    setAnswers((prev) => ({ ...prev, [id]: value }));
+    setSaved(false);
+  }
+
+  async function submit() {
+    setError("");
+    for (const block of blocks) {
+      if (block.required === false || block.type === "instructions") continue;
+      if (block.type === "text" && !String(answers[block.id] || "").trim()) {
+        setError(`Complete “${block.title || "Written response"}” before submitting.`); return;
+      }
+      if (block.type === "file" && !files[block.id] && !answers[block.id]?.path) {
+        setError(`Choose a file for “${block.title || "File submission"}”.`); return;
+      }
+      if (block.type === "checklist" && !(Array.isArray(answers[block.id]) && answers[block.id].length)) {
+        setError(`Complete “${block.title || "Checklist"}” before submitting.`); return;
+      }
+      if (block.type === "table") {
+        const rows = Array.isArray(answers[block.id]) ? answers[block.id] as unknown[] : [];
+        const hasResponse = rows.some((row) => Array.isArray(row) && row.some((cell) => String(cell || "").trim()));
+        if (!hasResponse) { setError(`Enter at least one response in “${block.title || "Exercise table"}”.`); return; }
+      }
+    }
+
+    setSaving(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Please sign in again.");
+      const payload: Record<string, any> = { ...answers };
+      for (const [blockId, file] of Object.entries(files)) {
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+        const path = `${user.id}/${section.id}/${blockId}-${Date.now()}-${safeName}`;
+        const { error: uploadError } = await supabase.storage.from("assignment-submissions").upload(path, file, { upsert: false });
+        if (uploadError) throw new Error(`File upload failed: ${uploadError.message}`);
+        payload[blockId] = { path, name: file.name, size: file.size, type: file.type };
+      }
+      const { error: saveError } = await supabase.from("nurse_section_progress").upsert({
+        nurse_id: nurseId,
+        section_id: section.id,
+        status: "completed",
+        completed_at: new Date().toISOString(),
+        submission_text: JSON.stringify(payload),
+        submission_file_url: null,
+      }, { onConflict: "nurse_id,section_id" });
+      if (saveError) throw new Error(saveError.message);
+      setAnswers(payload);
+      setFiles({});
+      setSaved(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not submit this section.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 px-3 pb-6 sm:px-6">
+    {blocks.map((block, index) => {
+      const cols = Array.isArray(block.columns) ? block.columns : ["Criterion", "Your response"];
+      const labels = Array.isArray(block.row_labels) ? block.row_labels : [];
+      const fixedRows = Array.isArray(block.table_rows) ? block.table_rows : [];
+      const width = Math.max(cols.length - 1, 1);
+      const tableAnswers = Array.isArray(answers[block.id]) ? answers[block.id] : [];
+      return <section key={block.id || index} className="rounded-xl border border-carinex-navy/15 p-4 sm:p-5">
+        <h2 className="text-base font-semibold text-carinex-navy">{block.title || `Activity ${index + 1}`}</h2>
+        {block.type === "instructions" && <div className="mt-3 whitespace-pre-wrap text-sm leading-6 text-carinex-navy">{block.content}</div>}
+        {block.type === "text" && <div className="mt-3"><p className="mb-2 text-sm text-carinex-navy/70">{block.prompt}</p><textarea value={String(answers[block.id] || "")} onChange={(e) => updateAnswer(block.id, e.target.value)} rows={5} className="w-full rounded-lg border border-carinex-navy/20 px-3 py-3 text-sm focus:border-carinex-emerald focus:outline-none" placeholder="Write your response here…" /></div>}
+        {block.type === "file" && <div className="mt-3"><p className="mb-2 text-sm text-carinex-navy/70">{block.prompt}</p><input type="file" onChange={(e) => { const f = e.target.files?.[0]; if (f) { if (f.size > 20 * 1024 * 1024) { setError("Files must be 20 MB or smaller."); return; } setFiles((prev) => ({ ...prev, [block.id]: f })); setSaved(false); } }} className="block w-full text-sm" />{answers[block.id]?.name && !files[block.id] && <p className="mt-2 text-xs text-carinex-navy/60">Previously submitted: {answers[block.id].name}</p>}{files[block.id] && <p className="mt-2 text-xs text-carinex-emerald">Selected: {files[block.id].name}</p>}</div>}
+        {block.type === "checklist" && <div className="mt-3 flex flex-col gap-2">{(block.items || []).map((item) => { const checked = Array.isArray(answers[block.id]) ? answers[block.id] as string[] : []; return <label key={item} className="flex items-start gap-3 rounded-lg border border-carinex-navy/15 px-3 py-3 text-sm"><input type="checkbox" checked={checked.includes(item)} onChange={(e) => updateAnswer(block.id, e.target.checked ? [...checked, item] : checked.filter((x) => x !== item))} className="mt-1" /><span>{item}</span></label>; })}</div>}
+        {block.type === "table" && <div className="mt-3"><div className="overflow-x-auto rounded-lg border border-carinex-navy/20"><table className="w-full min-w-[760px] border-collapse text-sm"><thead><tr>{cols.map((col, i) => <th key={i} className="border border-carinex-navy/20 bg-gray-50 p-3 text-left font-semibold">{col}</th>)}</tr></thead><tbody>{labels.map((label, r) => <tr key={r}><th className="border border-carinex-navy/20 p-3 text-left align-top">{label}</th>{Array.from({ length: width }, (_, c) => { const fixed = String(fixedRows[r]?.[c] || ""); const row = Array.isArray(tableAnswers[r]) ? tableAnswers[r] : []; const value = fixed.trim() ? fixed : String(row[c] || ""); return <td key={c} className="min-w-[190px] border border-carinex-navy/20 p-2 align-top">{fixed.trim() ? <div className="whitespace-pre-wrap">{fixed}</div> : <textarea value={value} onChange={(e) => { const next = labels.map((_, ri) => Array.from({ length: width }, (_, ci) => String((Array.isArray(tableAnswers[ri]) ? tableAnswers[ri] : [])[ci] || ""))); next[r][c] = e.target.value; updateAnswer(block.id, next); }} rows={3} className="w-full min-h-[84px] rounded border border-carinex-navy/20 p-2" placeholder="Your response" />}</td>; })}</tr>)}</tbody></table></div><p className="mt-2 text-xs text-carinex-navy/50">Swipe horizontally on mobile to view all columns.</p></div>}
+      </section>;
+    })}
+    {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
+    <div className="sticky bottom-0 flex items-center justify-between border-t border-carinex-navy/10 bg-white px-2 py-4">
+      <button onClick={() => void submit()} disabled={saving} className="rounded-full bg-carinex-navy px-6 py-2.5 text-sm font-semibold text-white disabled:opacity-60">{saving ? "Submitting…" : saved ? "Save changes" : "Submit responses"}</button>
+      <a href={nextHref} aria-label="Next" className="flex h-11 w-11 items-center justify-center rounded-full bg-carinex-emerald text-white">→</a>
+    </div>
+  </div>;
 }
 
 function getMode(section: Section): string {
