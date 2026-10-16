@@ -563,7 +563,7 @@ function SectionEditor({
                 const selectedTypes = new Set<string>(
                   responseBlocks.length
                     ? responseBlocks.map((block) => String(block.type))
-                    : legacyToBlockType[selectedMode] ? [legacyToBlockType[selectedMode]] : []
+                    : legacyToBlockType[String(selectedMode)] ? [legacyToBlockType[String(selectedMode)]] : []
                 );
                 const options = [
                   { type: "table", label: "Tabular" },
