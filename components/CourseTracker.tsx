@@ -35,9 +35,10 @@ export default function CourseTracker({
   course: Course;
   completion: Completion;
 }) {
-  const courseHref = course.is_in_house
-    ? `/dashboard/learning/inhouse/${course.id}/start`
-    : `/courses/${course.id}`;
+  // Pathway cards should always open the course details page first. The
+  // course details page handles enrollment/access and offers the explicit
+  // action to enter the in-house module player.
+  const courseHref = `/courses/${course.id}`;
 
   return (
     <article className="group flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-lg">
@@ -68,7 +69,7 @@ export default function CourseTracker({
         <div className="mt-auto flex items-center justify-between gap-3 border-t border-slate-100 pt-4 mt-5">
           <p className="text-sm font-bold text-slate-800">{course.price_display || (course.is_in_house ? "Included in Carinex" : "Course details")}</p>
           <a href={courseHref} className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-lg bg-carinex-emerald px-3.5 py-2 text-xs font-bold text-white transition hover:opacity-90 sm:text-sm">
-            {completion?.status === "completed" ? "Review course" : completion?.status ? "Continue learning" : "View course"} <span className="ml-1.5" aria-hidden="true">→</span>
+            {completion?.status === "completed" ? "Review course" : "View course"} <span className="ml-1.5" aria-hidden="true">→</span>
           </a>
         </div>
       </div>
