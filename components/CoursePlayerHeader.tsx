@@ -118,10 +118,10 @@ export default function CoursePlayerHeader({
 
       {tocOpen && (
         <div className="fixed inset-0 z-50 flex">
-          <div className="w-full max-w-sm overflow-y-auto bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-carinex-navy/10 p-4">
-              <p className="font-bold text-carinex-navy">{courseTitle}</p>
-              <button onClick={() => setTocOpen(false)} className="text-2xl text-carinex-navy/50" aria-label="Close">
+          <div className="w-full max-w-sm overflow-y-auto bg-carinex-navy text-white shadow-xl">
+            <div className="flex items-center justify-between border-b border-white/20 p-4">
+              <p className="font-bold text-white">{courseTitle}</p>
+              <button onClick={() => setTocOpen(false)} className="text-2xl text-white/70" aria-label="Close">
                 ×
               </button>
             </div>
@@ -130,16 +130,16 @@ export default function CoursePlayerHeader({
               {structure.map((mod, i) => {
                 const isOpen = openModules.has(mod.id);
                 return (
-                  <div key={mod.id} className="mb-1 rounded-lg bg-carinex-navy/[0.03]">
+                  <div key={mod.id} className="mb-1 rounded-lg bg-white/5">
                     <button
                       onClick={() => toggleModule(mod.id)}
                       className="flex w-full items-center justify-between px-4 py-3 text-left"
                     >
                       <div>
-                        <p className="text-xs font-semibold text-carinex-navy/50">Module {i + 1}</p>
-                        <p className="font-semibold text-carinex-navy">{mod.title}</p>
+                        <p className="text-xs font-semibold text-white/60">Module {i + 1}</p>
+                        <p className="font-semibold text-white">{mod.title}</p>
                       </div>
-                      <span className="text-carinex-navy/40">{isOpen ? "▲" : "▼"}</span>
+                      <span className="text-white/70">{isOpen ? "▲" : "▼"}</span>
                     </button>
 
                     {isOpen && (
@@ -152,11 +152,11 @@ export default function CoursePlayerHeader({
                               key={section.id}
                               href={`/dashboard/learning/inhouse/${courseId}/section/${section.id}`}
                               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm ${
-                                active ? "bg-carinex-emerald/10 text-carinex-emerald" : "text-carinex-navy"
+                                active ? "bg-carinex-emerald text-white" : "text-white hover:bg-white/10"
                               }`}
                             >
                               <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs ${
-                                done ? "bg-carinex-emerald text-white" : "border border-carinex-navy/20"
+                                done ? "bg-white text-carinex-navy" : "border border-white/40 text-white"
                               }`}>
                                 {done ? "✓" : ""}
                               </span>
@@ -170,11 +170,11 @@ export default function CoursePlayerHeader({
                           <Link
                             href={`/dashboard/learning/inhouse/${courseId}/quiz/${mod.id}`}
                             className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm ${
-                              mod.id === currentQuizModuleId ? "bg-carinex-emerald/10 text-carinex-emerald" : "text-carinex-navy"
+                              mod.id === currentQuizModuleId ? "bg-carinex-emerald text-white" : "text-white hover:bg-white/10"
                             }`}
                           >
                             <span className={`flex h-5 w-5 items-center justify-center rounded-full text-xs ${
-                              passedModuleIds.has(mod.id) ? "bg-carinex-emerald text-white" : "border border-carinex-navy/20"
+                              passedModuleIds.has(mod.id) ? "bg-white text-carinex-navy" : "border border-white/40 text-white"
                             }`}>
                               {passedModuleIds.has(mod.id) ? "✓" : ""}
                             </span>

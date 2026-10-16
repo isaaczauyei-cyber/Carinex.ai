@@ -643,13 +643,18 @@ function SectionEditor({
                               {(block.type === "instructions") && <textarea value={String(block.content || "")} onChange={(e) => updateBlock({ content: e.target.value })} placeholder="Instructions shown to learners" rows={3} className="mt-2 w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm" />}
                               {(block.type === "text" || block.type === "file") && <textarea value={String(block.prompt || "")} onChange={(e) => updateBlock({ prompt: e.target.value })} placeholder={block.type === "file" ? "Upload instructions" : "Question or prompt"} rows={2} className="mt-2 w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm" />}
                               {block.type === "checklist" && <textarea value={(Array.isArray(block.items) ? block.items : []).join("\n")} onChange={(e) => updateBlock({ items: e.target.value.split("\n").filter((x) => x.trim()) })} placeholder="One checklist item per line" rows={3} className="mt-2 w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm" />}
-                              {block.type === "table" && <div className="mt-2 flex flex-col gap-2">
-                                <label className="text-xs text-carinex-navy/60">Column headings (comma-separated)</label>
-                                <input value={(Array.isArray(block.columns) ? block.columns : []).join(", ")} onChange={(e) => { const cols = e.target.value.split(",").map((x) => x.trim()); updateBlock({ columns: cols, table_rows: (Array.isArray(block.row_labels) ? block.row_labels : []).map((_: string, r: number) => Array.from({ length: Math.max(cols.length - 1, 1) }, (_, c) => (block.table_rows?.[r] || [])[c] || "")) }); }} className="w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm" />
-                                <label className="text-xs text-carinex-navy/60">Row labels (one per line)</label>
-                                <textarea value={(Array.isArray(block.row_labels) ? block.row_labels : []).join("\n")} onChange={(e) => { const labels = e.target.value.split("\n"); updateBlock({ row_labels: labels, table_rows: labels.map((_: string, r: number) => Array.from({ length: Math.max((block.columns?.length || 2) - 1, 1) }, (_, c) => (block.table_rows?.[r] || [])[c] || "")) }); }} rows={3} className="w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm" />
-                                <p className="text-xs text-carinex-navy/50">Learners can fill empty cells; prefilled cells are shown as fixed content.</p>
-                              </div>}
+                              {block.type === "table" && (
+                                <div className="mt-3">
+                                  <AdminTableBuilder
+                                    config={{
+                                      columns: Array.isArray(block.columns) ? block.columns : ["S/N", "Column 1", "Column 2"],
+                                      row_labels: Array.isArray(block.row_labels) ? block.row_labels : ["1", "2", "3"],
+                                      table_rows: Array.isArray(block.table_rows) ? block.table_rows : [],
+                                    }}
+                                    onChange={(tablePatch) => updateBlock(tablePatch)}
+                                  />
+                                </div>
+                              )}
                               <label className="mt-3 flex items-center gap-2 text-xs text-carinex-navy/70"><input type="checkbox" checked={block.required !== false} onChange={(e) => updateBlock({ required: e.target.checked })} />Required before submitting</label>
                             </div>
                           );
