@@ -92,25 +92,25 @@ export default function CoursePlayerHeader({
 
   return (
     <>
-      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-carinex-navy/10 bg-white px-4 py-3">
+      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-white/10 bg-carinex-navy px-4 py-3">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setTocOpen(true)}
             aria-label="Course contents"
-            className="flex h-9 w-9 flex-col items-center justify-center gap-1.5 rounded-full hover:bg-carinex-navy/5"
+            className="flex h-9 w-9 flex-col items-center justify-center gap-1.5 rounded-full hover:bg-white/10"
           >
-            <span className="block h-0.5 w-5 bg-carinex-navy" />
-            <span className="block h-0.5 w-5 bg-carinex-navy" />
-            <span className="block h-0.5 w-5 bg-carinex-navy" />
+            <span className="block h-0.5 w-5 bg-white" />
+            <span className="block h-0.5 w-5 bg-white" />
+            <span className="block h-0.5 w-5 bg-white" />
           </button>
           <Image src="/carinex-logo.png" alt="Carinex" width={26} height={26} className="rounded-md" />
-          <span className="text-sm font-bold text-carinex-navy">Carinex</span>
+          <span className="text-sm font-bold text-white">Carinex</span>
         </div>
 
         <button
           onClick={() => setMenuOpen(true)}
           aria-label="Account menu"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-carinex-navy text-sm font-bold text-carinex-white"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-carinex-emerald text-sm font-bold text-white"
         >
           {initial}
         </button>
