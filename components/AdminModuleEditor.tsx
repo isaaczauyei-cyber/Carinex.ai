@@ -548,118 +548,121 @@ function SectionEditor({
           {(interactiveSection || section.section_type === "training_activity") && (
             <div className="rounded-lg border border-carinex-navy/10 p-4">
               <p className="text-sm font-semibold text-carinex-navy">Learner response format</p>
-              <p className="mt-1 text-xs text-carinex-navy/50">Choose one existing format or add multiple components (for example, a table plus file upload and written response).</p>
+              <p className="mt-1 text-xs text-carinex-navy/50">
+                Select one or more response formats. Selected formats turn dark. Select a format again to remove it.
+              </p>
 
-              <div className="mt-3 rounded-lg border border-carinex-navy/10 p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-semibold text-carinex-navy">Response components</p>
-                    <p className="mt-1 text-xs text-carinex-navy/50">Add and arrange multiple learner response types in this same section.</p>
-                  </div>
-                  <select
-                    aria-label="Add learner response component"
-                    defaultValue=""
-                    onChange={(e) => {
-                      const type = e.target.value;
-                      if (!type) return;
-                      const blocks = [...responseBlocks];
-                      const id = `block-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-                      const defaults: Record<string, any> = {
-                        text: { id, type, title: "Written response", prompt: "", required: true },
-                        instructions: { id, type, title: "Instructions", content: "", required: false },
-                        file: { id, type, title: "File submission", prompt: "Upload your completed work.", required: true },
-                        checklist: { id, type, title: "Checklist", items: ["Item 1", "Item 2"], required: true },
-                        table: { id, type, title: "Exercise table", columns: ["Criterion", "Your response"], row_labels: ["1", "2", "3"], table_rows: [["", ""], ["", ""], ["", ""]], required: true },
-                      };
-                      blocks.push(defaults[type]);
-                      patchConfig({ response_blocks: blocks });
-                      e.target.value = "";
-                    }}
-                    className="rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm"
-                  >
-                    <option value="">+ Add response type…</option>
-                    <option value="instructions">Instructions / text</option>
-                    <option value="table">Table</option>
-                    <option value="text">Written response</option>
-                    <option value="checklist">Checklist</option>
-                    <option value="file">File submission</option>
-                  </select>
-                </div>
+              {(() => {
+                const legacyToBlockType: Record<string, string> = {
+                  table: "table",
+                  freeform: "text",
+                  text: "text",
+                  checklist: "checklist",
+                  file: "file",
+                };
+                const selectedTypes = new Set<string>(
+                  responseBlocks.length
+                    ? responseBlocks.map((block) => String(block.type))
+                    : legacyToBlockType[selectedMode] ? [legacyToBlockType[selectedMode]] : []
+                );
+                const options = [
+                  { type: "table", label: "Tabular" },
+                  { type: "text", label: "Written response" },
+                  { type: "checklist", label: "Checklist" },
+                  { type: "file", label: "File upload" },
+                ];
+                const defaultBlock = (type: string) => {
+                  const id = `block-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+                  if (type === "table") return { id, type, title: "Exercise table", columns: Array.isArray(config.columns) ? config.columns : ["Criterion", "Your response"], row_labels: Array.isArray(config.row_labels) ? config.row_labels : ["1", "2", "3"], table_rows: Array.isArray(config.table_rows) ? config.table_rows : [["", ""], ["", ""], ["", ""]], required: true };
+                  if (type === "text") return { id, type, title: "Written response", prompt: "", required: true };
+                  if (type === "checklist") return { id, type, title: "Checklist", items: Array.isArray(config.items) ? config.items : ["Item 1", "Item 2"], required: true };
+                  return { id, type: "file", title: "File submission", prompt: "Upload your completed work.", required: true };
+                };
+                const toggleType = (type: string) => {
+                  let current = responseBlocks;
+                  if (!current.length && selectedTypes.size) {
+                    current = Array.from(selectedTypes).map((oldType) => defaultBlock(oldType));
+                  }
+                  const exists = current.some((block) => block.type === type || (type === "text" && block.type === "freeform"));
+                  const next = exists
+                    ? current.filter((block) => !(block.type === type || (type === "text" && block.type === "freeform")))
+                    : [...current, defaultBlock(type)];
+                  patchConfig({
+                    response_blocks: next,
+                    input_mode: next[0]?.type || "none",
+                    mode: next.some((block) => block.type === "checklist") ? "checklist" : "text",
+                    submission_type: next.some((block) => block.type === "file") ? "file" : "text",
+                    activity_format: next.some((block) => block.type === "table") ? "table" : "freeform",
+                  });
+                };
 
-                {responseBlocks.length > 0 ? (
-                  <div className="mt-4 flex flex-col gap-3">
-                    {responseBlocks.map((block, index) => {
-                      const updateBlock = (patch: Record<string, unknown>) => patchConfig({ response_blocks: responseBlocks.map((item, i) => i === index ? { ...item, ...patch } : item) });
-                      const moveBlock = (direction: number) => {
-                        const target = index + direction;
-                        if (target < 0 || target >= responseBlocks.length) return;
-                        const next = [...responseBlocks];
-                        [next[index], next[target]] = [next[target], next[index]];
-                        patchConfig({ response_blocks: next });
-                      };
-                      return <div key={block.id || `${block.type}-${index}`} className="rounded-lg border border-carinex-navy/15 p-3">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="rounded-full bg-carinex-navy/5 px-2 py-1 text-xs font-semibold">{index + 1}. {String(block.type)}</span>
-                          <button type="button" onClick={() => moveBlock(-1)} disabled={index === 0} className="text-xs underline disabled:opacity-30">Move up</button>
-                          <button type="button" onClick={() => moveBlock(1)} disabled={index === responseBlocks.length - 1} className="text-xs underline disabled:opacity-30">Move down</button>
-                          <button type="button" onClick={() => patchConfig({ response_blocks: responseBlocks.filter((_, i) => i !== index) })} className="ml-auto text-xs font-semibold text-red-600">Remove</button>
-                        </div>
-                        <input value={String(block.title || "")} onChange={(e) => updateBlock({ title: e.target.value })} placeholder="Component title" className="mt-3 w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm" />
-                        {block.type === "instructions" && <textarea value={String(block.content || "")} onChange={(e) => updateBlock({ content: e.target.value })} placeholder="Instructions shown to learners" rows={3} className="mt-2 w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm" />}
-                        {(block.type === "text" || block.type === "file") && <textarea value={String(block.prompt || "")} onChange={(e) => updateBlock({ prompt: e.target.value })} placeholder={block.type === "file" ? "Upload instructions" : "Question or prompt"} rows={2} className="mt-2 w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm" />}
-                        {block.type === "checklist" && <textarea value={(Array.isArray(block.items) ? block.items : []).join("\n")} onChange={(e) => updateBlock({ items: e.target.value.split("\n").filter((x) => x.trim()) })} placeholder="One checklist item per line" rows={3} className="mt-2 w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm" />}
-                        {block.type === "table" && <div className="mt-2 flex flex-col gap-2">
-                          <label className="text-xs text-carinex-navy/60">Column headings (comma-separated)</label>
-                          <input value={(Array.isArray(block.columns) ? block.columns : []).join(", ")} onChange={(e) => { const cols = e.target.value.split(",").map((x) => x.trim()); updateBlock({ columns: cols, table_rows: (Array.isArray(block.row_labels) ? block.row_labels : []).map((_: string, r: number) => Array.from({ length: Math.max(cols.length - 1, 1) }, (_, c) => (block.table_rows?.[r] || [])[c] || "")) }); }} className="w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm" />
-                          <label className="text-xs text-carinex-navy/60">Row labels (one per line)</label>
-                          <textarea value={(Array.isArray(block.row_labels) ? block.row_labels : []).join("\n")} onChange={(e) => { const labels = e.target.value.split("\n"); updateBlock({ row_labels: labels, table_rows: labels.map((_: string, r: number) => Array.from({ length: Math.max((block.columns?.length || 2) - 1, 1) }, (_, c) => (block.table_rows?.[r] || [])[c] || "")) }); }} rows={3} className="w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm" />
-                          <p className="text-xs text-carinex-navy/50">Learners can fill empty cells; prefilled cells are shown as fixed content.</p>
-                        </div>}
-                        <label className="mt-3 flex items-center gap-2 text-xs text-carinex-navy/70"><input type="checkbox" checked={block.required !== false} onChange={(e) => updateBlock({ required: e.target.checked })} />Required before submitting</label>
-                      </div>;
-                    })}
-                    <p className="text-xs text-carinex-navy/50">Multiple response components are active. Remove all components to return to the existing single-format controls below.</p>
-                  </div>
-                ) : (
-                  <p className="mt-3 text-xs text-carinex-navy/50">No additional components added. Your existing single response format remains active.</p>
-                )}
-              </div>
+                return (
+                  <>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {options.map((option) => {
+                        const selected = selectedTypes.has(option.type) ||
+                          (option.type === "text" && selectedTypes.has("freeform"));
+                        return (
+                          <button
+                            key={option.type}
+                            type="button"
+                            aria-pressed={selected}
+                            onClick={() => toggleType(option.type)}
+                            className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+                              selected
+                                ? "bg-black text-white"
+                                : "border border-carinex-navy/20 bg-white text-carinex-navy hover:border-black"
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        );
+                      })}
+                    </div>
 
-              {responseBlocks.length === 0 && <>
-              <p className="mt-4 text-xs font-semibold uppercase tracking-wide text-carinex-navy/50">Single response format</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {[
-                  ["none", "No response — mark complete"],
-                  ["table", "Tabular"],
-                  ["freeform", "Freeform"],
-                  ["checklist", "Checklist"],
-                  ["text", "Fill-in text"],
-                  ["file", "File upload"],
-                ].map(([mode, label]) => (
-                  <button key={mode} type="button" onClick={() => setInputMode(mode)} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${selectedMode === mode ? "bg-carinex-navy text-white" : "border border-carinex-navy/20 text-carinex-navy"}`}>
-                    {label}
-                  </button>
-                ))}
-              </div>
+                    {responseBlocks.length > 0 && (
+                      <div className="mt-4 flex flex-col gap-3">
+                        {responseBlocks.map((block, index) => {
+                          const updateBlock = (patch: Record<string, unknown>) =>
+                            patchConfig({ response_blocks: responseBlocks.map((item, i) => i === index ? { ...item, ...patch } : item) });
+                          const moveBlock = (direction: number) => {
+                            const targetIndex = index + direction;
+                            if (targetIndex < 0 || targetIndex >= responseBlocks.length) return;
+                            const next = [...responseBlocks];
+                            [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+                            patchConfig({ response_blocks: next });
+                          };
+                          return (
+                            <div key={block.id || `${block.type}-${index}`} className="rounded-lg border border-carinex-navy/15 p-3">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="rounded-full bg-carinex-navy/5 px-2 py-1 text-xs font-semibold">{index + 1}. {block.type === "table" ? "Tabular" : block.type === "text" ? "Written response" : block.type === "checklist" ? "Checklist" : block.type === "file" ? "File upload" : String(block.type)}</span>
+                                <button type="button" onClick={() => moveBlock(-1)} disabled={index === 0} className="text-xs underline disabled:opacity-30">Move up</button>
+                                <button type="button" onClick={() => moveBlock(1)} disabled={index === responseBlocks.length - 1} className="text-xs underline disabled:opacity-30">Move down</button>
+                              </div>
+                              <input value={String(block.title || "")} onChange={(e) => updateBlock({ title: e.target.value })} placeholder="Component title" className="mt-2 w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm" />
+                              {(block.type === "instructions") && <textarea value={String(block.content || "")} onChange={(e) => updateBlock({ content: e.target.value })} placeholder="Instructions shown to learners" rows={3} className="mt-2 w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm" />}
+                              {(block.type === "text" || block.type === "file") && <textarea value={String(block.prompt || "")} onChange={(e) => updateBlock({ prompt: e.target.value })} placeholder={block.type === "file" ? "Upload instructions" : "Question or prompt"} rows={2} className="mt-2 w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm" />}
+                              {block.type === "checklist" && <textarea value={(Array.isArray(block.items) ? block.items : []).join("\n")} onChange={(e) => updateBlock({ items: e.target.value.split("\n").filter((x) => x.trim()) })} placeholder="One checklist item per line" rows={3} className="mt-2 w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm" />}
+                              {block.type === "table" && <div className="mt-2 flex flex-col gap-2">
+                                <label className="text-xs text-carinex-navy/60">Column headings (comma-separated)</label>
+                                <input value={(Array.isArray(block.columns) ? block.columns : []).join(", ")} onChange={(e) => { const cols = e.target.value.split(",").map((x) => x.trim()); updateBlock({ columns: cols, table_rows: (Array.isArray(block.row_labels) ? block.row_labels : []).map((_: string, r: number) => Array.from({ length: Math.max(cols.length - 1, 1) }, (_, c) => (block.table_rows?.[r] || [])[c] || "")) }); }} className="w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm" />
+                                <label className="text-xs text-carinex-navy/60">Row labels (one per line)</label>
+                                <textarea value={(Array.isArray(block.row_labels) ? block.row_labels : []).join("\n")} onChange={(e) => { const labels = e.target.value.split("\n"); updateBlock({ row_labels: labels, table_rows: labels.map((_: string, r: number) => Array.from({ length: Math.max((block.columns?.length || 2) - 1, 1) }, (_, c) => (block.table_rows?.[r] || [])[c] || "")) }); }} rows={3} className="w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm" />
+                                <p className="text-xs text-carinex-navy/50">Learners can fill empty cells; prefilled cells are shown as fixed content.</p>
+                              </div>}
+                              <label className="mt-3 flex items-center gap-2 text-xs text-carinex-navy/70"><input type="checkbox" checked={block.required !== false} onChange={(e) => updateBlock({ required: e.target.checked })} />Required before submitting</label>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
 
-              {selectedMode === "checklist" && (
-                <div className="mt-4">
-                  <p className="mb-1 text-xs font-semibold text-carinex-navy/50">Checklist items — one per line</p>
-                  <textarea value={((config.items as string[]) || []).join("\n")} onChange={(e) => patchConfig({ items: e.target.value.split("\n") })} rows={5} placeholder="Item 1\nItem 2" className="w-full rounded-lg border border-carinex-navy/20 px-3 py-2 text-sm" />
-                </div>
-              )}
-
-              {selectedMode === "table" && (
-                <AdminTableBuilder config={config} onChange={patchConfig} />
-              )}
-
-              {selectedMode === "file" && (
-                <div className="mt-4">
-                  <p className="mb-2 text-xs text-carinex-navy/50">Learners will be able to upload a file when completing this section.</p>
-                  <p className="text-xs font-semibold text-carinex-emerald">File upload enabled ✓</p>
-                </div>
-              )}
-              </>}
+                    {!responseBlocks.length && selectedMode === "none" && (
+                      <p className="mt-3 text-xs text-carinex-navy/50">No response format selected. Choose one or more formats above.</p>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           )}
 
