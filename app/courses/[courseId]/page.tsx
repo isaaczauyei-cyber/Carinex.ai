@@ -48,7 +48,8 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
         ? `${formatNaira(courseOnlyPrice)} course / ${formatNaira(coursePlusGuidePrice)} with interview guide`
         : formatNaira(courseOnlyPrice)
       : course.price_display || "";
-  const descriptionText = course.description_long || course.summary || "";
+  const descriptionText = course.description_long || "";
+  const hasActivePaidEnrollment = course.is_in_house && hasPaidPricing && enrollmentStatus === "approved" && existingAccessType !== "trial";
 
   return <main className="min-h-screen bg-[#F4F7F8] text-carinex-navy">
     <Navbar />
@@ -63,7 +64,6 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
           </div>
           <h1 className="mt-5 max-w-3xl text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl lg:text-5xl">{course.title}</h1>
           <p className="mt-4 text-base font-medium text-white/80 sm:text-lg">{course.provider}</p>
-          {course.summary && descriptionText !== course.summary && <p className="mt-4 max-w-2xl text-sm leading-7 text-white/80 sm:text-base">{course.summary}</p>}
         </div>
         <div className="w-full max-w-md md:justify-self-end"><div className="overflow-hidden rounded-2xl border border-white/20 bg-white/10 p-3 shadow-xl backdrop-blur-sm">
           {course.image_url ? <img src={course.image_url} alt={course.title} className="h-44 w-full rounded-xl object-cover sm:h-52 md:h-44" /> : <div className="flex h-44 items-center justify-center rounded-xl bg-white/10 text-5xl" aria-hidden="true">✦</div>}
@@ -94,7 +94,7 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
         </section>
       </div>
       <aside className="min-w-0 lg:sticky lg:top-6"><div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="bg-gradient-to-br from-carinex-navy to-carinex-emerald px-5 py-4 text-white"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/75">{adminCourseAccess ? "ADMIN ACCESS" : "ENROLMENT"}</p><p className="mt-1 text-2xl font-extrabold">{adminCourseAccess ? "Free admin access" : (priceLine || "Course access")}</p><p className="mt-1 text-xs text-white/75">{adminCourseAccess ? "Access granted for this selected course" : isFreeCourse ? "Start learning at no course cost" : "Review the available access options below"}</p></div>
+        <div className="bg-gradient-to-br from-carinex-navy to-carinex-emerald px-5 py-4 text-white"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/75">{adminCourseAccess ? "ADMIN ACCESS" : hasActivePaidEnrollment ? "YOUR ENROLMENT" : "ENROLMENT"}</p><p className="mt-1 text-2xl font-extrabold">{adminCourseAccess ? "Free admin access" : hasActivePaidEnrollment ? "Course access active" : (priceLine || "Course access")}</p>{!adminCourseAccess && !hasActivePaidEnrollment && <p className="mt-1 text-xs text-white/75">{isFreeCourse ? "Start learning at no course cost" : "Review the available access options below"}</p>}{adminCourseAccess && <p className="mt-1 text-xs text-white/75">Access granted for this selected course</p>}</div>
         <div className="p-5"><div className="mb-5 space-y-3 text-sm text-slate-600">
           {course.provider && <div className="flex items-start gap-3"><span className="text-carinex-emerald" aria-hidden="true">✓</span><span>Provided by <strong className="font-semibold text-carinex-navy">{course.provider}</strong></span></div>}
           {course.duration_display && <div className="flex items-start gap-3"><span className="text-carinex-emerald" aria-hidden="true">✓</span><span>{course.duration_display} estimated duration</span></div>}
