@@ -74,6 +74,17 @@ export default async function CourseDetailPage({ params }: { params: { courseId:
           <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-lg text-carinex-emerald" aria-hidden="true">▤</span><div><p className="text-xs font-bold uppercase tracking-[0.14em] text-carinex-emerald">ABOUT THIS COURSE</p><h2 className="mt-1 text-xl font-bold sm:text-2xl">Course overview</h2></div></div>
           <div className="mt-5">{descriptionText ? <RichText text={descriptionText} /> : <p className="text-sm leading-6 text-slate-500">Course description will be available soon.</p>}</div>
         </section>
+        {Array.isArray(course.skills_gained) && course.skills_gained.filter((skill: unknown) => typeof skill === "string" && skill.trim()).length > 0 && (
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-carinex-emerald">SKILLS YOU'LL GAIN</p>
+            <h2 className="mt-1 text-xl font-bold sm:text-2xl">Skills you'll build</h2>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {course.skills_gained.filter((skill: unknown): skill is string => typeof skill === "string" && skill.trim().length > 0).map((skill: string, index: number) => (
+                <span key={`${skill}-${index}`} className="inline-flex items-center rounded-full border border-carinex-emerald/25 bg-emerald-50 px-3 py-1.5 text-sm font-medium text-carinex-emerald">{skill}</span>
+              ))}
+            </div>
+          </section>
+        )}
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
           <div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-lg text-carinex-emerald" aria-hidden="true">☷</span><div><p className="text-xs font-bold uppercase tracking-[0.14em] text-carinex-emerald">COURSE CONTENT</p><h2 className="mt-1 text-xl font-bold sm:text-2xl">Syllabus</h2></div></div>
           {syllabus && syllabus.length > 0 ? <div className="mt-5 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">{syllabus.map((item, i) => <div key={item.id} className="flex gap-4 p-4 sm:p-5"><div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-sm font-bold text-slate-600">{String(i + 1).padStart(2, "0")}</div><div className="min-w-0 flex-1"><h3 className="font-semibold">{item.title}</h3>{item.description && <div className="mt-2"><RichText text={item.description} /></div>}</div></div>)}</div> : <p className="mt-5 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-500">The course outline has not been added yet.</p>}
