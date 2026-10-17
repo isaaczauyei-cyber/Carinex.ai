@@ -197,6 +197,16 @@ const passedModuleIds =
           </div>
         )}
 
+        {section.section_type === "training_activity" && typeof config.why_it_matters === "string" && config.why_it_matters.trim() !== "" && (
+          <section className="mt-6 rounded-2xl border border-carinex-emerald/20 bg-emerald-50/70 p-5 sm:p-6">
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-carinex-emerald">Clinical relevance</p>
+            <h2 className="mt-1 text-lg font-bold text-carinex-navy">Why this matters to nurses</h2>
+            <div className="mt-3 text-sm leading-7 text-carinex-navy/80">
+              <RichText text={config.why_it_matters} />
+            </div>
+          </section>
+        )}
+
         {(section.section_type === "course_material" ||
           section.section_type === "career_application") && (
           <div className="mt-6">
