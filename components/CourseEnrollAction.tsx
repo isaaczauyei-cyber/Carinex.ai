@@ -14,6 +14,7 @@ type CourseEnrollActionProps = {
   completionStatus: string | null;
   enrollmentStatus: string | null;
   pricing: CoursePricing;
+  adminCourseAccess?: boolean;
 };
 
 export default function CourseEnrollAction({
@@ -27,6 +28,7 @@ export default function CourseEnrollAction({
   completionStatus,
   enrollmentStatus,
   pricing,
+  adminCourseAccess = false,
 }: CourseEnrollActionProps) {
   const [saving, setSaving] = useState(false);
   const [packageType, setPackageType] = useState<
@@ -146,6 +148,12 @@ export default function CourseEnrollAction({
     } finally {
       setSaving(false);
     }
+  }
+
+  // Explicit course-specific admin access bypasses payment only for admins
+  // whose access grant has already been verified server-side.
+  if (isInHouse && adminCourseAccess) {
+    return <a href={`/dashboard/learning/inhouse/${courseId}/start`} className="inline-block rounded-full bg-carinex-emerald px-6 py-3 text-sm font-semibold text-white">Continue course →</a>;
   }
 
   // Handle expired trials before other enrollment options.
