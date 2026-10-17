@@ -6,6 +6,8 @@ import Link from "next/link";
 import AddModuleButton from "@/components/AddModuleButton";
 import InHouseCoursePricingEditor from "@/components/InHouseCoursePricingEditor";
 import InHousePublishToggle from "@/components/InHousePublishToggle";
+import AdminCourseAccessGrant from "@/components/AdminCourseAccessGrant";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +20,9 @@ export default async function AdminCourseModulesPage({ params }: { params: { cou
     .select("id, title, price_course_only, price_course_plus_guide, is_published, trial_enabled")
     .eq("id", courseId)
     .maybeSingle();
+
+  const adminClient = createAdminClient();
+  const { data: accessGrant } = await adminClient.from("course_admin_access_grants").select("course_id").eq("course_id", courseId).maybeSingle();
 
   const { data: modules } = await supabase
     .from("course_modules")
@@ -33,6 +38,8 @@ export default async function AdminCourseModulesPage({ params }: { params: { cou
       <div className="flex flex-wrap items-center gap-2"><InHousePublishToggle courseId={courseId} initialPublished={Boolean(course?.is_published)} /><AddModuleButton courseId={courseId} /></div>
     </div>
     <AdminTabs />
+
+    <AdminCourseAccessGrant courseId={courseId} initialEnabled={Boolean(accessGrant)} />
 
     <div className="mt-8">
       <InHouseCoursePricingEditor
