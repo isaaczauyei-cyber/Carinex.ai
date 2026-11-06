@@ -53,6 +53,7 @@ export default function AssessmentForm({
   const [saving, setSaving] = useState(false);
   const [addState, setAddState] = useState<AddState>("idle");
   const [aiEnrollState, setAiEnrollState] = useState<AddState>("idle");
+  const [aiEnrollError, setAiEnrollError] = useState("");
 
   function toggleBackground(option: string) {
     setBackground((prev) => (prev.includes(option) ? prev.filter((b) => b !== option) : [...prev, option]));
@@ -115,24 +116,45 @@ export default function AssessmentForm({
   }
 
   async function handleAiEnroll() {
-    if (!aiCourse) return;
+    if (!aiCourse || aiEnrollState === "adding") return;
     setAiEnrollState("adding");
-    const supabase = createClient();
+    setAiEnrollError("");
 
-    await supabase
-      .from("nurse_course_completions")
-      .insert({ nurse_id: nurseId, course_id: aiCourse.id, status: "in_progress" });
+    try {
+      // Create/confirm the server-side course entitlement first. The API
+      // initializes progress only after it has verified or created access.
+      const response = await fetch("/api/courses/free-enroll", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ courseId: aiCourse.id }),
+      });
+      const enrollmentResult = await response.json().catch(() => ({}));
 
-    if (aiCourse.specialization_id) {
-      await supabase
-        .from("nurse_specializations")
-        .upsert(
-          { nurse_id: nurseId, specialization_id: aiCourse.specialization_id },
-          { onConflict: "nurse_id,specialization_id" }
+      if (!response.ok) {
+        throw new Error(
+          enrollmentResult.error || "Unable to start this course. Please try again."
         );
-    }
+      }
 
-    window.location.href = `/dashboard/learning/inhouse/${aiCourse.id}/start`;
+      // Pathway interest is supplementary; it must not block course access.
+      if (aiCourse.specialization_id) {
+        const supabase = createClient();
+        const { error } = await supabase
+          .from("nurse_specializations")
+          .upsert(
+            { nurse_id: nurseId, specialization_id: aiCourse.specialization_id },
+            { onConflict: "nurse_id,specialization_id" }
+          );
+        if (error) console.error("Could not save course specialization interest", error);
+      }
+
+      window.location.assign(`/dashboard/learning/inhouse/${aiCourse.id}/start`);
+    } catch (error) {
+      setAiEnrollError(
+        error instanceof Error ? error.message : "Unable to start this course. Please try again."
+      );
+      setAiEnrollState("idle");
+    }
   }
 
   if (result) {
@@ -181,6 +203,12 @@ export default function AssessmentForm({
               </span>
             )}
           </div>
+
+          {aiEnrollError && (
+            <p role="alert" className="mt-3 text-sm text-red-600">
+              {aiEnrollError}
+            </p>
+          )}
 
           <button
             onClick={handleAiEnroll}
