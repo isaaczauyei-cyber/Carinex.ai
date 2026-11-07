@@ -119,9 +119,24 @@ export default function AssessmentForm({
     setAiEnrollState("adding");
     const supabase = createClient();
 
-    await supabase
-      .from("nurse_course_completions")
-      .insert({ nurse_id: nurseId, course_id: aiCourse.id, status: "in_progress" });
+    // Enrolment is created on the server (3-day trial or free access). The server
+    // also starts the progress record, so progress can never exist without it.
+    try {
+      const response = await fetch("/api/courses/free-enroll", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ courseId: aiCourse.id }),
+      });
+      if (!response.ok) {
+        // Not eligible for a trial or free access (for example, payment is
+        // required): send the nurse to the course page instead of the player.
+        window.location.href = `/courses/${aiCourse.id}`;
+        return;
+      }
+    } catch {
+      setAiEnrollState("idle");
+      return;
+    }
 
     if (aiCourse.specialization_id) {
       await supabase
