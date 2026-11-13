@@ -9,7 +9,7 @@ import {
 } from "@/lib/course-content";
 import CoursePlayerHeader from "@/components/CoursePlayerHeader";
 import SectionActions from "@/components/SectionActions";
-import PdfViewer from "@/components/PdfViewer";
+import PdfViewer from "@/components/PdfViewerSafe";
 import RichText from "@/components/RichText";
 
 export default async function SectionPage({
