@@ -33,23 +33,34 @@ export async function POST(req: NextRequest) {
 
   const coursePrice = Number(course.price_course_only || 0);
   const guidePrice = course.price_course_plus_guide == null ? 0 : Number(course.price_course_plus_guide);
-  if (course.trial_enabled !== true && course.is_free !== true && (coursePrice > 0 || guidePrice > 0)) {
+
+  // A verified course-specific admin grant is a separate entitlement from
+  // learner enrollment. Preserve it without creating a trial for administrators.
+  const [{ data: adminGrant }, { data: userRow }] = await Promise.all([
+    admin.from("course_admin_access_grants").select("course_id").eq("course_id", courseId).maybeSingle(),
+    admin.from("users").select("user_type").eq("id", user.id).maybeSingle(),
+  ]);
+  const isCourseAdmin = userRow?.user_type === "admin" && Boolean(adminGrant);
+
+  if (!isCourseAdmin && course.trial_enabled !== true && course.is_free !== true && (coursePrice > 0 || guidePrice > 0)) {
     return NextResponse.json({ error: "This course requires payment. Please use the course payment option." }, { status: 400 });
   }
 
   // The existing access guard requires an approved enrollment record for course 23.
-  const { data: existingEnrollment, error: lookupError } = await admin
-    .from("course_enrollments")
-    .select("id, status, trial_expires_at, access_type")
-    .eq("user_id", user.id)
-    .eq("course_id", courseId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const { data: existingEnrollment, error: lookupError } = isCourseAdmin
+    ? { data: null, error: null }
+    : await admin
+        .from("course_enrollments")
+        .select("id, status, trial_expires_at, access_type")
+        .eq("user_id", user.id)
+        .eq("course_id", courseId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
   if (lookupError) return NextResponse.json({ error: "Could not verify your enrollment. Please try again." }, { status: 500 });
 
-  if (!existingEnrollment) {
+  if (!isCourseAdmin && !existingEnrollment) {
     const now = new Date();
     const trialEnabled = course.trial_enabled === true;
     const trialExpiresAt = trialEnabled ? new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000) : null;
@@ -73,9 +84,9 @@ export async function POST(req: NextRequest) {
       console.error("Free course enrollment insert failed", enrollmentError);
       return NextResponse.json({ error: "Could not create course access. Please try again." }, { status: 500 });
     }
-  } else if (existingEnrollment.status !== "approved") {
+  } else if (!isCourseAdmin && existingEnrollment?.status !== "approved") {
     return NextResponse.json({ error: "An existing enrollment is awaiting review. Please contact support before trying again." }, { status: 409 });
-  } else if (existingEnrollment.access_type === "trial" && existingEnrollment.trial_expires_at && new Date(existingEnrollment.trial_expires_at) <= new Date()) {
+  } else if (!isCourseAdmin && existingEnrollment?.access_type === "trial" && existingEnrollment.trial_expires_at && new Date(existingEnrollment.trial_expires_at) <= new Date()) {
     return NextResponse.json({ error: "Your 3-day trial has expired. Purchase this course to regain access." }, { status: 403 });
   }
 
